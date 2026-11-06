@@ -72,6 +72,7 @@ public static class GearbitHub
         services.AddSingleton<ClientRegistry>();
         services.AddSingleton<IProgramLauncher, ProcessLauncher>();
         services.AddSingleton<IProgramLanguage, PythonLanguage>();
+        services.AddSingleton<IProgramLanguage, CSharpLanguage>();
         services.AddSingleton<ProgramRunner>();
         services.AddHostedService(sp => sp.GetRequiredService<ProgramRunner>());
         services.AddSingleton<RpcDispatcher>();

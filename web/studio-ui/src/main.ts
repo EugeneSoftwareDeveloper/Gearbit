@@ -8,7 +8,6 @@ import { store, type Catalog, type Control, type ConnectionState, type RobotInfo
 import { createConnectDialog, setHubTransports } from "./ui/connect-dialog";
 import { h } from "./ui/dom";
 import { createHelpDialog } from "./ui/help-dialog";
-import { createPlaceholder } from "./ui/placeholders";
 import { createRemoteView } from "./ui/remote-view";
 import { createSettingsPopover } from "./ui/settings-popover";
 import { toast } from "./ui/toasts";
@@ -66,13 +65,14 @@ function lazyView(mode: Mode, title: string, loading: string, load: (root: HTMLE
 const programs: Partial<Record<Mode, ReturnType<typeof lazyView>>> = {
   blocks: lazyView("blocks", "Блоки", "Загружаю редактор блоков…", async (root) => (await import("./blocks/view")).mountBlocksView(root)),
   python: lazyView("python", "Python", "Загружаю редактор Python…", async (root) => (await import("./code/python")).mountPythonView(root)),
+  csharp: lazyView("csharp", "C#", "Загружаю редактор C#…", async (root) => (await import("./code/csharp")).mountCSharpView(root)),
 };
 
 const views: Record<Mode, HTMLElement> = {
   remote: remote.element,
   blocks: programs.blocks!.section,
   python: programs.python!.section,
-  csharp: createPlaceholder("csharp"),
+  csharp: programs.csharp!.section,
 };
 
 let mode: Mode = "remote";

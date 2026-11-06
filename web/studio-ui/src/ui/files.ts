@@ -12,6 +12,8 @@ export interface FileKind {
   suffix: string;
   /** Тип содержимого. По умолчанию JSON: тогда подходят и файлы «.json». */
   mime?: string;
+  /** Другие окончания, которые можно открыть (сохраняется всегда с suffix). */
+  alsoOpen?: string[];
 }
 
 type Writable = { write(data: Blob): Promise<void>; close(): Promise<void> };
@@ -22,7 +24,8 @@ type FilePickers = {
 
 const mimeOf = (kind: FileKind) => kind.mime ?? "application/json";
 const suffixes = (kind: FileKind) => (kind.mime ? [kind.suffix] : [kind.suffix, ".json"]);
-const pickerTypes = (kind: FileKind) => [{ description: kind.description, accept: { [mimeOf(kind)]: suffixes(kind) } }];
+const openSuffixes = (kind: FileKind) => [...suffixes(kind), ...(kind.alsoOpen ?? [])];
+const pickerTypes = (kind: FileKind, open = false) => [{ description: kind.description, accept: { [mimeOf(kind)]: open ? openSuffixes(kind) : suffixes(kind) } }];
 
 /**
  * Сохранить текст в файл. Возвращает имя файла (или предложенное имя, если браузер просто скачал файл);
@@ -63,14 +66,14 @@ export async function openFile(kind: FileKind): Promise<{ name: string; text: st
   const pickers = window as Window & FilePickers;
   if (pickers.showOpenFilePicker) {
     try {
-      const [handle] = await pickers.showOpenFilePicker({ types: pickerTypes(kind), multiple: false });
+      const [handle] = await pickers.showOpenFilePicker({ types: pickerTypes(kind, true), multiple: false });
       return handle ? await read(await handle.getFile()) : null;
     } catch {
       return null;
     }
   }
   return new Promise((resolve) => {
-    const input = h("input", { type: "file", accept: suffixes(kind).join(",") });
+    const input = h("input", { type: "file", accept: openSuffixes(kind).join(",") });
     input.onchange = async () => resolve(await read(input.files?.[0]));
     input.click();
   });

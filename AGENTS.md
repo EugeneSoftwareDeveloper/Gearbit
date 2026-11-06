@@ -27,6 +27,8 @@ src/Gearbit.Hub               хаб: JSON-RPC 2.0 по WebSocket /ws, арби�
 src/Gearbit.Hub/Programs      запуск программ на Python/C# в отдельных процессах (program.*)
 src/Gearbit.Server            хаб без окна (консоль)
 src/Gearbit.App               Gearbit.exe: WPF + WebView2, хаб в процессе
+src/Gearbit.Client            клиент хаба для C#: синхронный Robot, RobotScript (robot, Wait)
+src/Gearbit.ScriptHost        запуск C#-скриптов (Roslyn), ошибки по-русски; копируется в bin/…/csharp
 tests/Gearbit.Tests           xUnit
 web/studio-ui                 интерфейс: TypeScript 7 + Vite 8, без фреймворка
 web/studio-ui/src/blocks      вкладка «Блоки»: scratch-blocks + свой интерпретатор (runtime.ts)
@@ -92,7 +94,7 @@ dotnet run --project src/Gearbit.App               # окно
 - Правила и токены: [docs/dev/ui-and-themes.md](docs/dev/ui-and-themes.md).
 - В интерфейсе режим называется «Блоки», не «Scratch» (товарный знак).
 - Блоки: новая команда роботу идёт только через `command()` в `blocks/runtime.ts` (`source:"program"`); любой новый способ уйти с вкладки или прервать программу обязан вызвать `runtime.stop()` или `halt()`. Как добавить блок и тонкости scratch-blocks — [docs/dev/blocks.md](docs/dev/blocks.md).
-- Python и C#: программа — отдельный процесс и клиент хаба (`program.run`), хаб убивает её при СТОП, уходе владельца и потере робота. Вкладка останавливает её в `deactivate()` и при `visibilitychange`. Ошибки для ребёнка формирует сам процесс (`python/gearbit/_errors.py`). Новые команды робота добавляйте сразу в пакет, подсказки (`code/python.ts`), карточку «Команды» и [docs/user/python.md](docs/user/python.md).
+- Python и C#: программа — отдельный процесс и клиент хаба (`program.run`), хаб убивает её при СТОП, уходе владельца и потере робота. Вкладка останавливает её в `deactivate()` и при `visibilitychange`. Ошибки для ребёнка формирует сам процесс (`python/gearbit/_errors.py`, `Gearbit.ScriptHost/CompileErrors.cs` и `RuntimeErrors.cs`). API обоих языков одинаковый и синхронный (`robot.forward(50)` / `robot.Forward(50);`): новую команду робота добавляйте сразу в оба клиента (`python/gearbit`, `Gearbit.Client/Robot.cs`), подсказки и карточку «Команды» (`code/python.ts`, `code/csharp.ts`) и в [python.md](docs/user/python.md), [csharp.md](docs/user/csharp.md).
 - CodeMirror: цвета только через `var(--code-*)` и другие токены, лигатуры выключены.
 
 ## Документация

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Gearbit.ScriptHost</RootNamespace>
+    <AssemblyName>Gearbit.ScriptHost</AssemblyName>
+    <Description>Запускатель программ на C# из вкладки «C#»: Roslyn Scripting в отдельном процессе, ошибки по-русски с номером строки.</Description>
+    <!-- Сообщения Roslyn по-русски для строки «(C#: …)» под понятным объяснением. Остальные языки не нужны. -->
+    <SatelliteResourceLanguages>ru</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Gearbit.Client\Gearbit.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Gearbit.Tests" />
+  </ItemGroup>
+
+</Project>

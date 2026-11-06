@@ -13,11 +13,11 @@ export interface TopbarHandlers {
   onTrace: () => void;
 }
 
-const MODES: { id: Mode; title: string; glyph: string; soon?: boolean }[] = [
+const MODES: { id: Mode; title: string; glyph: string }[] = [
   { id: "remote", title: "Пульт", glyph: icons.remote },
   { id: "blocks", title: "Блоки", glyph: icons.puzzle },
   { id: "python", title: "Python", glyph: icons.python },
-  { id: "csharp", title: "C#", glyph: icons.csharp, soon: true },
+  { id: "csharp", title: "C#", glyph: icons.csharp },
 ];
 
 /** Шапка: логотип, режимы, робот, настройки и большая кнопка СТОП. */
@@ -26,13 +26,11 @@ export function createTopbar(handlers: TopbarHandlers): { element: HTMLElement; 
   const modes = h("nav", { class: "modes", role: "tablist", "aria-label": "Режим" });
   for (const m of MODES) {
     // Подпись дублируется в aria-label/title: в узком окне текст вкладок скрыт, остаются значки.
-    const label = m.soon ? `${m.title} (скоро)` : m.title;
     const tab = h(
       "button",
-      { class: "mode-tab", role: "tab", "aria-selected": "false", "aria-label": label, title: label, onclick: () => handlers.onMode(m.id) },
+      { class: "mode-tab", role: "tab", "aria-selected": "false", "aria-label": m.title, title: m.title, onclick: () => handlers.onMode(m.id) },
       icon(m.glyph),
       h("span", { class: "label" }, m.title),
-      m.soon ? h("span", { class: "soon" }, "скоро") : null,
     );
     tabs.set(m.id, tab);
     modes.append(tab);

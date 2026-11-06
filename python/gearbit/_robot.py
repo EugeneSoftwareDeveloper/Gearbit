@@ -160,6 +160,7 @@ class Robot:
     def tank(self, left: float, right: float, seconds: Optional[float] = None) -> None:
         """Мощность левого и правого колеса по отдельности, как у танка."""
         pair = (_power(left, "Мощность левого колеса"), _power(right, "Мощность правого колеса"))
+        self._check()  # повтор той же команды в хаб не уходит, но остановку программы заметить должен
         if pair == (0, 0):
             self._stop_drive()
         elif pair != self._drive:
@@ -173,6 +174,7 @@ class Robot:
         """Газ и руль, как стик геймпада: turn > 0 — направо, turn < 0 — налево."""
         t = _power(throttle, "Газ")
         r = _power(turn, "Поворот")
+        self._check()
         if t == 0 and r == 0:
             self._stop_drive()
         else:
@@ -184,6 +186,7 @@ class Robot:
 
     def stop(self) -> None:
         """Остановить колёса и моторы, которые включала программа."""
+        self._check()
         self._stop_drive()
         for motor_id, power in list(self._motors.items()):
             if power != 0:
@@ -198,6 +201,7 @@ class Robot:
     def motor(self, motor: str, power: float, seconds: Optional[float] = None) -> None:
         """Мощность одного мотора: robot.motor("M1", 50)."""
         p = _power(power)
+        self._check()
         if self._motors.get(motor) != p:
             self._command("motor.setPower", {"id": str(motor), "power": p})
             self._motors[motor] = p
@@ -289,7 +293,7 @@ class Robot:
         message = str(text)
         if _inside_gearbit():
             _emit({"type": "say", "text": message})
-        else:
+        elif message:  # пустая надпись в Gearbit убирает облачко, а в консоли печатать нечего
             print(f"Робот: {message}", flush=True)
 
     def _at_exit(self) -> None:

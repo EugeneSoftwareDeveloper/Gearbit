@@ -51,6 +51,9 @@ export interface CodeEditor {
   focus(): void;
 }
 
+/** Метка в тексте команды для {@link CodeEditor.insertLine}: здесь окажется курсор. */
+export const CURSOR_MARK = "§";
+
 const highlight = HighlightStyle.define([
   { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.operatorKeyword, t.modifier], color: "var(--code-keyword)", fontWeight: "600" },
   { tag: [t.string, t.special(t.string), t.character, t.regexp], color: "var(--code-string)" },
@@ -219,10 +222,13 @@ export function createCodeEditor(parent: HTMLElement, options: CodeEditorOptions
         .map((l) => prefix + l)
         .join("\n");
       const from = empty ? line.from : line.to;
-      const insert = empty ? text : `\n${text}`;
+      const raw = empty ? text : `\n${text}`;
+      // «§» в команде — где оставить курсор (внутри { } цикла); без него курсор встаёт в конец.
+      const mark = raw.indexOf(CURSOR_MARK);
+      const insert = mark >= 0 ? raw.slice(0, mark) + raw.slice(mark + CURSOR_MARK.length) : raw;
       view.dispatch({
         changes: { from, to: line.to, insert },
-        selection: { anchor: from + insert.length },
+        selection: { anchor: from + (mark >= 0 ? mark : insert.length) },
         scrollIntoView: true,
         userEvent: "input",
       });

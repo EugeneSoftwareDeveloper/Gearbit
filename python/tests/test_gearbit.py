@@ -135,6 +135,8 @@ class RobotTests(unittest.TestCase):
             robot_module.robot = original
         with self.assertRaises(ProgramStopped):
             self.robot.forward(20)
+        with self.assertRaises(ProgramStopped):
+            self.robot.forward(50)  # та же команда, что уже работает: в хаб не уходит, но остановку замечает
 
     def test_ping_is_answered(self):
         self.robot._connection()

@@ -77,7 +77,7 @@ flowchart TB
 | **Gearbit.Transport.WinRtBle** | C#, WinRT `Windows.Devices.Bluetooth` | Скан, подключение, запись чанками, уведомления, переподключение | 1 |
 | **Gearbit.Simulator** | C# (модель) + TS (отрисовка на canvas) | Виртуальный робот с теми же компонентами | 5 |
 | **Gearbit.ScriptHost** | C#, Roslyn Scripting | Компиляция и запуск C#-скриптов в отдельном процессе | 4 |
-| **Gearbit.Client** | C# (NuGet) | Клиент хаба для своих C#-программ и Notebooks | 4 |
+| **Gearbit.Client** | C# (библиотека, позже NuGet) | Синхронный клиент хаба: скрипты в ScriptHost, свои C#-программы и Notebooks | 4 |
 | **gearbit** (папка `python/`) | Python 3.9+, только стандартная библиотека | Клиент хаба для Python, простой синхронный API, понятные ошибки по-русски | 3 |
 | **Python** | CPython 3.9+ с python.org или portable в `python\runtime` | Исполняет программы на Python; хаб ищет его сам (`PythonLanguage`) | 3 |
 | **devices/\*.json** | JSON | Описание модели робота: как найти, UUID, компоненты, параметры протокола | 1 |
@@ -172,9 +172,9 @@ classDiagram
 
 ```mermaid
 sequenceDiagram
-    participant U as Вкладка «Python»
+    participant U as Вкладка «Python» / «C#»
     participant H as Hub (ProgramRunner)
-    participant P as python.exe + пакет gearbit
+    participant P as python.exe + gearbit<br/>или ScriptHost + Gearbit.Client
     participant A as Arbiter + Safety
 
     U->>H: program.run {language, code, sensors}
@@ -193,6 +193,7 @@ sequenceDiagram
 ```
 
 - `ProgramRunner` (`src/Gearbit.Hub/Programs`) держит одну программу на клиента, знает, кто её запустил, и заканчивает её при СТОП, уходе владельца, потере робота и закрытии хаба.
-- Язык описывает `IProgramLanguage`: как найти исполнитель и как запустить файл. Сейчас есть `PythonLanguage`.
-- Ошибки программы превращаются в понятный текст **внутри** процесса (`gearbit/_errors.py`): там видны тип ошибки и строка. Хаб только пересылает их во вкладку.
+- Язык описывает `IProgramLanguage`: как найти исполнитель и как запустить файл. Есть `PythonLanguage` (`python.exe`) и `CSharpLanguage` (`csharp\Gearbit.ScriptHost.exe`).
+- C#-программа — скрипт Roslyn Scripting. ScriptHost собирает его целиком до запуска, а `robot` и `Wait` даёт статический класс `Gearbit.Client.RobotScript`. API синхронный и повторяет Python (`robot.Forward(50); Wait(1);`): ребёнку не нужны `async` и `await`, а СТОП прерывает `Wait` через `CancellationToken`.
+- Ошибки программы превращаются в понятный текст **внутри** процесса (`gearbit/_errors.py`, `CompileErrors.cs`/`RuntimeErrors.cs` в ScriptHost): там видны тип ошибки и строка. Хаб только пересылает их во вкладку.
 - Подробности протокола — [API хаба](dev/hub-api.md#программы-python-c).

@@ -178,7 +178,7 @@ log         {dir:"tx"|"rx", hex}      (режим разработчика)
 |---|---|---|---|
 | Блоки (Scratch) | Вкладка «Блоки»: scratch-blocks (редактор) | Свой интерпретатор в интерфейсе, клиент хаба с `source:"program"` | «Стоп» на панели + общий СТОП; уход с вкладки — стоп |
 | Python | Monaco в Gearbit **или** любой внешний редактор (VS Code, IDLE) | Отдельный процесс: встроенный portable Python + пакет `gearbit` | Kill процесса + motors off |
-| C# | Monaco в Gearbit **или** Visual Studio / Polyglot Notebooks | Отдельный процесс `Gearbit.ScriptHost` (Roslyn Scripting), глобальная переменная `robot` | Kill процесса + motors off |
+| C# | CodeMirror в Gearbit **или** Visual Studio / Polyglot Notebooks | Отдельный процесс `Gearbit.ScriptHost` (Roslyn Scripting), глобальная переменная `robot` | Kill процесса + motors off |
 
 Пользовательский код работает в отдельном процессе, потому что бесконечный цикл `while(true){}` в .NET нельзя прервать внутри процесса. Kill процесса надёжен всегда.
 
@@ -220,13 +220,13 @@ while (true)
 {
     if (robot.Distance("front") < 2)
     {
-        await robot.TurnLeft(40);
-        await Wait(0.4);
+        robot.TurnLeft(40);
+        Wait(0.4);
     }
     else if (robot.Distance("right") < 2)
-        await robot.Drive(30, 50);
+        robot.Drive(30, 50);
     else
-        await robot.Forward(50);
+        robot.Forward(50);
 }
 ```
 
@@ -283,7 +283,7 @@ while (true)
 | Оболочка | WPF + **WebView2** | Окно на весь экран. UI можно открыть и в обычном браузере |
 | UI | TypeScript + Vite без фреймворка, CodeMirror 6 | Лёгкий фронтенд. Сначала планировался Monaco, выбран CodeMirror: меньше и проще красится темами |
 | Блоки | **scratch-blocks** (Apache-2.0, Blockly 12) + свой интерпретатор | Без GPL и без Scratch VM, общая тема с интерфейсом. Сначала планировался TurboWarp scratch-gui, см. [docs/dev/blocks.md](dev/blocks.md) |
-| C#-скрипты | Roslyn Scripting в процессе `ScriptHost` | Компиляция на лету, понятные ошибки с номерами строк |
+| C#-скрипты | Roslyn Scripting (`Microsoft.CodeAnalysis.CSharp.Scripting`) в процессе `ScriptHost`, лежит в папке `csharp` рядом с хабом | Компиляция на лету, понятные ошибки с номерами строк, ничего не нужно ставить |
 | Python | Python 3.9+ с компьютера (позже — встроенный portable) + пакет `gearbit` на стандартной библиотеке | Пакет работает и из внешних IDE |
 | Тесты | xUnit + «золотые» кадры из реальных захватов, Playwright для UI | Протокол — чистые функции, тестировать легко |
 | Установка | Один каталог или MSIX, позже — автообновление | — |
@@ -363,9 +363,11 @@ while (true)
 - **Результат:** те же задания текстом на Python.
 
 ### Этап 4. C# (≈1 неделя)
-- [ ] `Gearbit.Client` (NuGet): async API, `IAsyncDisposable`, события.
-- [ ] `ScriptHost`: Roslyn Scripting, глобальная переменная `robot`, ошибки компиляции → строки в редакторе.
-- [ ] Monaco для C# с подсветкой и автодополнением по API робота.
+Сделано иначе, чем задумывалось: API синхронный, как в Python (`robot.Forward(50); Wait(1);`), без `async`/`await` — так одинаковые задания решаются на обоих языках, а ребёнку не нужно понимать задачи. Редактор — тот же CodeMirror 6, что у Python.
+- [x] `Gearbit.Client`: `Robot` (синхронный, `IDisposable`), `RobotScript` (`robot`, `Wait`) для скриптов и консольных программ, ошибки по-русски.
+- [ ] Публикация `Gearbit.Client` на nuget.org (пока — ссылка на проект).
+- [x] `ScriptHost`: Roslyn Scripting (C# 14), готовые `robot` и `Wait`, ошибки компиляции и выполнения по-русски со строкой и исходным текстом Roslyn.
+- [x] Вкладка «C#»: подсветка, подсказки команд робота, мест датчиков и цветов, строка с ошибкой, карточка «Команды», примеры.
 - [ ] Примеры для Polyglot Notebooks в VS Code («ячейка → робот едет»).
 - **Результат:** C# внутри программы и в «настоящих» инструментах.
 

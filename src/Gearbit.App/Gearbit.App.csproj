@@ -20,10 +20,13 @@
   <ItemGroup>
     <ProjectReference Include="..\Gearbit.Hub\Gearbit.Hub.csproj" />
     <ProjectReference Include="..\Gearbit.Transport.WinRtBle\Gearbit.Transport.WinRtBle.csproj" />
+    <ProjectReference Include="..\Gearbit.ScriptHost\Gearbit.ScriptHost.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Assets\gearbit.ico" />
   </ItemGroup>
+
+  <Import Project="..\Gearbit.ScriptHost\CopyToHost.targets" />
 
 </Project>

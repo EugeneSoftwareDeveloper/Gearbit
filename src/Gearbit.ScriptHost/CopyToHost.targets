@@ -1,0 +1,31 @@
+<Project>
+  <!--
+    Запускатель программ на C# кладётся в папку csharp рядом с хабом: у него свои зависимости (Roslyn),
+    которые не должны смешиваться с зависимостями окна. Подключается в Gearbit.App, Gearbit.Server и тестах
+    вместе с ProjectReference на Gearbit.ScriptHost (тот гарантирует, что запускатель собран раньше).
+    Обычная ссылка на проект копирует только dll, без Gearbit.ScriptHost.exe и runtimeconfig.json.
+  -->
+  <PropertyGroup>
+    <GearbitScriptHostOutput>$(MSBuildThisFileDirectory)bin\$(Configuration)\net10.0\</GearbitScriptHostOutput>
+  </PropertyGroup>
+
+  <Target Name="CopyGearbitScriptHost" AfterTargets="Build">
+    <ItemGroup>
+      <_GearbitScriptHostFile Include="$(GearbitScriptHostOutput)**\*" Exclude="$(GearbitScriptHostOutput)**\*.xml" />
+    </ItemGroup>
+    <Error Condition="!Exists('$(GearbitScriptHostOutput)Gearbit.ScriptHost.exe')"
+           Text="Не собран Gearbit.ScriptHost: нет $(GearbitScriptHostOutput)Gearbit.ScriptHost.exe" />
+    <Copy SourceFiles="@(_GearbitScriptHostFile)"
+          DestinationFiles="@(_GearbitScriptHostFile->'$(OutDir)csharp\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="PublishGearbitScriptHost" AfterTargets="Publish">
+    <ItemGroup>
+      <_GearbitScriptHostPublishFile Include="$(GearbitScriptHostOutput)**\*" Exclude="$(GearbitScriptHostOutput)**\*.xml;$(GearbitScriptHostOutput)**\*.pdb" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_GearbitScriptHostPublishFile)"
+          DestinationFiles="@(_GearbitScriptHostPublishFile->'$(PublishDir)csharp\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

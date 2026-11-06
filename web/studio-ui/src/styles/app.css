@@ -236,15 +236,6 @@ select {
   color: var(--text);
   box-shadow: var(--shadow);
 }
-.mode-tab .soon {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--surface-3);
-  color: var(--text-muted);
-}
-
 .spacer {
   flex: 1;
 }
@@ -355,7 +346,6 @@ select {
   }
 }
 @media (max-width: 1100px) {
-  .mode-tab .soon,
   .brand-name {
     display: none;
   }
@@ -378,7 +368,6 @@ select {
   }
 }
 @media (max-width: 1240px) {
-  :root[data-large="true"] .mode-tab .soon,
   :root[data-large="true"] .brand-name {
     display: none;
   }
@@ -951,51 +940,6 @@ kbd {
 }
 .hidden {
   display: none !important;
-}
-
-/* ---------- Заглушки режимов ---------- */
-.placeholder {
-  max-width: 760px;
-  margin: 40px auto;
-  text-align: center;
-  display: grid;
-  gap: 16px;
-  justify-items: center;
-}
-.placeholder .big-icon {
-  width: 96px;
-  height: 96px;
-  border-radius: 28px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: var(--shadow-lg);
-}
-.placeholder .big-icon svg {
-  width: 52px;
-  height: 52px;
-}
-.placeholder h1 {
-  margin: 8px 0 0;
-  font-family: var(--font-display);
-  font-size: 2rem;
-}
-.placeholder p {
-  margin: 0;
-  color: var(--text-muted);
-  max-width: 560px;
-}
-.placeholder pre {
-  text-align: left;
-  width: 100%;
-  margin: 8px 0 0;
-  padding: 18px 20px;
-  border-radius: var(--radius);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  font: 0.9rem/1.6 var(--font-mono);
-  overflow: auto;
 }
 
 /* ---------- Журнал протокола ---------- */

@@ -10,7 +10,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Gearbit.Hub\Gearbit.Hub.csproj" />
+    <ProjectReference Include="..\Gearbit.ScriptHost\Gearbit.ScriptHost.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Gearbit.Transport.WinRtBle\Gearbit.Transport.WinRtBle.csproj" />
   </ItemGroup>
+
+  <Import Project="..\Gearbit.ScriptHost\CopyToHost.targets" />
 
 </Project>

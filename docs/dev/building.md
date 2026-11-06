@@ -56,6 +56,10 @@ python -m unittest discover -s tests
 
 Файлы пакета `python/gearbit/*.py` копируются в `bin/…/python/gearbit` как Content проекта `Gearbit.Hub`. Если правите пакет при запущенном хабе, скопируйте их туда же или пересоберите.
 
+C#: `CSharpScriptTests` проверяют русские тексты ошибок компиляции без запуска, `ClientTests` — `Gearbit.Client` против хаба с эмулятором, `CSharpProgramTests` — весь путь `program.run` → ScriptHost → робот. .NET SDK для запуска C#-программ не нужен: Roslyn лежит рядом с ScriptHost.
+
+ScriptHost — отдельное приложение со своими зависимостями (Roslyn), поэтому `Gearbit.Server`, `Gearbit.App` и тесты ссылаются на него с `ReferenceOutputAssembly="false"` и подключают `src/Gearbit.ScriptHost/CopyToHost.targets`. После сборки он копирует вывод ScriptHost в `bin/…/csharp/`, а после `dotnet publish` — в `csharp/` папки публикации (без `.pdb`). Если ScriptHost не собран, сборка останавливается с понятной ошибкой.
+
 ## Иконка
 
 `tools/make_icon.py` (нужен Pillow) рисует `src/Gearbit.App/Assets/gearbit.ico` и `docs/images/logo.png`. `web/studio-ui/public/favicon.svg` правится вручную в том же стиле.

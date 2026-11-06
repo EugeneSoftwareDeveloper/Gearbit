@@ -22,10 +22,9 @@
 | `ui/files.ts` | `saveTextFile`, `saveJsonFile`, `openFile`, `openTextFile`: File System Access API с запасным вариантом через ссылку. Тип файла — `FileKind {description, suffix, mime?}`. |
 | `ui/mini-sensors.ts`, `ui/examples-dialog.ts` | Общие для вкладок программ карточка «Датчики» и окно «Примеры». |
 | `measure/*` | Помощник замеров этапа 0: `helper.ts` (окно, вкладки «Кадры» и «Запись», `MeasureContext`), `power-test.ts`, `calibration.ts` (`levelToCm`), `recorder.ts` (формат [docs/captures](../captures/README.md)), `frames.ts` (кадры TUDAO). Кадры уходят через `service.*` хаба. |
-| `ui/placeholders.ts` | Заглушка режима C#. |
 | `ui/ask-dialog.ts` | `askText`, `askConfirm`, `showAlert` — свои диалоги вместо `prompt`/`confirm`/`alert`. |
 | `blocks/*` | Редактор блоков, загружается лениво. См. [Редактор блоков](blocks.md). |
-| `code/*` | Вкладки с текстом программы, загружаются лениво. `editor.ts` — CodeMirror 6 (тема из токенов, подсветка строки с ошибкой, подсказки, Esc = СТОП), `view.ts` — общий экран (`mountCodeView(root, spec)`: панель, вывод, «Команды», запуск через `program.run`), `python.ts` — описание языка: примеры, команды, подсказки при наборе. |
+| `code/*` | Вкладки с текстом программы, загружаются лениво. `editor.ts` — CodeMirror 6 (тема из токенов, подсветка строки с ошибкой, подсказки, Esc = СТОП), `view.ts` — общий экран (`mountCodeView(root, spec)`: панель, вывод, «Команды», запуск через `program.run`), `python.ts` и `csharp.ts` — описания языков (`CodeLanguageSpec`): примеры, команды, подсказки при наборе. C# подсвечивается старым режимом `clike` (`StreamLanguage`): узлы там называются по стилю токена (`comment`, `string`). В многострочной команде метка `§` (`CURSOR_MARK`) — где оставить курсор после вставки; карточка показывает только первую строку команды. |
 | `ui/dom.ts` | `h(tag, attrs, ...children)` — маленький помощник для создания элементов, `icon(svg)`, `cssVar(name)`. |
 | `styles/tokens.css` | Дизайн-токены и темы. |
 | `styles/app.css` | Раскладка и компоненты. |

@@ -77,7 +77,7 @@
 | Метод | Параметры | Поведение |
 |---|---|---|
 | `program.languages` | — | `[{id, title, available, version, problem}]`. `problem` — что сделать, если запустить нечем (по-русски, для показа). Python ищется при каждом вызове, пока не найден; найденный запоминается. |
-| `program.run` | `{language, code, name?, sensors?}` | Запустить. `language`: `python`. `sensors` — где стоят датчики: `{D1: "front", D2: "none"}`. Предыдущая программа останавливается (`reason: "replaced"`). Возвращает `{runId}`. Нет языка — `NotSupported` с подсказкой. Код длиннее 256 КБ — `InvalidParams`. |
+| `program.run` | `{language, code, name?, sensors?}` | Запустить. `language`: `python` или `csharp`. `sensors` — где стоят датчики: `{D1: "front", D2: "none"}`. Предыдущая программа останавливается (`reason: "replaced"`). Возвращает `{runId}`. Нет языка — `NotSupported` с подсказкой. Код длиннее 256 КБ — `InvalidParams`. |
 | `program.stop` | — | Завершить процесс программы. Если управляла она, моторы в 0. `false` — ничего не работало. |
 | `program.status` | — | `{runId, language, name, startedAt}` или `null`. |
 
@@ -86,7 +86,7 @@
 | Переменная | Значение |
 |---|---|
 | `GEARBIT_URL` | `ws://localhost:<порт>/ws` |
-| `GEARBIT_NAME` | `Python: <name>` — имя в полоске «Сейчас управляет…» |
+| `GEARBIT_NAME` | `Python: <name>` или `C#: <name>` — имя в полоске «Сейчас управляет…» |
 | `GEARBIT_RUN_ID` | `runId` для `hub.hello` |
 | `GEARBIT_SENSOR_PLACES` | JSON `sensors` из `program.run` |
 
@@ -102,7 +102,12 @@
 
 Хаб сам остановил программу — тревога `safety.event {reason:"clientLeft"}` при закрытии её соединения не рассылается: моторы уже стоят. Нормально закончившаяся программа сама выключает свои моторы и отдаёт управление (`control.release`).
 
-Реализация — `src/Gearbit.Hub/Programs`: `ProgramRunner` (запуск, вывод, остановка), `IProgramLanguage` (как запустить язык: `PythonLanguage`), `IProgramLauncher` (процесс; в тестах подменяется).
+Код возврата процесса: 0 — закончилась, 1 — ошибка, 2 — остановлена (пришёл `safety.event`). Хаб смотрит на него, только если не останавливал программу сам.
+
+Реализация — `src/Gearbit.Hub/Programs`: `ProgramRunner` (запуск, вывод, остановка), `IProgramLanguage` (как запустить язык), `IProgramLauncher` (процесс; в тестах подменяется). Языки:
+
+- `PythonLanguage` — `python.exe` с пакетом `gearbit` в `PYTHONPATH`, программа в `program.py`;
+- `CSharpLanguage` — `csharp\Gearbit.ScriptHost.exe program.csx`. ScriptHost собирает скрипт Roslyn Scripting (C# 14, импорты `System…`, `Gearbit.Client` и `using static Gearbit.Client.RobotScript`, отсюда `robot` и `Wait`), переводит ошибки компиляции и выполнения на русский (`CompileErrors`, `RuntimeErrors`) и ездит через `Gearbit.Client`. Скрипт выполняется в процессе ScriptHost, поэтому его, как и Python, хаб просто завершает.
 
 ### Замеры протокола (этап 0)
 
@@ -190,6 +195,7 @@
 | `Hub:Emulator` | true | Показывать эмулятор в поиске. |
 | `Hub:PythonPath` | — | Путь к `python.exe`. Без него: `python\runtime\python.exe` рядом с программой, `py -3`, `python.exe` в `PATH` (заглушки Microsoft Store пропускаются). Нужен Python 3.9+. |
 | `Hub:PythonPackageDirectory` | `python` рядом с программой | Где лежит пакет `gearbit` (добавляется в `PYTHONPATH`). |
+| `Hub:CSharpHostPath` | `csharp\Gearbit.ScriptHost.exe` рядом с программой | Запускатель программ на C#. |
 | `Hub:ProgramsDirectory` | `%TEMP%\Gearbit\programs` | Куда записывается запускаемая программа (папка на каждый запуск, удаляется после). |
 
 ## Пример: Python без библиотек Gearbit

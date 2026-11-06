@@ -29,7 +29,9 @@
 | `Gearbit.Protocols.Tudao` | Протокол SuperBot: кадры `FF FE … FD FC`, разбор потока, телеметрия v1/v2. |
 | `Gearbit.Transport.WinRtBle` | BLE через WinRT (`Windows.Devices.Bluetooth`): сканер и транспорт Nordic UART. |
 | `Gearbit.Emulator` | Виртуальный контроллер TUDAO и 2D-мир (комната, препятствия, датчики). Подключается через `LoopbackTransport` и говорит на том же байтовом протоколе. |
-| `Gearbit.Hub` | Хаб: JSON-RPC, методы, арбитр, страж, уведомления, раздача `wwwroot`. `GearbitHub.Build(args, addTransports)`. В `Programs/` — `ProgramRunner`: программы на Python (и C#) в отдельных процессах. |
+| `Gearbit.Hub` | Хаб: JSON-RPC, методы, арбитр, страж, уведомления, раздача `wwwroot`. `GearbitHub.Build(args, addTransports)`. В `Programs/` — `ProgramRunner`: программы на Python и C# в отдельных процессах. |
+| `Gearbit.Client` | Клиент хаба для C#: синхронный `Robot` (те же команды, что в Python), `RobotScript` (`robot`, `Wait`) для скриптов и консольных программ. |
+| `Gearbit.ScriptHost` | Запускатель программ на C#: Roslyn Scripting, ошибки компиляции и выполнения по-русски. Копируется в папку `csharp` рядом с хабом (`CopyToHost.targets`). |
 | `Gearbit.Server` | Консольный хаб без окна (для разработки и внешних клиентов). |
 | `Gearbit.App` | Gearbit.exe: окно WPF + WebView2, хаб работает внутри процесса. |
 | `tests/Gearbit.Tests` | xUnit: протокол, каталог, робот, эмулятор, хаб целиком через WebSocket. |
@@ -43,7 +45,7 @@
 - [Как добавить робота или сборку](adding-a-robot.md)
 - [Интерфейс и темы](ui-and-themes.md)
 - [Редактор блоков](blocks.md)
-- Программы на Python и C#: [API хаба → Программы](hub-api.md#программы-python-c), [пакет gearbit](../../python/README.md), [как это устроено](../ARCHITECTURE.md#5-как-работает-программа-на-python-или-c)
+- Программы на Python и C#: [API хаба → Программы](hub-api.md#программы-python-c), [пакет gearbit](../../python/README.md), [C# для пользователя](../user/csharp.md), [как это устроено](../ARCHITECTURE.md#5-как-работает-программа-на-python-или-c)
 - [Архитектура подробно](../ARCHITECTURE.md), [план этапов](../PLAN.md)
 - [Протокол SuperBot](../PROTOCOL-SUPERBOT.md), [чек-лист замеров (этап 0)](../STAGE0-CHECKLIST.md)
 - Для ИИ-агентов: [AGENTS.md](../../AGENTS.md)

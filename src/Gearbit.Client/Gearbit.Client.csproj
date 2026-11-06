@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Gearbit.Client</RootNamespace>
+    <Description>Клиент хаба Gearbit для программ на C#: robot.Forward(50), Wait(1), датчики и свет. Тот же простой API, что у пакета gearbit для Python.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageId>Gearbit.Client</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Gearbit.Tests" />
+    <InternalsVisibleTo Include="Gearbit.ScriptHost" />
+  </ItemGroup>
+
+</Project>

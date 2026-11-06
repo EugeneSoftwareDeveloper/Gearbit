@@ -39,6 +39,9 @@ public sealed class HubOptions
     /// <summary>Папка, в которой лежит пакет gearbit для Python. По умолчанию — python рядом с программой.</summary>
     public string? PythonPackageDirectory { get; set; }
 
+    /// <summary>Путь к Gearbit.ScriptHost.exe — запускателю программ на C#. По умолчанию — рядом с программой.</summary>
+    public string? CSharpHostPath { get; set; }
+
     /// <summary>Куда сохраняются запускаемые программы. По умолчанию — %TEMP%\Gearbit\programs.</summary>
     public string? ProgramsDirectory { get; set; }
 
