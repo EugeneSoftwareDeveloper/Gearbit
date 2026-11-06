@@ -31,6 +31,11 @@ function card(title: string, glyph: string, hint?: string): { root: HTMLElement;
   return { root, body };
 }
 
+/** Подсказка в пустой карточке: что сделать, чтобы она ожила. */
+function emptyNote(text: string): HTMLElement {
+  return h("p", { class: "muted", style: "margin:0" }, text);
+}
+
 /* ---------- Кто управляет ---------- */
 function createControlBanner(): HTMLElement {
   const text = h("div", { class: "text" });
@@ -321,7 +326,7 @@ function createSensorsCard(): HTMLElement {
   const stats = h("div", { class: "stats" });
   body.append(list, stats);
 
-  let signature = "";
+  let signature: string | null = null;
   const rows = new Map<string, { value: HTMLElement; bars: HTMLElement[] }>();
   const battery = h("div", { class: "value" }, "—");
   const batteryStat = h("div", { class: "stat" }, h("div", { class: "label" }, "Батарея"), battery);
@@ -331,12 +336,12 @@ function createSensorsCard(): HTMLElement {
 
   store.subscribe((s) => {
     const sensors = s.robot?.components.filter((c) => c.kind === "distance") ?? [];
-    const sig = sensors.map((c) => c.id + c.aliases.join()).join("|");
+    const sig = (s.robot ? "+" : "-") + sensors.map((c) => c.id + c.aliases.join()).join("|");
     if (sig !== signature) {
       signature = sig;
       list.replaceChildren();
       rows.clear();
-      if (!sensors.length) list.append(h("p", { class: "muted", style: "margin:0" }, "Подключите робота, чтобы увидеть показания."));
+      if (!sensors.length) list.append(emptyNote(s.robot ? "У этой модели нет датчиков расстояния." : "Подключите робота, чтобы увидеть показания."));
       for (const c of sensors) {
         const value = h("div", { class: "sensor-value" }, "—");
         const bars = Array.from({ length: 7 }, () => h("span"));
@@ -366,8 +371,8 @@ function createSensorsCard(): HTMLElement {
 
     battery.textContent = t?.battery != null ? String(t.battery) : "—";
     batteryStat.classList.toggle("warn", !!t?.batteryLow);
-    tilt.textContent = t?.tilt ? `${t.tilt.x}° / ${t.tilt.y}°` : "нет";
-    tiltStat.title = t?.tilt ? "" : "Гироскоп есть только в новой прошивке (кадр телеметрии 19 байт)";
+    tilt.textContent = t?.tilt ? `${t.tilt.x}° / ${t.tilt.y}°` : t ? "нет" : "—";
+    tiltStat.title = t && !t.tilt ? "Гироскоп есть только в новой прошивке (кадр телеметрии 19 байт)" : "";
   });
   return root;
 }
@@ -375,7 +380,7 @@ function createSensorsCard(): HTMLElement {
 /* ---------- Свет ---------- */
 function createLightsCard(): HTMLElement {
   const { root, body } = card("Свет", icons.bulb);
-  let signature = "";
+  let signature: string | null = null;
   const swatchesById = new Map<string, Map<RobotColor, HTMLButtonElement>>();
 
   const setColor = async (ids: string[], color: RobotColor) => {
@@ -406,13 +411,13 @@ function createLightsCard(): HTMLElement {
 
   store.subscribe((s) => {
     const lights = s.robot?.components.filter((c) => c.kind === "light") ?? [];
-    const sig = lights.map((c) => c.id).join();
+    const sig = (s.robot ? "+" : "-") + lights.map((c) => c.id).join();
     if (sig !== signature) {
       signature = sig;
       body.replaceChildren();
       swatchesById.clear();
       if (!lights.length) {
-        body.append(h("p", { class: "muted", style: "margin:0" }, "Нет светодиодов."));
+        body.append(emptyNote(s.robot ? "У этой модели нет светодиодов." : "Подключите робота, чтобы менять цвет огоньков."));
         return;
       }
       body.append(row("Все", lights.map((l) => l.id)).el);
@@ -433,7 +438,7 @@ function createLightsCard(): HTMLElement {
 /* ---------- Моторы ---------- */
 function createMotorsCard(): HTMLElement {
   const { root, body } = card("Моторы", icons.motor, "двойной щелчок — 0");
-  let signature = "";
+  let signature: string | null = null;
   const sliders = new Map<string, { input: HTMLInputElement; out: HTMLOutputElement }>();
   let keepAlive: number | undefined;
 
@@ -466,13 +471,13 @@ function createMotorsCard(): HTMLElement {
 
   store.subscribe((s) => {
     const motors = s.robot?.components.filter((c) => c.kind === "motor") ?? [];
-    const sig = motors.map((c) => c.id + c.aliases.join()).join("|");
+    const sig = (s.robot ? "+" : "-") + motors.map((c) => c.id + c.aliases.join()).join("|");
     if (sig === signature) return;
     signature = sig;
     body.replaceChildren();
     sliders.clear();
     if (!motors.length) {
-      body.append(h("p", { class: "muted", style: "margin:0" }, "Нет моторов."));
+      body.append(emptyNote(s.robot ? "У этой модели нет моторов." : "Подключите робота, чтобы крутить каждый мотор отдельно."));
       return;
     }
     for (const c of motors) {

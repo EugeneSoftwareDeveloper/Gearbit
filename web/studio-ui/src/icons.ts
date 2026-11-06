@@ -13,7 +13,7 @@ export const icons = {
   keyboard: svg('<rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>'),
   puzzle: svg('<path d="M10 3a2 2 0 0 1 4 0v2h4v4h-2a2 2 0 0 0 0 4h2v4h-4v-2a2 2 0 0 0-4 0v2H6v-4H4a2 2 0 0 1 0-4h2V5h4z"/>'),
   python: svg('<path d="M12 3c-4 0-4 1.6-4 3v2h4v1H6c-2 0-3 1.5-3 4s1 4 3 4h2v-3c0-1.4 1-2.5 2.5-2.5h3.5c1.4 0 2.5-1 2.5-2.5V6c0-1.4-1-3-5-3z"/><path d="M12 21c4 0 4-1.6 4-3v-2h-4v-1h6c2 0 3-1.5 3-4s-1-4-3-4h-2"/><circle cx="10" cy="5.8" r=".6" fill="currentColor"/><circle cx="14" cy="18.2" r=".6" fill="currentColor"/>'),
-  csharp: svg('<path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/><path d="M13.5 9.5a3 3 0 1 0 0 5"/><path d="M15.5 10.5v3M17.5 10.5v3M14.8 11.3h3.4M14.8 12.7h3.4"/>'),
+  csharp: svg('<path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/><path d="M11.8 9.4A3.4 3.4 0 1 0 11.8 14.6"/><path stroke-width="1.4" d="M15 9.6v4.8M17.6 9.6v4.8M13.8 10.9h4.8M13.8 13.1h4.8"/>'),
   remote: svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>'),
   stop: svg('<path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z" fill="currentColor" stroke="none" opacity=".25"/><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor"/>'),
   up: svg('<path d="M12 19V5M5 12l7-7 7 7"/>'),

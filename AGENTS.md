@@ -46,7 +46,7 @@ dotnet run --project src/Gearbit.App               # окно
 
 - Порядок: **сначала `npm run build`, потом `dotnet build`**: `wwwroot` копируется в `bin` как Content.
 - Сервер раздаёт копию из `bin`. Если интерфейс пересобран при запущенном сервере, скопируйте `src/Gearbit.Hub/wwwroot` в `src/Gearbit.Server/bin/Debug/<tfm>/wwwroot` или перезапустите сервер.
-- `.claude/launch.json` содержит конфигурацию `gearbit-server` для превью.
+- `.claude/launch.json` содержит конфигурацию `gearbit-server` для превью на порту 5290: так она не конфликтует с запущенным Gearbit.exe на 5280.
 - Проверка интерфейса без робота: эмулятор `Nordic_TUDAO (эмулятор)` в диалоге подключения.
 
 ## Инварианты безопасности (не ломать)

@@ -4,8 +4,9 @@
     {
       "name": "gearbit-server",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/Gearbit.Server"],
-      "port": 5280
+      "runtimeArgs": ["run", "--project", "src/Gearbit.Server", "--", "--Hub:Port=5290"],
+      "port": 5290,
+      "autoPort": false
     }
   ]
 }

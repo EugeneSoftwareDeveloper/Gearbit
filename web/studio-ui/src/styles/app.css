@@ -333,13 +333,17 @@ select {
 .robot-pill {
   white-space: nowrap;
   min-width: 0;
-  max-width: 300px;
+  max-width: 19rem;
   overflow: hidden;
 }
 .robot-pill > span:not(.dot) {
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+}
+/* Не хватает места — сначала сжимается подсказка, имя робота остаётся целым. */
+.robot-pill .meta {
+  flex-shrink: 100;
 }
 .robot-pill .dot {
   flex: none;
@@ -363,6 +367,25 @@ select {
   .topbar {
     gap: 8px;
     padding: 0 12px;
+  }
+}
+/* Крупный текст занимает больше места: те же шаги, но в более широком окне
+   (в @media единицы rem не учитывают размер шрифта страницы, поэтому пороги отдельно). */
+@media (max-width: 1500px) {
+  :root[data-large="true"] .robot-pill .meta,
+  :root[data-large="true"] .stop-btn kbd {
+    display: none;
+  }
+}
+@media (max-width: 1240px) {
+  :root[data-large="true"] .mode-tab .soon,
+  :root[data-large="true"] .brand-name {
+    display: none;
+  }
+}
+@media (max-width: 1010px) {
+  :root[data-large="true"] .modes .label {
+    display: none;
   }
 }
 .col {

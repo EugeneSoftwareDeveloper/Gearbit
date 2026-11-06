@@ -25,9 +25,11 @@ export function createTopbar(handlers: TopbarHandlers): { element: HTMLElement; 
   const tabs = new Map<Mode, HTMLButtonElement>();
   const modes = h("nav", { class: "modes", role: "tablist", "aria-label": "Режим" });
   for (const m of MODES) {
+    // Подпись дублируется в aria-label/title: в узком окне текст вкладок скрыт, остаются значки.
+    const label = m.soon ? `${m.title} (скоро)` : m.title;
     const tab = h(
       "button",
-      { class: "mode-tab", role: "tab", "aria-selected": "false", onclick: () => handlers.onMode(m.id) },
+      { class: "mode-tab", role: "tab", "aria-selected": "false", "aria-label": label, title: label, onclick: () => handlers.onMode(m.id) },
       icon(m.glyph),
       h("span", { class: "label" }, m.title),
       m.soon ? h("span", { class: "soon" }, "скоро") : null,
