@@ -1,5 +1,6 @@
 using Gearbit.Core.Components;
 using Gearbit.Core.Robots;
+using Gearbit.Hub.Programs;
 using Gearbit.Hub.Rpc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ public sealed class SafetyWatchdog(
     ControlArbiter arbiter,
     ServiceMode service,
     ClientRegistry clients,
+    ProgramRunner programs,
     HubOptions options,
     TimeProvider time,
     ILogger<SafetyWatchdog> logger) : BackgroundService
@@ -74,6 +76,8 @@ public sealed class SafetyWatchdog(
     {
         // Ушёл тот, кто вёл замеры: ручной режим заканчивается (моторы в 0), затем обычная остановка.
         var wasService = await service.EndIfOwnerAsync(client.Id).ConfigureAwait(false);
+        // Программу остановил сам хаб (СТОП, «Стоп» в редакторе): моторы в 0, но это не авария.
+        var stoppedProgram = programs.ConsumeStopped(client.Id);
         if ((!arbiter.Release(client.Id) && !wasService) || robots.Active is not { State: RobotConnectionState.Connected } robot)
         {
             return;
@@ -82,7 +86,10 @@ public sealed class SafetyWatchdog(
         try
         {
             await robot.StopAllAsync().ConfigureAwait(false);
-            clients.Broadcast("safety.event", new { reason = "clientLeft", message = $"«{client.Name}» отключился — робот остановлен." });
+            if (!stoppedProgram)
+            {
+                clients.Broadcast("safety.event", new { reason = "clientLeft", message = $"«{client.Name}» отключился — робот остановлен." });
+            }
         }
         catch (InvalidOperationException ex)
         {

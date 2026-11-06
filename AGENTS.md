@@ -24,11 +24,14 @@ src/Gearbit.Protocols.Tudao   протокол SuperBot (кадры FF FE … FD
 src/Gearbit.Transport.WinRtBle BLE через WinRT
 src/Gearbit.Emulator          виртуальный контроллер + 2D-комната (через LoopbackTransport)
 src/Gearbit.Hub               хаб: JSON-RPC 2.0 по WebSocket /ws, арбитр, страж, раздача wwwroot
+src/Gearbit.Hub/Programs      запуск программ на Python/C# в отдельных процессах (program.*)
 src/Gearbit.Server            хаб без окна (консоль)
 src/Gearbit.App               Gearbit.exe: WPF + WebView2, хаб в процессе
 tests/Gearbit.Tests           xUnit
 web/studio-ui                 интерфейс: TypeScript 7 + Vite 8, без фреймворка
 web/studio-ui/src/blocks      вкладка «Блоки»: scratch-blocks + свой интерпретатор (runtime.ts)
+web/studio-ui/src/code        вкладки «Python» и «C#»: CodeMirror 6, общий экран view.ts
+python/gearbit                пакет gearbit для Python (только стандартная библиотека)
 web/studio-ui/src/measure     помощник замеров этапа 0: кадры вручную, тест мощности, калибровка, запись
 devices/, profiles/           описания роботов и сборок (JSON, копируются рядом с exe)
 docs/user, docs/dev           документация для пользователя и разработчика
@@ -41,6 +44,7 @@ tools/make_icon.py            генерация иконки и логотип�
 cd web/studio-ui && npm install && npm run build   # интерфейс → src/Gearbit.Hub/wwwroot (gitignored)
 dotnet build                                        # предупреждения = ошибки
 dotnet test
+cd python && python -m unittest discover -s tests  # пакет gearbit
 cd web/studio-ui && npm run typecheck
 dotnet run --project src/Gearbit.Server            # http://localhost:5280, эмулятор включён
 dotnet run --project src/Gearbit.App               # окно
@@ -88,6 +92,8 @@ dotnet run --project src/Gearbit.App               # окно
 - Правила и токены: [docs/dev/ui-and-themes.md](docs/dev/ui-and-themes.md).
 - В интерфейсе режим называется «Блоки», не «Scratch» (товарный знак).
 - Блоки: новая команда роботу идёт только через `command()` в `blocks/runtime.ts` (`source:"program"`); любой новый способ уйти с вкладки или прервать программу обязан вызвать `runtime.stop()` или `halt()`. Как добавить блок и тонкости scratch-blocks — [docs/dev/blocks.md](docs/dev/blocks.md).
+- Python и C#: программа — отдельный процесс и клиент хаба (`program.run`), хаб убивает её при СТОП, уходе владельца и потере робота. Вкладка останавливает её в `deactivate()` и при `visibilitychange`. Ошибки для ребёнка формирует сам процесс (`python/gearbit/_errors.py`). Новые команды робота добавляйте сразу в пакет, подсказки (`code/python.ts`), карточку «Команды» и [docs/user/python.md](docs/user/python.md).
+- CodeMirror: цвета только через `var(--code-*)` и другие токены, лигатуры выключены.
 
 ## Документация
 

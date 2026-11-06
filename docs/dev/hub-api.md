@@ -22,7 +22,7 @@
 
 | Метод | Параметры | Результат |
 |---|---|---|
-| `hub.hello` | `{name}` | `{hub, version, clientId, transports, robot, control}` |
+| `hub.hello` | `{name, runId?}` | `{hub, version, clientId, transports, robot, control}`. `runId` передаёт программа, которую запустил хаб (`GEARBIT_RUN_ID`): так хаб узнаёт её соединение. |
 | `hub.methods` | — | список `{name, summary}` |
 | `catalog.get` | — | `{devices: [{id, title, status, protocol, components}], profiles: [{id, title, device, status, maxPowerPercent, aliases}]}` |
 
@@ -70,6 +70,40 @@
 
 `kind` владельца: `remote` (пульт), `program` (программа) или `service` (замеры протокола).
 
+### Программы (Python, C#)
+
+Хаб сам запускает программу в отдельном процессе, а процесс подключается к хабу как обычный клиент (`hub.hello {name, runId}`) и ездит командами с `source:"program"`. Одновременно работает одна программа.
+
+| Метод | Параметры | Поведение |
+|---|---|---|
+| `program.languages` | — | `[{id, title, available, version, problem}]`. `problem` — что сделать, если запустить нечем (по-русски, для показа). Python ищется при каждом вызове, пока не найден; найденный запоминается. |
+| `program.run` | `{language, code, name?, sensors?}` | Запустить. `language`: `python`. `sensors` — где стоят датчики: `{D1: "front", D2: "none"}`. Предыдущая программа останавливается (`reason: "replaced"`). Возвращает `{runId}`. Нет языка — `NotSupported` с подсказкой. Код длиннее 256 КБ — `InvalidParams`. |
+| `program.stop` | — | Завершить процесс программы. Если управляла она, моторы в 0. `false` — ничего не работало. |
+| `program.status` | — | `{runId, language, name, startedAt}` или `null`. |
+
+Процесс получает переменные окружения:
+
+| Переменная | Значение |
+|---|---|
+| `GEARBIT_URL` | `ws://localhost:<порт>/ws` |
+| `GEARBIT_NAME` | `Python: <name>` — имя в полоске «Сейчас управляет…» |
+| `GEARBIT_RUN_ID` | `runId` для `hub.hello` |
+| `GEARBIT_SENSOR_PLACES` | JSON `sensors` из `program.run` |
+
+Строки вывода, которые начинаются с `@@gearbit:`, — служебные: хаб их не показывает, а разбирает JSON. `{"type":"say","text"}` — облачко над роботом (`program.say`), `{"type":"error","line","column","message"}` — ошибка для подсветки строки (попадает в `program.exited.error`).
+
+Программа останавливается, а процесс завершается (вместе с дочерними), когда:
+
+- вызван `program.stop` или `robot.stop` (СТОП);
+- запущена другая программа;
+- отключилась вкладка, которая её запустила (`ownerLeft`);
+- робот отключился или связь потеряна (`robotLost`);
+- хаб закрывается (`hubStopping`).
+
+Хаб сам остановил программу — тревога `safety.event {reason:"clientLeft"}` при закрытии её соединения не рассылается: моторы уже стоят. Нормально закончившаяся программа сама выключает свои моторы и отдаёт управление (`control.release`).
+
+Реализация — `src/Gearbit.Hub/Programs`: `ProgramRunner` (запуск, вывод, остановка), `IProgramLanguage` (как запустить язык: `PythonLanguage`), `IProgramLauncher` (процесс; в тестах подменяется).
+
 ### Замеры протокола (этап 0)
 
 Режим для [помощника замеров](../STAGE0-CHECKLIST.md): кадры уходят роботу как есть, байт в байт. Им пользуется окно «Помощник замеров» (журнал протокола → «Замеры»).
@@ -108,6 +142,9 @@
 | `safety.event` | любая аварийная остановка | `{reason: stop\|lost\|watchdog\|clientLeft, message}` |
 | `control.changed` | смена владельца | `{clientId, clientName, kind, mine}` |
 | `robot.trace` | кадр протокола (если подписаны) | `{dir: "out"\|"in", hex, note, t}`, `t` — мс от старта хаба |
+| `program.output` | программа напечатала строки (пачками раз в 100 мс, до 32 КБ) | `{runId, stream: "out"\|"err", text}` — строки через `\n`, без `\n` в конце |
+| `program.say` | программа вызвала `robot.say` | `{runId, text}` |
+| `program.exited` | программа закончилась | `{runId, exitCode, reason, error, durationMs}`. `reason`: `finished` (код 0), `error`, `stopped` (СТОП, `program.stop` или код 2 — программа сама поймала остановку), `replaced`, `ownerLeft`, `robotLost`, `hubStopping`. `error`: `{line, column, message}` или `null`. |
 | `emulator.state` | ~15 Гц (если подписаны) | `{active, roomWidth, roomHeight, robotRadius, x, y, heading, bumped, motors, lights, sensorCm, sensorLevels, sensorAngles, battery, obstacles}` |
 
 ## Безопасность
@@ -115,6 +152,7 @@
 - **Страж («кнопка мертвеца»)**: если владелец вида `remote` не присылал команду движения дольше `Hub:RemoteWatchdogMs` (600 мс), моторы останавливаются (`safety.event {reason:"watchdog"}`). Пульт, пока держат кнопку, повторяет команду каждые ~100 мс, а ползунки моторов — каждые 250 мс. Программы (`source:"program"`) под стражем не стоят, но останавливаются, если отключились.
 - При потере связи — `robot.state {state:"lost"}` и `safety.event {reason:"lost"}`.
 - При закрытии хаба моторы останавливаются до отключения.
+- Программа, запущенная через `program.run`, завершается по СТОП, при отключении запустившей её вкладки и при потере робота (см. «Программы»). Уведомления `program.*` получает только запустившая её вкладка.
 
 ## Ошибки
 
@@ -150,6 +188,9 @@
 | `Hub:ScanDurationMs` | 4000 | Длительность поиска. |
 | `Hub:AllowedOrigins` | — | Дополнительные разрешённые `Origin`. |
 | `Hub:Emulator` | true | Показывать эмулятор в поиске. |
+| `Hub:PythonPath` | — | Путь к `python.exe`. Без него: `python\runtime\python.exe` рядом с программой, `py -3`, `python.exe` в `PATH` (заглушки Microsoft Store пропускаются). Нужен Python 3.9+. |
+| `Hub:PythonPackageDirectory` | `python` рядом с программой | Где лежит пакет `gearbit` (добавляется в `PYTHONPATH`). |
+| `Hub:ProgramsDirectory` | `%TEMP%\Gearbit\programs` | Куда записывается запускаемая программа (папка на каждый запуск, удаляется после). |
 
 ## Пример: Python без библиотек Gearbit
 
@@ -175,4 +216,4 @@ async def main():
 asyncio.run(main())
 ```
 
-Библиотека `gearbit` для Python с удобным API (`robot.forward(1)`) — этап 3.
+Удобнее — пакет `gearbit` ([python/README.md](../../python/README.md)): `robot.forward(50)`, `wait(1)`, понятные ошибки, остановка по СТОП.

@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Gearbit.Core.Components;
 using Gearbit.Core.Robots;
 using Gearbit.Emulator;
+using Gearbit.Hub.Programs;
 using Gearbit.Hub.Rpc;
 
 namespace Gearbit.Hub;
@@ -17,6 +18,7 @@ public sealed class HubMethods(
     ClientRegistry clients,
     HubOptions options,
     ServiceMode service,
+    ProgramRunner programs,
     EmulatorHost? emulator = null)
 {
     public static string Version { get; } =
@@ -26,9 +28,14 @@ public sealed class HubMethods(
     {
         ArgumentNullException.ThrowIfNull(rpc);
 
-        rpc.Register("hub.hello", "Представиться: {name}. Возвращает версию хаба, id клиента и текущее состояние.", (client, p) =>
+        rpc.Register("hub.hello", "Представиться: {name, runId?}. runId передаёт программа, которую запустил хаб. Возвращает версию хаба, id клиента и текущее состояние.", (client, p) =>
         {
             client.Name = p.OptionalString("name") ?? client.Name;
+            if (p.OptionalString("runId") is { } runId)
+            {
+                programs.Bind(client, runId);
+            }
+
             return new
             {
                 hub = "Gearbit",
@@ -100,6 +107,7 @@ public sealed class HubMethods(
                 }
 
                 service.Disarm();
+                await programs.StopProgramAsync("stopped", wait: false).ConfigureAwait(false);
 
                 clients.Broadcast("safety.event", new { reason = "stop", message = "Остановлено кнопкой СТОП" });
                 return true;
@@ -180,6 +188,38 @@ public sealed class HubMethods(
             "Закончить замеры: моторы в 0, обычное управление снова работает. Разрешён любому клиенту.",
             async (_, _, _) => await service.EndAsync().ConfigureAwait(false),
             concurrent: true);
+
+        rpc.Register(
+            "program.languages",
+            "Языки программ: [{id, title, available, version, problem}]. problem — что сделать, если запустить нечем.",
+            async (_, _, ct) => await programs.DescribeLanguagesAsync(ct).ConfigureAwait(false),
+            concurrent: true);
+
+        rpc.Register(
+            "program.run",
+            "Запустить программу: {language: python|csharp, code, name?, sensors?: {D1: \"front\"}}. Предыдущая останавливается. Вывод и итог приходят уведомлениями program.output / program.say / program.exited.",
+            async (client, p, ct) =>
+            {
+                var sensors = new Dictionary<string, string>();
+                foreach (var (id, value) in p.Node?["sensors"] as JsonObject ?? new JsonObject())
+                {
+                    if (value is JsonValue v && v.TryGetValue<string>(out var place))
+                    {
+                        sensors[id] = place;
+                    }
+                }
+
+                return await programs.RunAsync(client, p.String("language"), p.String("code"), p.OptionalString("name"), sensors, ct).ConfigureAwait(false);
+            },
+            concurrent: true);
+
+        rpc.Register(
+            "program.stop",
+            "Остановить программу (процесс завершается). Моторы, которыми она управляла, — в 0. false — ничего не работало.",
+            async (_, _, _) => await programs.StopProgramAsync().ConfigureAwait(false),
+            concurrent: true);
+
+        rpc.Register("program.status", "Какая программа работает: {runId, language, name, startedAt} или null.", (_, _) => programs.Current);
 
         rpc.Register("trace.subscribe", "Журнал байтов протокола: {enabled}.", (client, p) => client.TraceEnabled = p.Bool("enabled", true));
 

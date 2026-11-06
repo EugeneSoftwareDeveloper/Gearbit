@@ -1,12 +1,12 @@
 import * as SB from "scratch-blocks";
 import { icons } from "../icons";
 import { emergencyStop, onStop } from "../input/drive";
-import { displayName, NO_SENSOR, sensorPlace, store } from "../model";
 import { onSettings, settings } from "../settings";
 import { askConfirm, askText, showAlert } from "../ui/ask-dialog";
 import { h, icon } from "../ui/dom";
+import { createExamplesDialog } from "../ui/examples-dialog";
 import { openTextFile, saveJsonFile } from "../ui/files";
-import { levelColor } from "../ui/room-view";
+import { createSensorsCard } from "../ui/mini-sensors";
 import { toast } from "../ui/toasts";
 import { EXAMPLES, type Example } from "./examples";
 import { registerRobotBlocks } from "./robot-blocks";
@@ -53,11 +53,11 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
   const openBtn = h("button", { class: "btn ghost icon", title: "Открыть программу из файла", "aria-label": "Открыть" }, icon(icons.folder));
   const saveBtn = h("button", { class: "btn ghost icon", title: "Сохранить программу в файл", "aria-label": "Сохранить" }, icon(icons.save));
   const newBtn = h("button", { class: "btn ghost icon", title: "Новая программа", "aria-label": "Новая программа" }, icon(icons.filePlus));
-  const toolbar = h("div", { class: "blocks-toolbar" }, runBtn, stopBtn, status, h("div", { class: "spacer" }), examplesBtn, newBtn, openBtn, saveBtn);
+  const toolbar = h("div", { class: "program-toolbar" }, runBtn, stopBtn, status, h("div", { class: "spacer" }), examplesBtn, newBtn, openBtn, saveBtn);
 
   const editor = h("div", { class: "blocks-editor" });
   const bubble = h("div", { class: "say-bubble hidden", role: "status", "aria-live": "polite" });
-  const stageSlot = h("div", { class: "blocks-stage" }, bubble);
+  const stageSlot = h("div", { class: "program-stage" }, bubble);
   const sensors = createSensorsCard();
   const variables = h("div", { class: "var-monitors" });
   const variablesCard = h(
@@ -68,7 +68,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
   );
   root.replaceChildren(
     toolbar,
-    h("div", { class: "blocks-body" }, h("div", { class: "card blocks-editor-card" }, editor), h("aside", { class: "blocks-side" }, stageSlot, variablesCard, sensors)),
+    h("div", { class: "program-body" }, h("div", { class: "card blocks-editor-card" }, editor), h("aside", { class: "program-side" }, stageSlot, variablesCard, sensors)),
   );
 
   /* ---------- Редактор ---------- */
@@ -320,7 +320,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
     }
   };
 
-  const examples = createExamplesDialog(async (example) => {
+  const examples = createExamplesDialog(EXAMPLES, "Откройте пример, запустите его и попробуйте поменять числа или блоки.", async (example) => {
     if (hasUnsavedWork() && !(await askConfirm("Открыть пример?", `Пример «${example.title}» заменит блоки на экране. Сохраните свою программу в файл, если она ещё нужна.`, "Открыть"))) return;
     loadExample(example);
   });
@@ -383,81 +383,6 @@ function setupScratchBlocks(): void {
 
   // Галочка у переменной в палитре отмечена, если её табличка показана.
   (SB.CheckboxBubble.prototype as unknown as { isChecked(id: string): boolean }).isChecked = (id) => monitors.has(id);
-}
-
-/* ---------- Датчики (компактно) ---------- */
-function createSensorsCard(): HTMLElement {
-  const list = h("div", { class: "mini-sensors" });
-  const root = h(
-    "article",
-    { class: "card" },
-    h("header", { class: "card-head" }, icon(icons.sensor), h("h2", {}, "Датчики"), h("span", { class: "hint" }, "0 — вплотную, 6 — далеко")),
-    list,
-  );
-  store.subscribe((s) => {
-    const robot = s.robot?.state === "connected" ? s.robot : null;
-    if (!robot) {
-      list.replaceChildren(h("p", { class: "muted", style: "margin:0" }, "Подключите робота, чтобы видеть показания."));
-      return;
-    }
-    const t = s.telemetry;
-    const rows: HTMLElement[] = [];
-    for (const c of robot.components.filter((c) => c.kind === "distance" && sensorPlace(c, robot) !== NO_SENSOR)) {
-      const level = t?.distances[c.id];
-      const value = level === null || level === undefined ? "—" : String(level);
-      const color = level === null || level === undefined ? "var(--text-muted)" : levelColor(level);
-      rows.push(row(`Расстояние ${displayName(c).toLowerCase()}`, c.id, value, color));
-    }
-    if (robot.components.some((c) => c.kind === "imu")) {
-      rows.push(row("Наклон X / Y", "", t?.tilt ? `${t.tilt.x} / ${t.tilt.y}` : "—"));
-    }
-    if (robot.components.some((c) => c.kind === "battery")) rows.push(row("Заряд батареи", "", t?.battery === null || t?.battery === undefined ? "—" : String(t.battery)));
-    list.replaceChildren(...rows);
-  });
-  return root;
-}
-
-function row(name: string, id: string, value: string, color?: string): HTMLElement {
-  return h(
-    "div",
-    { class: "mini-sensor" },
-    h("span", { class: "name" }, name, id ? h("small", {}, ` ${id}`) : null),
-    h("span", { class: "value", style: color ? `color:${color}` : null }, value),
-  );
-}
-
-/* ---------- Примеры ---------- */
-function createExamplesDialog(onPick: (example: Example) => void): { open: () => void } {
-  const closeBtn = h("button", { class: "btn icon ghost", "aria-label": "Закрыть" }, icon(icons.close));
-  const grid = h("div", { class: "examples" });
-  const dialog = h(
-    "dialog",
-    { class: "wide", "aria-labelledby": "examples-title" },
-    h("header", { class: "dialog-head" }, icon(icons.book), h("h2", { id: "examples-title" }, "Примеры программ"), closeBtn),
-    h("div", { class: "dialog-body" }, h("p", { class: "muted", style: "margin:0" }, "Откройте пример, запустите его и попробуйте поменять числа или блоки."), grid),
-  );
-  for (const example of EXAMPLES) {
-    grid.append(
-      h(
-        "button",
-        {
-          class: "example",
-          onclick: () => {
-            dialog.close();
-            onPick(example);
-          },
-        },
-        h("strong", {}, example.title),
-        h("span", {}, example.text),
-      ),
-    );
-  }
-  document.body.append(dialog);
-  closeBtn.onclick = () => dialog.close();
-  dialog.addEventListener("click", (e) => {
-    if (e.target === dialog) dialog.close();
-  });
-  return { open: () => dialog.showModal() };
 }
 
 /* ---------- Файлы ---------- */

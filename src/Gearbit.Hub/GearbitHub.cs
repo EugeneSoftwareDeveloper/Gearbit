@@ -2,6 +2,7 @@ using Gearbit.Core.Descriptors;
 using Gearbit.Core.Protocol;
 using Gearbit.Core.Transport;
 using Gearbit.Emulator;
+using Gearbit.Hub.Programs;
 using Gearbit.Hub.Rpc;
 using Gearbit.Protocols.Tudao;
 using Microsoft.AspNetCore.Builder;
@@ -69,6 +70,10 @@ public static class GearbitHub
         services.AddSingleton<ControlArbiter>();
         services.AddSingleton<ServiceMode>();
         services.AddSingleton<ClientRegistry>();
+        services.AddSingleton<IProgramLauncher, ProcessLauncher>();
+        services.AddSingleton<IProgramLanguage, PythonLanguage>();
+        services.AddSingleton<ProgramRunner>();
+        services.AddHostedService(sp => sp.GetRequiredService<ProgramRunner>());
         services.AddSingleton<RpcDispatcher>();
         services.AddSingleton<HubMethods>();
         services.AddHostedService<Notifier>();

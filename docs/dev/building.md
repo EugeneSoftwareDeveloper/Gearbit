@@ -6,6 +6,7 @@
 - .NET SDK 10: версия закреплена в `global.json`, допускаются новые feature-band.
 - Node.js 20+ и npm: для веб-интерфейса.
 - Для реального робота — Bluetooth 4.0+. Для эмулятора ничего не нужно.
+- Python 3.9+ — для вкладки «Python» и тестов пакета `gearbit`. Без него Gearbit работает, вкладка просто подскажет, что поставить.
 
 Пакеты NuGet берутся только с nuget.org (`nuget.config` очищает источники машины), версии собраны в `Directory.Packages.props` (Central Package Management). Предупреждения считаются ошибками (`TreatWarningsAsErrors` в `Directory.Build.props`).
 
@@ -43,6 +44,17 @@ cd web/studio-ui && npm run typecheck
 ```
 
 `HubTests` поднимают хаб на свободном порту с эмулятором и ходят в него через настоящий WebSocket. Время в стражах и арбитре идёт через `TimeProvider`, так что тесты не спят.
+
+`ProgramRunnerTests` проверяют запуск программ на поддельном языке, без Python. `PythonProgramTests` запускают настоящий Python и пропускаются (с записью в вывод теста), если Python не найден.
+
+Пакет `gearbit` тестируется отдельно, на поддельном хабе:
+
+```bash
+cd python
+python -m unittest discover -s tests
+```
+
+Файлы пакета `python/gearbit/*.py` копируются в `bin/…/python/gearbit` как Content проекта `Gearbit.Hub`. Если правите пакет при запущенном хабе, скопируйте их туда же или пересоберите.
 
 ## Иконка
 

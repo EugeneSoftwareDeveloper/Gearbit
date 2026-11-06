@@ -23,6 +23,8 @@
   <ItemGroup>
     <Content Include="..\..\devices\*.json" Link="devices\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\profiles\*.json" Link="profiles\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Пакет gearbit для программ на Python: подключается через PYTHONPATH, pip не нужен. -->
+    <Content Include="..\..\python\gearbit\*.py" Link="python\gearbit\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- Собранный веб-интерфейс (npm run build в web/studio-ui кладёт его сюда). -->
     <Content Include="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

@@ -81,6 +81,16 @@
   --shadow-lg: 0 24px 64px rgb(16 24 40 / 0.18);
   --grid: rgb(18 22 40 / 0.06);
   --overlay: rgb(18 22 40 / 0.35);
+
+  /* Подсветка кода (Python, C#). */
+  --code-keyword: #8b3fd9;
+  --code-string: #18794e;
+  --code-number: #c2410c;
+  --code-comment: #6b7a90;
+  --code-function: #0b62d6;
+  --code-builtin: #0e7490;
+  --code-type: #a16207;
+  --code-operator: #4b5568;
 }
 
 /* ---------- Тёмная (ночной режим) ---------- */
@@ -98,6 +108,15 @@
   --shadow-lg: 0 24px 64px rgb(0 0 0 / 0.5);
   --grid: rgb(232 236 248 / 0.05);
   --overlay: rgb(0 0 0 / 0.55);
+
+  --code-keyword: #c792ea;
+  --code-string: #a5d98a;
+  --code-number: #f7a072;
+  --code-comment: #8590b0;
+  --code-function: #82aaff;
+  --code-builtin: #5fd7c4;
+  --code-type: #ffcb6b;
+  --code-operator: #b3bdd8;
 }
 
 /* ---------- Акценты (палитры) ---------- */
@@ -113,6 +132,9 @@
 :root {
   --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
   --accent-contrast: #ffffff;
+  --code-selection: color-mix(in srgb, var(--accent) 24%, transparent);
+  --code-active-line: color-mix(in srgb, var(--accent) 6%, transparent);
+  --code-error-line: color-mix(in srgb, var(--danger) 12%, transparent);
 }
 
 /* Крупный текст (удобно с расстояния и для чтения ребёнком). */

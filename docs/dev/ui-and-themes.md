@@ -19,11 +19,13 @@
 | `ui/room-view.ts` | Canvas комнаты эмулятора: машинка, лучи, след, рисование препятствий. |
 | `ui/connect-dialog.ts` | Поиск и подключение. |
 | `ui/settings-popover.ts`, `help-dialog.ts`, `trace-panel.ts`, `toasts.ts` | Настройки, подсказка (F1), журнал протокола (с кнопкой «Замеры»), всплывающие сообщения. |
-| `ui/files.ts` | `saveJsonFile`, `openTextFile`: File System Access API с запасным вариантом через ссылку. |
+| `ui/files.ts` | `saveTextFile`, `saveJsonFile`, `openFile`, `openTextFile`: File System Access API с запасным вариантом через ссылку. Тип файла — `FileKind {description, suffix, mime?}`. |
+| `ui/mini-sensors.ts`, `ui/examples-dialog.ts` | Общие для вкладок программ карточка «Датчики» и окно «Примеры». |
 | `measure/*` | Помощник замеров этапа 0: `helper.ts` (окно, вкладки «Кадры» и «Запись», `MeasureContext`), `power-test.ts`, `calibration.ts` (`levelToCm`), `recorder.ts` (формат [docs/captures](../captures/README.md)), `frames.ts` (кадры TUDAO). Кадры уходят через `service.*` хаба. |
-| `ui/placeholders.ts` | Заглушки режимов Python / C#. |
+| `ui/placeholders.ts` | Заглушка режима C#. |
 | `ui/ask-dialog.ts` | `askText`, `askConfirm`, `showAlert` — свои диалоги вместо `prompt`/`confirm`/`alert`. |
 | `blocks/*` | Редактор блоков, загружается лениво. См. [Редактор блоков](blocks.md). |
+| `code/*` | Вкладки с текстом программы, загружаются лениво. `editor.ts` — CodeMirror 6 (тема из токенов, подсветка строки с ошибкой, подсказки, Esc = СТОП), `view.ts` — общий экран (`mountCodeView(root, spec)`: панель, вывод, «Команды», запуск через `program.run`), `python.ts` — описание языка: примеры, команды, подсказки при наборе. |
 | `ui/dom.ts` | `h(tag, attrs, ...children)` — маленький помощник для создания элементов, `icon(svg)`, `cssVar(name)`. |
 | `styles/tokens.css` | Дизайн-токены и темы. |
 | `styles/app.css` | Раскладка и компоненты. |
@@ -46,6 +48,7 @@
 | Состояния | `--ok`, `--warn`, `--danger`, `--danger-strong` |
 | Светодиоды | `--led-off`, `--led-red` … `--led-white` |
 | Блоки | `--block-<категория>`, `-2`, `-3` (`motion`, `looks`, `event`, `control`, `sensing`, `operators`, `data`, `more`), `--block-field`, `--block-field-text`, `--block-glow` |
+| Код | `--code-keyword`, `-string`, `-number`, `-comment`, `-function`, `-builtin`, `-type`, `-operator` (подсветка, свои для каждой темы), `--code-selection`, `--code-active-line`, `--code-error-line` (от акцента и `--danger`) |
 | Форма | `--radius-sm`, `--radius`, `--radius-lg`, `--gap`, `--shadow`, `--shadow-lg`, `--header-h` |
 | Шрифты и анимация | `--font`, `--font-display`, `--font-mono`, `--ease`, `--fast`, `--normal` |
 
@@ -53,9 +56,19 @@
 
 **Редактор блоков** берёт цвета блоков из `--block-*` (тема Blockly в `blocks/theme.ts` пересобирается при смене темы), а фон поля, палитры и меню — из переменных scratch-blocks `--colour-*`, переопределённых в `app.css`.
 
+**Редактор кода** (CodeMirror) берёт цвета из `EditorView.theme` и `HighlightStyle` в `code/editor.ts`, где стоят только `var(--…)`. Поэтому тема меняется без пересоздания редактора. Лигатуры шрифта выключены: иначе `<=` в Cascadia Code выглядит как `≤`, и ребёнок не поймёт, что набирать.
+
 **Canvas** (комната эмулятора) не видит CSS напрямую: цвета берутся через `cssVar()` при каждой перерисовке. Поэтому смена темы подхватывается сразу.
 
 **Окно WPF**: `settings.ts` после применения темы отправляет хосту `{type:"theme", theme}` через `window.chrome.webview.postMessage`. `MainWindow` красит заголовок окна (`DwmSetWindowAttribute`, тёмный заголовок Windows) и фон под WebView2, чтобы не было белой вспышки.
+
+## Вкладки программ
+
+«Блоки», «Python» и «C#» устроены одинаково и делят классы раскладки: `section.view.program-view.<режим>-view`, внутри `.program-toolbar` и `.program-body` с колонкой `.program-side`. Карточка сцены пульта (`.program-stage`) переезжает в колонку той вкладки, которая открыта.
+
+В `main.ts` такие вкладки создаёт `lazyView(mode, title, loading, load)`: модуль грузится при первом открытии, а дальше `setMode` вызывает у вида `activate()` и `deactivate()`. Вид реализует `ProgramView {stageSlot, activate, deactivate}`, а `deactivate` обязан остановить программу (инвариант 5).
+
+Новый текстовый язык — это описание `CodeLanguageSpec` (как в `code/python.ts`) и строчка в `programs` в `main.ts`. Хабу нужен свой `IProgramLanguage` ([API хаба](hub-api.md#программы-python-c)).
 
 ## Правила интерфейса
 

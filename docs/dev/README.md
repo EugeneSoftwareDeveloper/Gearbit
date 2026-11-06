@@ -29,11 +29,12 @@
 | `Gearbit.Protocols.Tudao` | Протокол SuperBot: кадры `FF FE … FD FC`, разбор потока, телеметрия v1/v2. |
 | `Gearbit.Transport.WinRtBle` | BLE через WinRT (`Windows.Devices.Bluetooth`): сканер и транспорт Nordic UART. |
 | `Gearbit.Emulator` | Виртуальный контроллер TUDAO и 2D-мир (комната, препятствия, датчики). Подключается через `LoopbackTransport` и говорит на том же байтовом протоколе. |
-| `Gearbit.Hub` | Хаб: JSON-RPC, методы, арбитр, страж, уведомления, раздача `wwwroot`. `GearbitHub.Build(args, addTransports)`. |
+| `Gearbit.Hub` | Хаб: JSON-RPC, методы, арбитр, страж, уведомления, раздача `wwwroot`. `GearbitHub.Build(args, addTransports)`. В `Programs/` — `ProgramRunner`: программы на Python (и C#) в отдельных процессах. |
 | `Gearbit.Server` | Консольный хаб без окна (для разработки и внешних клиентов). |
 | `Gearbit.App` | Gearbit.exe: окно WPF + WebView2, хаб работает внутри процесса. |
 | `tests/Gearbit.Tests` | xUnit: протокол, каталог, робот, эмулятор, хаб целиком через WebSocket. |
-| `web/studio-ui` | Веб-интерфейс: TypeScript без фреймворка + Vite. Редактор блоков — scratch-blocks и свой интерпретатор (`src/blocks`). |
+| `web/studio-ui` | Веб-интерфейс: TypeScript без фреймворка + Vite. Редактор блоков — scratch-blocks и свой интерпретатор (`src/blocks`). Вкладки Python и C# — CodeMirror 6 (`src/code`). |
+| `python/` | Пакет `gearbit` для Python: синхронный клиент хаба на стандартной библиотеке, понятные ошибки по-русски, свои тесты (`unittest`). См. [python/README.md](../../python/README.md). |
 
 ## Разделы
 
@@ -42,6 +43,7 @@
 - [Как добавить робота или сборку](adding-a-robot.md)
 - [Интерфейс и темы](ui-and-themes.md)
 - [Редактор блоков](blocks.md)
+- Программы на Python и C#: [API хаба → Программы](hub-api.md#программы-python-c), [пакет gearbit](../../python/README.md), [как это устроено](../ARCHITECTURE.md#5-как-работает-программа-на-python-или-c)
 - [Архитектура подробно](../ARCHITECTURE.md), [план этапов](../PLAN.md)
 - [Протокол SuperBot](../PROTOCOL-SUPERBOT.md), [чек-лист замеров (этап 0)](../STAGE0-CHECKLIST.md)
 - Для ИИ-агентов: [AGENTS.md](../../AGENTS.md)

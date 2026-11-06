@@ -16,7 +16,7 @@ export interface TopbarHandlers {
 const MODES: { id: Mode; title: string; glyph: string; soon?: boolean }[] = [
   { id: "remote", title: "Пульт", glyph: icons.remote },
   { id: "blocks", title: "Блоки", glyph: icons.puzzle },
-  { id: "python", title: "Python", glyph: icons.python, soon: true },
+  { id: "python", title: "Python", glyph: icons.python },
   { id: "csharp", title: "C#", glyph: icons.csharp, soon: true },
 ];
 

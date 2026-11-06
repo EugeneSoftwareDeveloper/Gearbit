@@ -37,6 +37,8 @@ export const icons = {
   battery: svg('<rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 10v4M10 10v4"/>'),
   tilt: svg('<path d="M3 17l18-6"/><circle cx="12" cy="14" r="2"/>'),
   log: svg('<path d="M4 6h16M4 12h10M4 18h13"/>'),
+  terminal: svg('<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9.5l3 2.5-3 2.5M13 15h4"/>'),
+  code: svg('<path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5"/>'),
   close: svg('<path d="M18 6L6 18M6 6l12 12"/>'),
   check: svg('<path d="M20 6L9 17l-5-5"/>'),
   alert: svg('<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'),

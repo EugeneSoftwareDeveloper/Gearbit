@@ -1,6 +1,5 @@
 import "./styles/app.css";
 
-import type { BlocksView } from "./blocks/view";
 import { hub } from "./hub";
 import { resetInputs } from "./input/drive";
 import { setupGamepad, setupKeyboard } from "./input/keyboard-gamepad";
@@ -27,28 +26,52 @@ const trace = createTracePanel(measure.open);
 const remote = createRemoteView(connect.open);
 const stageHome = remote.stage.parentElement!;
 
-/* «Блоки» — большой редактор (Blockly): грузим его, только когда вкладку открыли. */
-const blocksSection = h(
-  "section",
-  { class: "view blocks-view", id: "view-blocks", "aria-label": "Блоки" },
-  h("div", { class: "blocks-loading" }, h("span", { class: "spinner" }), "Загружаю редактор блоков…"),
-);
-let blocks: BlocksView | null = null;
-let blocksLoading: Promise<BlocksView> | null = null;
-function loadBlocks(): Promise<BlocksView> {
-  blocksLoading ??= import("./blocks/view")
-    .then((m) => (blocks = m.mountBlocksView(blocksSection)))
-    .catch((e: unknown) => {
-      blocksLoading = null;
-      throw e;
-    });
-  return blocksLoading;
+/** Вкладка с программой: «Блоки», Python, C#. Комната эмулятора переезжает в неё из «Пульта». */
+interface ProgramView {
+  stageSlot: HTMLElement;
+  activate(): void;
+  /** Уход с вкладки: программа останавливается. */
+  deactivate(): Promise<void>;
 }
+
+/**
+ * Редакторы большие (Blockly, CodeMirror): модуль грузится, только когда вкладку открыли.
+ * До этого на вкладке — «Загружаю…».
+ */
+function lazyView(mode: Mode, title: string, loading: string, load: (root: HTMLElement) => Promise<ProgramView>) {
+  const section = h(
+    "section",
+    { class: `view program-view ${mode}-view`, id: `view-${mode}`, "aria-label": title },
+    h("div", { class: "view-loading" }, h("span", { class: "spinner" }), loading),
+  );
+  let view: ProgramView | null = null;
+  let pending: Promise<ProgramView> | null = null;
+  return {
+    section,
+    get view() {
+      return view;
+    },
+    load(): Promise<ProgramView> {
+      pending ??= load(section)
+        .then((v) => (view = v))
+        .catch((e: unknown) => {
+          pending = null;
+          throw e;
+        });
+      return pending;
+    },
+  };
+}
+
+const programs: Partial<Record<Mode, ReturnType<typeof lazyView>>> = {
+  blocks: lazyView("blocks", "Блоки", "Загружаю редактор блоков…", async (root) => (await import("./blocks/view")).mountBlocksView(root)),
+  python: lazyView("python", "Python", "Загружаю редактор Python…", async (root) => (await import("./code/python")).mountPythonView(root)),
+};
 
 const views: Record<Mode, HTMLElement> = {
   remote: remote.element,
-  blocks: blocksSection,
-  python: createPlaceholder("python"),
+  blocks: programs.blocks!.section,
+  python: programs.python!.section,
   csharp: createPlaceholder("csharp"),
 };
 
@@ -67,19 +90,21 @@ function setMode(next: Mode): void {
   for (const [id, view] of Object.entries(views)) view.classList.toggle("active", id === next);
   topbar.setMode(next);
   if (prev === "remote" && next !== "remote") resetInputs();
-  // Ушли с «Блоков» — программа останавливается, комната возвращается в «Пульт».
-  if (prev === "blocks" && next !== "blocks") {
+  // Ушли с вкладки программы — программа останавливается, комната возвращается в «Пульт».
+  const left = prev !== next ? programs[prev] : undefined;
+  if (left) {
     stageHome.append(remote.stage);
-    void blocks?.deactivate();
+    void left.view?.deactivate();
   }
-  if (next === "blocks") {
-    loadBlocks().then(
+  const entered = programs[next];
+  if (entered && prev !== next) {
+    entered.load().then(
       (view) => {
-        if (mode !== "blocks") return;
+        if (mode !== next) return;
         view.stageSlot.append(remote.stage);
         view.activate();
       },
-      (e: unknown) => toast(`Не удалось загрузить редактор блоков: ${e instanceof Error ? e.message : String(e)}`, "error", 8000),
+      (e: unknown) => toast(`Не удалось загрузить редактор: ${e instanceof Error ? e.message : String(e)}`, "error", 8000),
     );
   }
 }

@@ -30,6 +30,18 @@ public sealed class HubOptions
     /// </summary>
     public IList<string> AllowedOrigins { get; } = [];
 
+    /// <summary>
+    /// Путь к python.exe. По умолчанию Python ищется сам: python\runtime рядом с программой,
+    /// py.exe (лаунчер с python.org), python.exe в PATH.
+    /// </summary>
+    public string? PythonPath { get; set; }
+
+    /// <summary>Папка, в которой лежит пакет gearbit для Python. По умолчанию — python рядом с программой.</summary>
+    public string? PythonPackageDirectory { get; set; }
+
+    /// <summary>Куда сохраняются запускаемые программы. По умолчанию — %TEMP%\Gearbit\programs.</summary>
+    public string? ProgramsDirectory { get; set; }
+
     /// <summary>Сколько длится сканирование по умолчанию, мс.</summary>
     public int ScanDurationMs { get; set; } = 4000;
 
