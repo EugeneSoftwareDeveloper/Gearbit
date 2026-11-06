@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BotStudio.Core/BotStudio.Core.csproj" />
+    <Project Path="src/BotStudio.Protocols.Tudao/BotStudio.Protocols.Tudao.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BotStudio.Tests/BotStudio.Tests.csproj" />
+  </Folder>
+</Solution>

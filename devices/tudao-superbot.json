@@ -77,7 +77,7 @@
     },
 
     "telemetry": {
-      "frameType": "0x06",
+      "framing": "FF FE [len] [payload] FD FC; вариант выбирается по полной длине кадра",
       "pushedByDevice": true,
       "variants": [
         {
@@ -88,10 +88,11 @@
         {
           "length": 19,
           "firmware": "v2",
-          "fields": { "D1": 6, "D2": 7, "imuX": 8, "imuY": 9, "imuAcc": 10 },
+          "fields": { "battery": 5, "D1": 6, "D2": 7, "imuX": 8, "imuY": 9, "imuAcc": 10 },
           "imuOffset": 90
         }
       ],
+      "note": "Индекс батареи в 19-байтовом кадре (5) — предположение по аналогии с 11-байтовым.",
       "noValue": 255,
       "verified": false
     },

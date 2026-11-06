@@ -10,27 +10,31 @@
     "left": "M1",
     "right": "M2",
     "invertLeft": false,
-    "invertRight": true,
-    "note": "ЗАГЛУШКА: M2 инвертирован, как в ApitorCommander (зеркальный монтаж). Уточнить, какой порт левый и в какую сторону вперёд."
+    "invertRight": true
   },
 
   "aliases": {
     "front": "D1",
     "right": "D2",
     "left_wheel": "M1",
-    "right_wheel": "M2",
-    "note": "Куда смотрят датчики в этой сборке. Для «робота-пса» сделать отдельную сборку с front_left/front_right."
+    "right_wheel": "M2"
   },
 
   "limits": {
     "maxPowerPercent": 60,
-    "rampPercentPerSecond": 200,
     "kidMode": true
   },
 
   "calibration": {
-    "D1": { "levelToCm": null },
-    "D2": { "levelToCm": null },
-    "note": "Заполняется мастером калибровки: уровень 0..6 → сантиметры."
+    "distance": {
+      "D1": { "levelToCm": null },
+      "D2": { "levelToCm": null }
+    }
+  },
+
+  "notes": {
+    "drive": "ЗАГЛУШКА: M2 инвертирован, как в ApitorCommander (зеркальный монтаж). Уточнить, какой порт левый и в какую сторону вперёд.",
+    "aliases": "Куда смотрят датчики в этой сборке. Для «робота-пса» сделать отдельную сборку с front_left/front_right.",
+    "calibration": "Заполняется мастером калибровки: уровень 0..6 → сантиметры (массив из 7 чисел)."
   }
 }

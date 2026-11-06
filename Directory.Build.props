@@ -5,10 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;CA1515;CA1707;CA1848;CA1859;CA2007</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CA1515;CA1707;CA1848;CA1859;CA2007</NoWarn>
     <Version>0.1.0</Version>
     <Authors>EugeneSoftwareDeveloper</Authors>
     <Product>BotStudio</Product>
