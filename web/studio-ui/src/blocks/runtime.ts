@@ -1,6 +1,6 @@
 import * as SB from "scratch-blocks";
 import { hub } from "../hub";
-import { COLORS, store, type RobotColor } from "../model";
+import { COLORS, sensorPlace, store, type RobotColor } from "../model";
 import { LIGHTS, OBSTACLE_LEVEL, SENSORS } from "./robot-blocks";
 
 /**
@@ -509,7 +509,8 @@ export class Runtime {
   private distance(key: string, blockId: string): number {
     const robot = store.state.robot;
     if (!robot || robot.state !== "connected") return DISTANCE_MAX;
-    const sensor = robot.components.find((c) => c.kind === "distance" && (c.id === key || c.aliases.includes(key)));
+    // «Впереди» — тот датчик, который стоит спереди (пользователь мог переставить его в карточке «Датчики»).
+    const sensor = robot.components.find((c) => c.kind === "distance" && (c.id === key || sensorPlace(c, robot) === key));
     if (!sensor) throw new ProgramError(`У этой сборки нет датчика «${label(SENSORS, key)}». Выберите другой в блоке.`, blockId);
     return store.state.telemetry?.distances[sensor.id] ?? DISTANCE_MAX;
   }

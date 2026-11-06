@@ -741,6 +741,58 @@ kbd {
   color: var(--text-muted);
   font-family: var(--font-mono);
 }
+/* Название датчика — выпадающий список места: выглядит как заголовок, щёлкнул — переставил. */
+.sensor-place {
+  appearance: none;
+  field-sizing: content;
+  min-width: 0;
+  max-width: 60%;
+  height: auto;
+  padding: 2px 22px 2px 6px;
+  margin-left: -6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  /* Галочка ▾ из двух треугольников — цвет берётся из темы. */
+  background-color: transparent;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 12px) 55%,
+    calc(100% - 7px) 55%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.sensor-place:hover,
+.sensor-place:focus-visible {
+  border-color: var(--border);
+  background-color: var(--surface-2);
+}
+.sensor-place option {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 400;
+}
+.sensors-absent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.radar-note {
+  margin: 0;
+  text-align: center;
+  font-size: 0.875rem;
+}
 .sensor-value {
   margin-left: auto;
   font-family: var(--font-display);
@@ -1313,6 +1365,194 @@ dialog.ask-dialog {
 }
 dialog.wide {
   width: min(780px, calc(100vw - 32px));
+}
+
+/* ---------- Помощник замеров ---------- */
+dialog.measure-dialog {
+  width: min(860px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+}
+dialog.measure-dialog[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.measure-dialog .dialog-body {
+  overflow: auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+.measure-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 0.9rem;
+}
+.measure-status.on {
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+}
+.measure-status svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.measure-status .text {
+  flex: 1;
+}
+.measure-tabs {
+  justify-self: start;
+}
+.measure-tabs button svg {
+  width: 16px;
+  height: 16px;
+}
+.measure-panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.measure-panel p,
+.measure-panel h3 {
+  margin: 0;
+}
+.measure-panel h3 {
+  font-size: 0.95rem;
+}
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.frame-builder {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.frame-builder label,
+.measure-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.frame-builder .text-input {
+  padding: 0 8px;
+  font-family: var(--font-mono);
+}
+.frame-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.frame-actions .text-input {
+  flex: 1;
+  min-width: 200px;
+}
+.frame-actions .spacer {
+  flex: 1;
+}
+label.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+label.inline .text-input {
+  width: 72px;
+  min-width: 0;
+  height: 32px;
+}
+.text-input.mono,
+.measure-panel .mono {
+  font-family: var(--font-mono);
+}
+.hex-preview {
+  font: 0.85rem/1.4 var(--font-mono);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.hex-preview.snippet {
+  margin: 0;
+}
+.mini-log {
+  min-height: 120px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font: 0.8rem/1.5 var(--font-mono);
+}
+.mini-log .trace-line {
+  grid-template-columns: 16px minmax(0, 1fr) auto auto;
+}
+.mini-log .hex {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.measure-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.measure-form .grow {
+  flex: 1;
+  min-width: 200px;
+}
+.measure-form input[type="number"] {
+  width: 110px;
+}
+.measure-form .live {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+.live-level {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.measure-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.measure-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 4px 8px;
+}
+.measure-table td {
+  padding: 4px 8px;
+  border-top: 1px solid var(--border);
+}
+.measure-table tr.active td {
+  background: var(--accent-soft);
+}
+.measure-table select {
+  height: 32px;
+}
+.record-state {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.trace-head .chip.rec {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
 /* ---------- Блоки ---------- */

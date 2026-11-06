@@ -9,10 +9,12 @@ namespace Gearbit.Hub;
 /// <summary>
 /// Страховка: останавливает моторы, если пульт замолчал дольше <see cref="HubOptions.RemoteWatchdogMs"/>
 /// или клиент, который управлял роботом, отключился (закрыли вкладку, упала программа).
+/// Режим замеров страхуется своим стражем (<see cref="ServiceMode.CheckWatchdogAsync"/>), он вызывается отсюда же.
 /// </summary>
 public sealed class SafetyWatchdog(
     RobotManager robots,
     ControlArbiter arbiter,
+    ServiceMode service,
     ClientRegistry clients,
     HubOptions options,
     TimeProvider time,
@@ -38,6 +40,7 @@ public sealed class SafetyWatchdog(
             while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
             {
                 await CheckAsync().ConfigureAwait(false);
+                await service.CheckWatchdogAsync().ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -64,16 +67,18 @@ public sealed class SafetyWatchdog(
 
     private void OnClientDisconnected(object? sender, HubClient client)
     {
-        if (!arbiter.Release(client.Id) || robots.Active is not { State: RobotConnectionState.Connected } robot)
+        _ = OnClientDisconnectedAsync(client);
+    }
+
+    private async Task OnClientDisconnectedAsync(HubClient client)
+    {
+        // Ушёл тот, кто вёл замеры: ручной режим заканчивается (моторы в 0), затем обычная остановка.
+        var wasService = await service.EndIfOwnerAsync(client.Id).ConfigureAwait(false);
+        if ((!arbiter.Release(client.Id) && !wasService) || robots.Active is not { State: RobotConnectionState.Connected } robot)
         {
             return;
         }
 
-        _ = StopAfterClientLeftAsync(robot, client);
-    }
-
-    private async Task StopAfterClientLeftAsync(ProtocolRobot robot, HubClient client)
-    {
         try
         {
             await robot.StopAllAsync().ConfigureAwait(false);

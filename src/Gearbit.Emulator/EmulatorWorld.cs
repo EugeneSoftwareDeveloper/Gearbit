@@ -34,10 +34,10 @@ public sealed class EmulatorSettings
 
     public int RightMotorSlot { get; init; } = 1;
 
-    /// <summary>Правый мотор стоит зеркально: «плюс» крутит колесо назад (как у SuperBot-машинки).</summary>
-    public bool RightMirrored { get; init; } = true;
+    /// <summary>Левый мотор стоит зеркально: «плюс» крутит колесо назад (как у настоящей SuperBot-машинки, profiles/superbot-car.json).</summary>
+    public bool LeftMirrored { get; init; } = true;
 
-    public bool LeftMirrored { get; init; }
+    public bool RightMirrored { get; init; }
 
     /// <summary>Направления датчиков относительно курса: D1 смотрит вперёд, D2 — вправо.</summary>
     public IReadOnlyDictionary<string, double> SensorAngles { get; init; } = new Dictionary<string, double> { ["D1"] = 0, ["D2"] = 90 };
@@ -67,8 +67,38 @@ public sealed class EmulatorWorld(EmulatorSettings settings)
 {
     private readonly Lock _lock = new();
     private List<Obstacle> _obstacles = [.. settings.Obstacles];
+    private readonly Dictionary<string, double> _sensorAngles = new(settings.SensorAngles);
 
     public EmulatorSettings Settings { get; } = settings;
+
+    /// <summary>Куда смотрят датчики сейчас: интерфейс переставляет их вслед за настоящей сборкой (emulator.setSensorAngles).</summary>
+    public IReadOnlyDictionary<string, double> SensorAngles
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return new Dictionary<string, double>(_sensorAngles);
+            }
+        }
+    }
+
+    /// <summary>Переставить датчики: известные id получают новый угол (градусы от «вперёд» по часовой стрелке), чужие id пропускаются.</summary>
+    public IReadOnlyDictionary<string, double> SetSensorAngles(IReadOnlyDictionary<string, double> angles)
+    {
+        lock (_lock)
+        {
+            foreach (var (id, angle) in angles)
+            {
+                if (_sensorAngles.ContainsKey(id) && double.IsFinite(angle))
+                {
+                    _sensorAngles[id] = ((angle % 360) + 360) % 360;
+                }
+            }
+
+            return new Dictionary<string, double>(_sensorAngles);
+        }
+    }
 
     public IReadOnlyList<Obstacle> Obstacles
     {

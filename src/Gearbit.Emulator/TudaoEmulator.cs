@@ -149,9 +149,10 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
         lock (_lock)
         {
             var settings = World.Settings;
+            var angles = World.SensorAngles;
             var cm = new Dictionary<string, double>();
             var levels = new Dictionary<string, int>();
-            foreach (var (sensor, angle) in settings.SensorAngles)
+            foreach (var (sensor, angle) in angles)
             {
                 var distance = MeasureCm(angle);
                 cm[sensor] = Math.Round(distance, 1);
@@ -171,7 +172,7 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
                 settings.RoomWidth,
                 settings.RoomHeight,
                 settings.RobotRadius,
-                settings.SensorAngles,
+                angles,
                 World.Obstacles);
         }
     }
@@ -245,7 +246,7 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
                 ["imuAcc"] = _motors.Any(m => m != 0) ? 12 : 10,
             };
 
-            foreach (var (sensor, angle) in World.Settings.SensorAngles)
+            foreach (var (sensor, angle) in World.SensorAngles)
             {
                 values[sensor] = ToLevel(MeasureCm(angle));
             }

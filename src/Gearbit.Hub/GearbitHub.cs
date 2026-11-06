@@ -67,6 +67,7 @@ public static class GearbitHub
 
         services.AddSingleton<RobotManager>();
         services.AddSingleton<ControlArbiter>();
+        services.AddSingleton<ServiceMode>();
         services.AddSingleton<ClientRegistry>();
         services.AddSingleton<RpcDispatcher>();
         services.AddSingleton<HubMethods>();

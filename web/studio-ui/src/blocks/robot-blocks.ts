@@ -20,6 +20,8 @@ export const TURN_DIRS: Options = [
 export const SENSORS: Options = [
   ["впереди", "front"],
   ["справа", "right"],
+  ["слева", "left"],
+  ["сзади", "back"],
   ["D1", "D1"],
   ["D2", "D2"],
 ];

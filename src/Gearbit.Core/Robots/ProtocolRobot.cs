@@ -26,6 +26,13 @@ public sealed class ProtocolRobot : IRobot
     private long _lastSentTimestamp;
     private bool _userDisconnect;
     private int _maxPowerPercent;
+    private bool _manual;
+
+    /// <summary>Номер кадра: растёт при каждом кодировании (под <see cref="_stateLock"/>).</summary>
+    private long _frameSeq;
+
+    /// <summary>Номер последнего отправленного кадра (под <see cref="_writeLock"/>).</summary>
+    private long _writtenSeq;
 
     public ProtocolRobot(
         string id,
@@ -97,6 +104,21 @@ public sealed class ProtocolRobot : IRobot
     public DifferentialDrive? Drive { get; }
 
     public RobotTelemetry? LastTelemetry { get; private set; }
+
+    /// <summary>
+    /// Ручной режим (замеры протокола): цикл отправки молчит, кадры уходят только через <see cref="WriteRawAsync"/>.
+    /// Желаемое состояние в это время не отправляется, поэтому моторы и свет в телеметрии могут не совпадать с роботом.
+    /// </summary>
+    public bool ManualMode
+    {
+        get
+        {
+            lock (_stateLock)
+            {
+                return _manual;
+            }
+        }
+    }
 
     public int MaxPowerPercent
     {
@@ -175,7 +197,7 @@ public sealed class ProtocolRobot : IRobot
             await _transport.ConnectAsync(cancellationToken).ConfigureAwait(false);
             foreach (var step in _protocol.ConnectSequence)
             {
-                await WriteAsync(step.Data, step.Name, cancellationToken).ConfigureAwait(false);
+                await WriteAsync(step.Data, step.Name, NextSeq(), cancellationToken).ConfigureAwait(false);
                 if (step.DelayAfter > TimeSpan.Zero)
                 {
                     await Task.Delay(step.DelayAfter, _time, cancellationToken).ConfigureAwait(false);
@@ -194,6 +216,7 @@ public sealed class ProtocolRobot : IRobot
         {
             // После подключения робот всегда стоит: не продолжаем «старое» движение.
             _desired.StopMotors();
+            _manual = false;
             _dirty = true;
         }
 
@@ -232,17 +255,77 @@ public sealed class ProtocolRobot : IRobot
     public async Task StopAllAsync()
     {
         byte[] frame;
+        long seq;
         lock (_stateLock)
         {
             _desired.StopMotors();
             frame = _protocol.EncodeState(_desired);
+            seq = ++_frameSeq;
             _dirty = false;
         }
 
         if (_transport.State == TransportState.Connected)
         {
-            await WriteAsync(frame, "СТОП", CancellationToken.None).ConfigureAwait(false);
+            await WriteAsync(frame, "СТОП", seq, CancellationToken.None).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>Войти в ручной режим: сначала остановить моторы, затем выключить цикл отправки.</summary>
+    public async Task EnterManualModeAsync()
+    {
+        if (State != RobotConnectionState.Connected)
+        {
+            throw new InvalidOperationException("Робот не подключён.");
+        }
+
+        lock (_stateLock)
+        {
+            _manual = true;
+        }
+
+        await StopAllAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>Выйти из ручного режима: моторы в 0, цикл отправки снова шлёт желаемое состояние.</summary>
+    public async Task ExitManualModeAsync()
+    {
+        lock (_stateLock)
+        {
+            if (!_manual)
+            {
+                return;
+            }
+
+            _manual = false;
+        }
+
+        if (State == RobotConnectionState.Connected)
+        {
+            await StopAllAsync().ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Отправить байты как есть (только в ручном режиме). Предел мощности к ним не применяется.</summary>
+    public async Task WriteRawAsync(byte[] data, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        long seq;
+        lock (_stateLock)
+        {
+            if (!_manual)
+            {
+                throw new InvalidOperationException("Кадры вручную можно отправлять только в режиме замеров.");
+            }
+
+            seq = ++_frameSeq;
+        }
+
+        if (State != RobotConnectionState.Connected)
+        {
+            throw new InvalidOperationException("Робот не подключён.");
+        }
+
+        await WriteAsync(data, "вручную", seq, cancellationToken).ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()
@@ -301,19 +384,21 @@ public sealed class ProtocolRobot : IRobot
             do
             {
                 byte[]? frame = null;
+                long seq = 0;
                 lock (_stateLock)
                 {
                     var sinceLast = _time.GetElapsedTime(_lastSentTimestamp);
-                    if (_dirty || sinceLast >= timing.ResendInterval)
+                    if (!_manual && (_dirty || sinceLast >= timing.ResendInterval))
                     {
                         frame = _protocol.EncodeState(_desired);
+                        seq = ++_frameSeq;
                         _dirty = false;
                     }
                 }
 
                 if (frame is not null)
                 {
-                    await WriteAsync(frame, null, cancellationToken).ConfigureAwait(false);
+                    await WriteAsync(frame, null, seq, cancellationToken).ConfigureAwait(false);
                 }
             }
             while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false));
@@ -328,12 +413,30 @@ public sealed class ProtocolRobot : IRobot
         }
     }
 
-    private async Task WriteAsync(byte[] data, string? note, CancellationToken cancellationToken)
+    private long NextSeq()
+    {
+        lock (_stateLock)
+        {
+            return ++_frameSeq;
+        }
+    }
+
+    /// <summary>
+    /// Отправить кадр. Кадр, закодированный раньше уже отправленного, не отправляется: иначе цикл мог бы
+    /// закодировать «едем», СТОП успел бы уйти первым, а «едем» — следом за ним.
+    /// </summary>
+    private async Task WriteAsync(byte[] data, string? note, long seq, CancellationToken cancellationToken)
     {
         await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if (seq < _writtenSeq)
+            {
+                return;
+            }
+
             await _transport.WriteAsync(data, cancellationToken).ConfigureAwait(false);
+            _writtenSeq = seq;
             _lastSentTimestamp = _time.GetTimestamp();
         }
         finally

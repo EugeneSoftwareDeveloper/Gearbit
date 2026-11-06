@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json.Nodes;
 using Gearbit.Core.Components;
 using Gearbit.Core.Robots;
 using Gearbit.Emulator;
@@ -15,6 +16,7 @@ public sealed class HubMethods(
     ControlArbiter arbiter,
     ClientRegistry clients,
     HubOptions options,
+    ServiceMode service,
     EmulatorHost? emulator = null)
 {
     public static string Version { get; } =
@@ -97,6 +99,8 @@ public sealed class HubMethods(
                     await robot.StopAllAsync().ConfigureAwait(false);
                 }
 
+                service.Disarm();
+
                 clients.Broadcast("safety.event", new { reason = "stop", message = "Остановлено кнопкой СТОП" });
                 return true;
             },
@@ -139,6 +143,7 @@ public sealed class HubMethods(
         rpc.Register("light.setColor", "Цвет светодиода: {id, color}. Цвета: off, red, orange, yellow, green, cyan, blue, purple, white.", (client, p) =>
         {
             var robot = RequireRobot();
+            RequireNoService();
             var light = robot.Find<ILight>(p.String("id")) ?? throw new HubException(HubErrors.NotFound, $"Нет светодиода «{p.String("id")}».");
             light.SetColor(p.Enum<RobotColor>("color"));
             return true;
@@ -153,6 +158,28 @@ public sealed class HubMethods(
         });
 
         rpc.Register("control.release", "Отдать управление.", (client, _) => arbiter.Release(client.Id));
+
+        rpc.Register(
+            "service.begin",
+            "Режим замеров: робот останавливается, обычное управление выключается, кадры шлются вручную (service.send).",
+            async (client, _, _) =>
+            {
+                await service.BeginAsync(client, RequireRobot()).ConfigureAwait(false);
+                return true;
+            },
+            concurrent: true);
+
+        rpc.Register(
+            "service.send",
+            $"Отправить роботу сырой кадр в режиме замеров: {{hex}}, до {ServiceMode.MaxFrameBytes} байт. Предел мощности не применяется.",
+            async (client, p, ct) => await service.SendAsync(client, ServiceMode.ParseHex(p.String("hex")), ct).ConfigureAwait(false),
+            concurrent: true);
+
+        rpc.Register(
+            "service.end",
+            "Закончить замеры: моторы в 0, обычное управление снова работает. Разрешён любому клиенту.",
+            async (_, _, _) => await service.EndAsync().ConfigureAwait(false),
+            concurrent: true);
 
         rpc.Register("trace.subscribe", "Журнал байтов протокола: {enabled}.", (client, p) => client.TraceEnabled = p.Bool("enabled", true));
 
@@ -181,6 +208,25 @@ public sealed class HubMethods(
             emulator.World.SetObstacles(list);
             return list.Count;
         });
+
+        rpc.Register("emulator.setSensorAngles", "Куда смотрят датчики виртуальной машинки: {angles: {D1: 0, D2: 90}}, градусы от «вперёд» по часовой стрелке. Возвращает все углы.", (_, p) =>
+        {
+            if (emulator is null)
+            {
+                throw new HubException(HubErrors.NotSupported, "Эмулятор не включён.");
+            }
+
+            var angles = new Dictionary<string, double>();
+            foreach (var (id, value) in p.Node?["angles"] as JsonObject ?? new JsonObject())
+            {
+                if (value is JsonValue v && v.TryGetValue<double>(out var angle))
+                {
+                    angles[id] = angle;
+                }
+            }
+
+            return emulator.World.SetSensorAngles(angles);
+        });
     }
 
     private ProtocolRobot RequireRobot() =>
@@ -191,8 +237,18 @@ public sealed class HubMethods(
     private ProtocolRobot RequireMotion(HubClient client, RpcParams p)
     {
         var robot = RequireRobot();
+        RequireNoService();
         arbiter.Authorize(client.Id, client.Name, Source(p));
         return robot;
+    }
+
+    /// <summary>Во время замеров желаемое состояние не отправляется — команды пульта и программ отклоняем явно.</summary>
+    private void RequireNoService()
+    {
+        if (service.IsActive)
+        {
+            throw new HubException(HubErrors.ControlBusy, $"Идут замеры протокола («{service.OwnerName}»): пульт и программы выключены. Закончите замеры в журнале протокола или нажмите СТОП.");
+        }
     }
 
     private static DifferentialDrive RequireDrive(ProtocolRobot robot) =>

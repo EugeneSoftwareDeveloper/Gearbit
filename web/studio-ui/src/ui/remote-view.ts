@@ -2,8 +2,8 @@ import { hub } from "../hub";
 import { icons } from "../icons";
 import { emergencyStop, isPressed, onInputChange, onStop, press, release, setJoystick, type Direction } from "../input/drive";
 import { onGamepad } from "../input/keyboard-gamepad";
-import { COLOR_NAMES, COLORS, displayName, store, type AppState, type ComponentInfo, type RobotColor } from "../model";
-import { settings, updateSettings } from "../settings";
+import { COLOR_NAMES, COLORS, displayName, NO_SENSOR, SENSOR_PLACES, sensorAngle, sensorPlace, store, type AppState, type ComponentInfo, type RobotColor } from "../model";
+import { onSettings, setSensorPlaces, settings, updateSettings } from "../settings";
 import { h, icon, paintRange } from "./dom";
 import { levelColor, RoomView } from "./room-view";
 import { toast } from "./toasts";
@@ -43,6 +43,22 @@ function emptyNote(text: string): HTMLElement {
 /* ---------- Кто управляет ---------- */
 function createControlBanner(): HTMLElement {
   const text = h("div", { class: "text" });
+  // Замеры протокола (помощник замеров): пульт выключен, пока их не закончат.
+  const endService = h(
+    "button",
+    {
+      class: "btn small",
+      onclick: async () => {
+        try {
+          await hub.call("service.end");
+          toast("Замеры закончены, пульт снова работает", "ok");
+        } catch (e) {
+          toast(String((e as Error).message), "error");
+        }
+      },
+    },
+    "Закончить замеры",
+  );
   const take = h(
     "button",
     {
@@ -59,12 +75,16 @@ function createControlBanner(): HTMLElement {
     icon(icons.hand),
     "Забрать управление",
   );
-  const banner = h("div", { class: "banner warn hidden" }, icon(icons.info), text, take);
+  const banner = h("div", { class: "banner warn hidden" }, icon(icons.info), text, endService, take);
   store.subscribe((s) => {
     const c = s.control;
+    const service = !!s.robot?.serviceMode;
     const foreign = !!c?.clientId && !c.mine;
-    banner.classList.toggle("hidden", !foreign);
-    if (foreign) text.textContent = `Сейчас роботом управляет ${c?.kind === "program" ? "программа" : "другой пульт"} «${c?.clientName}». Кнопка СТОП работает всегда.`;
+    banner.classList.toggle("hidden", !foreign && !service);
+    endService.classList.toggle("hidden", !service);
+    take.classList.toggle("hidden", service);
+    if (service) text.textContent = "Идут замеры протокола: пульт и программы выключены. Кнопка СТОП работает всегда.";
+    else if (foreign) text.textContent = `Сейчас роботом управляет ${c?.kind === "program" ? "программа" : "другой пульт"} «${c?.clientName}». Кнопка СТОП работает всегда.`;
   });
   return banner;
 }
@@ -227,6 +247,43 @@ function createJoystick(): HTMLElement {
   return h("div", { class: "hidden" }, pad);
 }
 
+/** Датчики расстояния робота: все, стоящие на роботе и отмеченные «нет на роботе». */
+function distanceSensors(s: AppState): { all: ComponentInfo[]; shown: ComponentInfo[]; absent: ComponentInfo[] } {
+  const all = s.robot?.components.filter((c) => c.kind === "distance") ?? [];
+  const absent = all.filter((c) => sensorPlace(c, s.robot) === NO_SENSOR);
+  return { all, shown: all.filter((c) => !absent.includes(c)), absent };
+}
+
+/**
+ * Эмулятор ставит виртуальные датчики туда же, куда пользователь переставил настоящие:
+ * тогда комната, радар и блоки «датчик справа» говорят об одном и том же.
+ */
+function syncEmulatorSensors(): () => void {
+  let sent = "";
+  const sync = () => {
+    const s = store.state;
+    if (s.hub !== "open" || s.robot?.state !== "connected" || !s.robot.id.startsWith("emulator:")) {
+      sent = "";
+      return;
+    }
+    const angles: Record<string, number> = {};
+    distanceSensors(s).all.forEach((c, i) => {
+      const angle = sensorAngle(c, i, s.robot);
+      if (angle !== null) angles[c.id] = angle;
+    });
+    const key = s.robot.id + JSON.stringify(angles);
+    if (key === sent) return;
+    sent = key;
+    void hub.call("emulator.setSensorAngles", { angles }).catch(() => {
+      sent = "";
+    });
+  };
+  hub.on("hub.connected", () => {
+    sent = "";
+  });
+  return sync;
+}
+
 /* ---------- Комната эмулятора или радар ---------- */
 function createStageCard(openConnect: () => void): HTMLElement {
   const title = h("h2", {}, "Робот");
@@ -245,22 +302,27 @@ function createStageCard(openConnect: () => void): HTMLElement {
   const root = h("article", { class: "card stage" }, head, empty, room.element, radar.element);
 
   let subscribed = false;
+  const syncSensors = syncEmulatorSensors();
   hub.on("emulator.state", (s) => room.update(s));
-  store.subscribe((s) => {
+  const render = (s: AppState) => {
     const connected = s.robot?.state === "connected" || s.robot?.state === "lost";
     const emulator = connected && !!s.robot?.id.startsWith("emulator:");
+    const sensors = distanceSensors(s).shown.length > 0;
     empty.classList.toggle("hidden", connected);
     room.element.classList.toggle("hidden", !emulator);
     radar.element.classList.toggle("hidden", !connected || emulator);
     title.textContent = emulator ? "Комната эмулятора" : connected ? "Радар" : "Робот";
-    hint.textContent = emulator ? "240 × 160 см, клетка 10 см" : connected ? "Куда смотрят датчики" : "";
+    hint.textContent = emulator ? "240 × 160 см, клетка 10 см" : connected && sensors ? "Куда смотрят датчики" : "";
+    syncSensors();
     if (emulator !== subscribed && s.hub === "open") {
       subscribed = emulator;
       void hub.call("emulator.subscribe", { enabled: emulator }).catch(() => undefined);
     }
     if (!emulator) subscribed = false;
     radar.update(s);
-  });
+  };
+  store.subscribe(render);
+  onSettings(() => render(store.state));
   hub.on("hub.connected", () => {
     subscribed = false;
   });
@@ -286,17 +348,19 @@ function createRadar(): { element: HTMLElement; update: (s: AppState) => void } 
       <rect x="26" y="-20" width="8" height="40" rx="3" fill="var(--text-muted)"/>
     </g>`;
   const beams = svg.querySelector(".beams")!;
+  const note = h("p", { class: "muted radar-note hidden" }, "Датчиков расстояния на роботе нет — радару смотреть нечем. Моторы и свет работают как обычно.");
   const element = h("div", { style: "padding:8px 18px 18px" });
-  element.append(svg);
-
-  // Направления датчиков: по псевдонимам сборки (front — вперёд, right — вправо…).
-  const ANGLES: Record<string, number> = { front: 0, right: 90, back: 180, left: 270, front_right: 45, front_left: 315 };
+  element.append(svg, note);
 
   const update = (s: AppState) => {
-    const sensors = s.robot?.components.filter((c) => c.kind === "distance") ?? [];
+    const sensors = distanceSensors(s).all;
     beams.innerHTML = "";
+    let shown = 0;
     sensors.forEach((c, i) => {
-      const angle = ANGLES[c.aliases[0] ?? ""] ?? (i === 0 ? 0 : 90);
+      // Направление — где датчик стоит в сборке (пользователь может переставить его в карточке «Датчики»).
+      const angle = sensorAngle(c, i, s.robot);
+      if (angle === null) return;
+      shown++;
       const level = s.telemetry?.distances[c.id];
       const max = 6;
       const reach = level === null || level === undefined ? 150 : 40 + (level / max) * 110;
@@ -319,6 +383,7 @@ function createRadar(): { element: HTMLElement; update: (s: AppState) => void } 
       g.append(label);
       beams.append(g);
     });
+    note.classList.toggle("hidden", shown > 0);
   };
   return { element, update };
 }
@@ -327,8 +392,33 @@ function createRadar(): { element: HTMLElement; update: (s: AppState) => void } 
 function createSensorsCard(): HTMLElement {
   const { root, body } = card("Датчики", icons.sensor, "0 — близко, 6 — далеко");
   const list = h("div");
+  const absentRow = h("div", { class: "sensors-absent hidden" });
   const stats = h("div", { class: "stats" });
-  body.append(list, stats);
+  body.append(list, absentRow, stats);
+
+  // Переставить датчик (запоминается в настройках интерфейса для этой сборки).
+  const place = (changes: Record<string, string | null>) => {
+    const robot = store.state.robot;
+    if (robot) setSensorPlaces(robot, changes);
+  };
+
+  /** Название датчика — это выбор места: щёлкнул и переставил («Спереди» → «Слева» или «Нет на роботе»). */
+  const placeSelect = (c: ComponentInfo, robot: AppState["robot"]) => {
+    const current = sensorPlace(c, robot);
+    const select = h(
+      "select",
+      { class: "sensor-place", title: "Где стоит датчик на роботе", "aria-label": `Где стоит датчик ${c.id}` },
+      current === null ? h("option", { value: "", disabled: true }, "Где стоит?") : null,
+      ...SENSOR_PLACES.map((p) => h("option", { value: p.id }, p.title)),
+      h("option", { value: NO_SENSOR }, "Нет на роботе"),
+    );
+    select.value = current ?? "";
+    select.addEventListener("change", () => {
+      place({ [c.id]: select.value });
+      select.blur();
+    });
+    return select;
+  };
 
   let signature: string | null = null;
   const rows = new Map<string, { value: HTMLElement; bars: HTMLElement[] }>();
@@ -338,28 +428,35 @@ function createSensorsCard(): HTMLElement {
   const tiltStat = h("div", { class: "stat" }, h("div", { class: "label" }, "Наклон X / Y"), tilt);
   stats.append(batteryStat, tiltStat);
 
-  store.subscribe((s) => {
-    const sensors = s.robot?.components.filter((c) => c.kind === "distance") ?? [];
-    const sig = (s.robot ? "+" : "-") + sensors.map((c) => c.id + c.aliases.join()).join("|");
+  const render = (s: AppState) => {
+    const { all, shown, absent } = distanceSensors(s);
+    const sig = (s.robot ? "+" : "-") + all.map((c) => `${c.id}:${sensorPlace(c, s.robot)}`).join("|");
     if (sig !== signature) {
       signature = sig;
       list.replaceChildren();
       rows.clear();
-      if (!sensors.length) list.append(emptyNote(s.robot ? "У этой модели нет датчиков расстояния." : "Подключите робота, чтобы увидеть показания."));
-      for (const c of sensors) {
+      if (!all.length) list.append(emptyNote(s.robot ? "У этой модели нет датчиков расстояния." : "Подключите робота, чтобы увидеть показания."));
+      else if (!shown.length) list.append(emptyNote("Датчиков расстояния на роботе нет."));
+      for (const c of shown) {
         const value = h("div", { class: "sensor-value" }, "—");
         const bars = Array.from({ length: 7 }, () => h("span"));
         list.append(
           h(
             "div",
             { class: "sensor" },
-            h("div", { class: "sensor-head" }, h("span", { class: "sensor-name" }, displayName(c)), h("span", { class: "sensor-id" }, c.id), value),
+            h("div", { class: "sensor-head" }, placeSelect(c, s.robot), h("span", { class: "sensor-id" }, c.id), value),
             h("div", { class: "levels", "aria-hidden": "true" }, ...bars),
             h("div", { class: "levels-legend" }, h("span", {}, "близко"), h("span", {}, "далеко")),
           ),
         );
         rows.set(c.id, { value, bars });
       }
+      // Убранные датчики: строка «Нет на роботе: D1, D2» и кнопка вернуть их на места из сборки.
+      absentRow.classList.toggle("hidden", !absent.length);
+      absentRow.replaceChildren(
+        h("span", {}, `Нет на роботе: ${absent.map((c) => c.id).join(", ")}`),
+        h("button", { class: "btn small ghost", onclick: () => place(Object.fromEntries(absent.map((c) => [c.id, null]))) }, icon(icons.eye), "Вернуть"),
+      );
     }
 
     const t = s.telemetry;
@@ -375,9 +472,12 @@ function createSensorsCard(): HTMLElement {
 
     battery.textContent = t?.battery != null ? String(t.battery) : "—";
     batteryStat.classList.toggle("warn", !!t?.batteryLow);
-    tilt.textContent = t?.tilt ? `${t.tilt.x}° / ${t.tilt.y}°` : t ? "нет" : "—";
-    tiltStat.title = t && !t.tilt ? "Гироскоп есть только в новой прошивке (кадр телеметрии 19 байт)" : "";
-  });
+    tilt.textContent = t?.tilt ? `${t.tilt.x}° / ${t.tilt.y}°` : "—";
+    // Гироскоп есть только в новой прошивке (кадр телеметрии 19 байт): без него карточку наклона не показываем.
+    tiltStat.classList.toggle("hidden", !!t && !t.tilt);
+  };
+  store.subscribe(render);
+  onSettings(() => render(store.state));
   return root;
 }
 

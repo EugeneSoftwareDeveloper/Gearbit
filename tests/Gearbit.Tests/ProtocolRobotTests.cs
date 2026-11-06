@@ -29,12 +29,12 @@ public class ProtocolRobotTests
         var (robot, device) = Create();
         await robot.ConnectAsync(CancellationToken.None);
 
-        // Профиль машинки: правый мотор (M2) инвертирован, лимит 60 %.
+        // Профиль машинки: левый мотор (M1) инвертирован, лимит 60 %.
         robot.Drive!.Tank(100, 100);
 
         await WaitUntil(() => device.States.Count > 0 && device.States[^1].Motors[0] != 0);
-        Assert.Equal(new[] { 6, -6, 0 }, device.States[^1].Motors);
-        Assert.Equal(60, robot.Find<IMotor>("left_wheel")!.Power);
+        Assert.Equal(new[] { -6, 6, 0 }, device.States[^1].Motors);
+        Assert.Equal(-60, robot.Find<IMotor>("left_wheel")!.Power);
 
         await robot.DisposeAsync();
         Assert.Equal(new[] { 0, 0, 0 }, device.States[^1].Motors);
@@ -72,6 +72,42 @@ public class ProtocolRobotTests
         await robot.StopAllAsync();
 
         Assert.Equal(new[] { 0, 0, 0 }, device.States[^1].Motors);
+        await robot.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Manual_mode_pauses_the_send_loop_until_exit()
+    {
+        var (robot, device) = Create();
+        await robot.ConnectAsync(CancellationToken.None);
+        robot.Find<IMotor>("M3")!.SetPower(40);
+        await WaitUntil(() => device.States.Count > 0 && device.States[^1].Motors[2] != 0);
+
+        // Вход в ручной режим останавливает моторы.
+        await robot.EnterManualModeAsync();
+        Assert.True(robot.ManualMode);
+        Assert.Equal(new[] { 0, 0, 0 }, device.States[^1].Motors);
+
+        // Сырой кадр уходит как есть, без предела мощности: 0x14 = 20 при пределе устройства 10 и машинки 60 %.
+        await robot.WriteRawAsync([0xFF, 0xFE, 0x09, 0x01, 0x02, 0x14, 0, 0, 0, 0, 0, 0, 0xFD, 0xFC], CancellationToken.None);
+        Assert.Equal(new[] { 20, 0, 0 }, device.States[^1].Motors);
+
+        // Цикл не повторяет желаемое состояние (раз в 500 мс он прислал бы нули).
+        var count = device.States.Count;
+        await Task.Delay(800);
+        Assert.Equal(count, device.States.Count);
+
+        // СТОП работает и в ручном режиме.
+        await robot.StopAllAsync();
+        Assert.Equal(new[] { 0, 0, 0 }, device.States[^1].Motors);
+
+        await robot.ExitManualModeAsync();
+        Assert.False(robot.ManualMode);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => robot.WriteRawAsync([0xFF, 0xFE, 0x01, 0x04, 0xFD, 0xFC], CancellationToken.None));
+
+        // Цикл снова работает.
+        robot.Find<IMotor>("M1")!.SetPower(50);
+        await WaitUntil(() => device.States[^1].Motors[0] != 0);
         await robot.DisposeAsync();
     }
 

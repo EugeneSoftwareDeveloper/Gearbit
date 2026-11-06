@@ -13,7 +13,8 @@ public class CatalogTests
         var car = TestData.Car;
         Assert.Equal("tudao-superbot", car.Device);
         Assert.Equal("M1", car.Drive!.Left);
-        Assert.True(car.Drive.InvertRight);
+        Assert.True(car.Drive.InvertLeft);
+        Assert.False(car.Drive.InvertRight);
         Assert.Equal("D1", car.Aliases["front"]);
         Assert.Equal(60, car.Limits.MaxPowerPercent);
         Assert.Null(car.Calibration.Distance["D1"].LevelToCm);

@@ -4,6 +4,7 @@ import type { BlocksView } from "./blocks/view";
 import { hub } from "./hub";
 import { resetInputs } from "./input/drive";
 import { setupGamepad, setupKeyboard } from "./input/keyboard-gamepad";
+import { createMeasureHelper } from "./measure/helper";
 import { store, type Catalog, type Control, type ConnectionState, type RobotInfo, type Telemetry } from "./model";
 import { createConnectDialog, setHubTransports } from "./ui/connect-dialog";
 import { h } from "./ui/dom";
@@ -20,7 +21,8 @@ const app = document.getElementById("app")!;
 const connect = createConnectDialog();
 const help = createHelpDialog();
 const settingsPopover = createSettingsPopover();
-const trace = createTracePanel();
+const measure = createMeasureHelper();
+const trace = createTracePanel(measure.open);
 
 const remote = createRemoteView(connect.open);
 const stageHome = remote.stage.parentElement!;
@@ -142,7 +144,8 @@ hub.on("safety.event", ({ reason, message }: { reason: string; message: string }
 });
 
 /* ---------- Ввод ---------- */
-setupKeyboard(() => mode === "remote" && !document.querySelector("dialog[open]"));
+// Во время замеров (service.*) клавиши движения молчат: хаб всё равно отказал бы. Пробел и Esc — СТОП всегда.
+setupKeyboard(() => mode === "remote" && !document.querySelector("dialog[open]") && !store.state.robot?.serviceMode);
 setupGamepad();
 
 hub.start();

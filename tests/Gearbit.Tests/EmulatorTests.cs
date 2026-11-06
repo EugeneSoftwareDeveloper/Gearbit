@@ -54,7 +54,7 @@ public class EmulatorTests
         // Лимит машинки 60 % → 6 из 10 → 0,6 × 35 см/с × 1 с ≈ 21 см прямо, без поворота.
         Assert.InRange(snapshot.Pose.X - start.X, 19, 23);
         Assert.InRange(snapshot.Pose.Y, 79.5, 80.5);
-        Assert.Equal(new[] { 6, -6, 0 }, snapshot.Motors);
+        Assert.Equal(new[] { -6, 6, 0 }, snapshot.Motors);  // левый мотор зеркальный
     }
 
     [Fact]
@@ -75,6 +75,24 @@ public class EmulatorTests
         Assert.Equal(2, telemetry.Distances["D1"]);
         Assert.Equal("v2", telemetry.Firmware);
         Assert.Equal(new TiltReading(0, 0, 10), telemetry.Tilt);
+    }
+
+    [Fact]
+    public void Sensors_can_be_moved_to_another_place()
+    {
+        var world = new EmulatorWorld(new EmulatorSettings { Obstacles = [new Obstacle(70, 0, 10, 160)], StartPose = new Pose(50, 80, 0) });
+        using var emulator = new TudaoEmulator(Options, world, new ManualTime());
+        emulator.PowerOn();
+
+        // D2 смотрит вправо (в стену комнаты на 80 см ниже), D1 — вперёд, в препятствие.
+        Assert.NotEqual(emulator.GetSnapshot().SensorLevels["D1"], emulator.GetSnapshot().SensorLevels["D2"]);
+
+        var angles = world.SetSensorAngles(new Dictionary<string, double> { ["D2"] = -360, ["D9"] = 45 });
+
+        Assert.Equal(0, angles["D2"]);
+        Assert.False(angles.ContainsKey("D9"));
+        Assert.Equal(emulator.GetSnapshot().SensorLevels["D1"], emulator.GetSnapshot().SensorLevels["D2"]);
+        Assert.Equal(0, emulator.GetSnapshot().SensorAngles["D2"]);
     }
 
     private static async Task RunUntil(ManualTime time, Task task)

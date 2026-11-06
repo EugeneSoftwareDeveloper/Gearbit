@@ -30,6 +30,7 @@ export const icons = {
   bluetooth: svg('<path d="M7 7l10 10-5 5V2l5 5L7 17"/>'),
   chip: svg('<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>'),
   radar: svg('<path d="M12 12L19 5"/><path d="M19.4 14.5A8 8 0 1 1 12 4"/><path d="M15.5 13A4 4 0 1 1 12 8"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
+  eye: svg('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
   sensor: svg('<path d="M5 12h2M17 12h2"/><path d="M9 7a7 7 0 0 0 0 10M15 7a7 7 0 0 1 0 10"/><circle cx="12" cy="12" r="2"/>'),
   bulb: svg('<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2z"/>'),
   motor: svg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 4v4M12 16v4M4 12h4M16 12h4"/>'),

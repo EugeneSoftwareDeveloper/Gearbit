@@ -1,10 +1,11 @@
 import * as SB from "scratch-blocks";
 import { icons } from "../icons";
 import { emergencyStop, onStop } from "../input/drive";
-import { displayName, store } from "../model";
+import { displayName, NO_SENSOR, sensorPlace, store } from "../model";
 import { onSettings, settings } from "../settings";
 import { askConfirm, askText, showAlert } from "../ui/ask-dialog";
 import { h, icon } from "../ui/dom";
+import { openTextFile, saveJsonFile } from "../ui/files";
 import { levelColor } from "../ui/room-view";
 import { toast } from "../ui/toasts";
 import { EXAMPLES, type Example } from "./examples";
@@ -300,7 +301,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
   };
 
   openBtn.onclick = async () => {
-    const text = await openFile();
+    const text = await openTextFile(PROGRAM_FILE);
     if (text === null) return;
     let file: ProjectFile;
     try {
@@ -401,7 +402,7 @@ function createSensorsCard(): HTMLElement {
     }
     const t = s.telemetry;
     const rows: HTMLElement[] = [];
-    for (const c of robot.components.filter((c) => c.kind === "distance")) {
+    for (const c of robot.components.filter((c) => c.kind === "distance" && sensorPlace(c, robot) !== NO_SENSOR)) {
       const level = t?.distances[c.id];
       const value = level === null || level === undefined ? "—" : String(level);
       const color = level === null || level === undefined ? "var(--text-muted)" : levelColor(level);
@@ -460,49 +461,16 @@ function createExamplesDialog(onPick: (example: Example) => void): { open: () =>
 }
 
 /* ---------- Файлы ---------- */
-type Writable = { write(data: Blob): Promise<void>; close(): Promise<void> };
-type FilePickers = {
-  showSaveFilePicker?: (options: object) => Promise<{ createWritable(): Promise<Writable> }>;
-  showOpenFilePicker?: (options: object) => Promise<{ getFile(): Promise<File> }[]>;
-};
-const pickerTypes = [{ description: "Программа Gearbit", accept: { "application/json": [FILE_SUFFIX, ".json"] } }];
+const PROGRAM_FILE = { description: "Программа Gearbit", suffix: FILE_SUFFIX };
 
 /** Сохранить в файл. true — сохранено (или отдано браузеру на скачивание). */
 async function saveToFile(file: ProjectFile): Promise<boolean> {
-  const blob = new Blob([JSON.stringify(file, null, 2)], { type: "application/json" });
-  const pickers = window as Window & FilePickers;
-  if (pickers.showSaveFilePicker) {
-    try {
-      const handle = await pickers.showSaveFilePicker({ suggestedName: `Моя программа${FILE_SUFFIX}`, types: pickerTypes });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      toast("Программа сохранена", "ok");
-      return true;
-    } catch (e) {
-      if ((e as Error).name !== "AbortError") toast("Не получилось сохранить файл", "error");
-      return false;
-    }
+  try {
+    if (!(await saveJsonFile(file, `Моя программа${FILE_SUFFIX}`, PROGRAM_FILE))) return false;
+    toast("Программа сохранена", "ok");
+    return true;
+  } catch {
+    toast("Не получилось сохранить файл", "error");
+    return false;
   }
-  const link = h("a", { href: URL.createObjectURL(blob), download: `Моя программа${FILE_SUFFIX}` });
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-  return true;
-}
-
-async function openFile(): Promise<string | null> {
-  const pickers = window as Window & FilePickers;
-  if (pickers.showOpenFilePicker) {
-    try {
-      const [handle] = await pickers.showOpenFilePicker({ types: pickerTypes, multiple: false });
-      return handle ? await (await handle.getFile()).text() : null;
-    } catch {
-      return null;
-    }
-  }
-  return new Promise((resolve) => {
-    const input = h("input", { type: "file", accept: `${FILE_SUFFIX},.json` });
-    input.onchange = async () => resolve(input.files?.[0] ? await input.files[0].text() : null);
-    input.click();
-  });
 }

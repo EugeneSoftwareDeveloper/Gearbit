@@ -35,10 +35,10 @@
 | `robot.disconnect` | — | Останавливает моторы и отключается. |
 | `robot.info` | — | `RobotDto` или `null`. |
 | `robot.telemetry` | — | `TelemetryDto` (см. ниже). |
-| `robot.stop` | — | **Разрешён всем и всегда.** Моторы в 0, рассылает `safety.event {reason:"stop"}`. |
+| `robot.stop` | — | **Разрешён всем и всегда.** Моторы в 0, рассылает `safety.event {reason:"stop"}`. В режиме замеров тоже работает (и снимает страж замеров до следующего кадра). |
 | `robot.setMaxPower` | `{percent}` | Общий предел мощности 0–100. Рассылает `robot.info`. |
 
-`RobotDto`: `{id, name, state, deviceId, deviceTitle, deviceStatus, profileId, profileTitle, uid, firmware, maxPowerPercent, profileMaxPowerPercent, hasDrive, components: [{id, kind, title, available, aliases}]}`. `state`: `disconnected | connecting | connected | lost`.
+`RobotDto`: `{id, name, state, deviceId, deviceTitle, deviceStatus, profileId, profileTitle, uid, firmware, maxPowerPercent, profileMaxPowerPercent, hasDrive, serviceMode, components: [{id, kind, title, available, aliases}]}`. `state`: `disconnected | connecting | connected | lost`. `serviceMode` — идут замеры протокола (см. ниже): обычное управление выключено.
 
 `TelemetryDto`: `{distances: {D1: 0..6|null}, distancesCm: {D1: number|null}, tilt: {x, y, acceleration}|null, battery, batteryLow, firmware, motors: {M1: -100..100}, lights: {L1: "red"}, available: {M1: true}}`.
 
@@ -68,6 +68,25 @@
 
 Арбитр: моторами управляет один клиент. Первая команда движения занимает свободное управление. Если управление занято другим, команда отклоняется с `ControlBusy` (−32002). Владелец освобождается при отключении клиента; моторы при этом останавливаются (`safety.event {reason:"clientLeft"}`).
 
+`kind` владельца: `remote` (пульт), `program` (программа) или `service` (замеры протокола).
+
+### Замеры протокола (этап 0)
+
+Режим для [помощника замеров](../STAGE0-CHECKLIST.md): кадры уходят роботу как есть, байт в байт. Им пользуется окно «Помощник замеров» (журнал протокола → «Замеры»).
+
+| Метод | Параметры | Поведение |
+|---|---|---|
+| `service.begin` | — | Занять арбитр с видом `service`, остановить моторы и перевести робота в ручной режим: цикл отправки кадра состояния молчит. Рассылает `robot.info` с `serviceMode: true`. Повторный вызов тем же клиентом ничего не делает; другим — `ControlBusy`. |
+| `service.send` | `{hex}` | Отправить кадр (пробелы, `-` и `:` допустимы, до 64 байт). Возвращает число байт. Только владельцу замеров; без `service.begin` — `NotSupported`; плохой hex — `InvalidParams`. |
+| `service.end` | — | Закончить замеры (может любой клиент): моторы в 0, цикл отправки снова работает, арбитр свободен. `true`, если замеры шли. |
+
+Пока идут замеры, `motor.setPower`, `drive.*` и `light.setColor` отклоняются с `ControlBusy`. Предел мощности к сырым кадрам **не применяется**: это осознанное исключение для замеров на подставке. Защита:
+
+- `robot.stop` работает всегда;
+- страж замеров: нет новых кадров дольше `Hub:ServiceWatchdogMs` (15 с) — кадр «стоп» и `safety.event {reason:"watchdog"}`; срабатывает один раз до следующего кадра;
+- отключился клиент, начавший замеры, — замеры закончены, моторы в 0 (`safety.event {reason:"clientLeft"}`);
+- смена или отключение робота заканчивает замеры.
+
 ### Отладка и эмулятор
 
 | Метод | Параметры | Поведение |
@@ -77,6 +96,7 @@
 | `emulator.state` | — | Снимок мира или `null`. |
 | `emulator.reset` | — | Машинка на старт. |
 | `emulator.setObstacles` | `{obstacles: [{x, y, width, height}]}` | Препятствия в сантиметрах. |
+| `emulator.setSensorAngles` | `{angles: {D1: 0, D2: 90}}` | Куда смотрят виртуальные датчики: градусы от «вперёд» по часовой стрелке. Неизвестные id пропускаются. Возвращает все углы. Интерфейс вызывает его, когда пользователь переставляет датчики в карточке «Датчики». |
 
 ## Уведомления (хаб → клиент)
 
@@ -126,6 +146,7 @@
 | `Hub:DevicesDirectory` | `devices` рядом с программой | Описания роботов. |
 | `Hub:ProfilesDirectory` | `profiles` рядом с программой | Сборки. |
 | `Hub:RemoteWatchdogMs` | 600 | Таймаут «кнопки мертвеца». |
+| `Hub:ServiceWatchdogMs` | 15000 | Страж замеров: сколько ждать новый кадр, прежде чем остановить моторы. Больше 10 с — чтобы проверить, останавливается ли робот сам (п. 8 чек-листа). |
 | `Hub:ScanDurationMs` | 4000 | Длительность поиска. |
 | `Hub:AllowedOrigins` | — | Дополнительные разрешённые `Origin`. |
 | `Hub:Emulator` | true | Показывать эмулятор в поиске. |

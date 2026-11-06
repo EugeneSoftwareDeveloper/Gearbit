@@ -22,6 +22,7 @@ public sealed record RobotDto(
     int MaxPowerPercent,
     int ProfileMaxPowerPercent,
     bool HasDrive,
+    bool ServiceMode,
     IReadOnlyList<ComponentDto> Components)
 {
     public static RobotDto From(IRobot robot)
@@ -42,6 +43,7 @@ public sealed record RobotDto(
             robot.MaxPowerPercent,
             robot.Profile?.Limits.MaxPowerPercent ?? 100,
             robot.Drive is not null,
+            robot is ProtocolRobot { ManualMode: true },
             robot.Components
                 .Select(c => new ComponentDto(
                     c.Id,

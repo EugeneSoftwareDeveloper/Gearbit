@@ -12,6 +12,7 @@ publish/
 
 # Rider / VS Code
 .idea/
+_ReSharper.Caches/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json

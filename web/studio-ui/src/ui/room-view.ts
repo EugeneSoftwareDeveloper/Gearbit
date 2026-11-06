@@ -1,6 +1,6 @@
 import { hub } from "../hub";
 import { icons } from "../icons";
-import type { EmulatorState, Obstacle } from "../model";
+import { NO_SENSOR, sensorPlace, store, type EmulatorState, type Obstacle } from "../model";
 import { onSettings } from "../settings";
 import { cssVar, h, icon } from "./dom";
 import { toast } from "./toasts";
@@ -230,8 +230,12 @@ export class RoomView {
       }
     }
 
-    // Лучи датчиков.
+    // Лучи датчиков (кроме отмеченных в карточке «Датчики» как «Нет на роботе»).
+    const absent = new Set(
+      store.state.robot?.components.filter((c) => c.kind === "distance" && sensorPlace(c) === NO_SENSOR).map((c) => c.id),
+    );
     for (const [sensor, angle] of Object.entries(s.sensorAngles)) {
+      if (absent.has(sensor)) continue;
       const cm = s.sensorCm[sensor] ?? 0;
       const level = s.sensorLevels[sensor] ?? 6;
       const rad = ((s.heading + angle) * Math.PI) / 180;

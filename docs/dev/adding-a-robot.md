@@ -19,7 +19,7 @@
   "title": "Танк",
   "device": "tudao-superbot",
   "status": "draft",
-  "drive": { "type": "differential", "left": "M1", "right": "M2", "invertLeft": false, "invertRight": true },
+  "drive": { "type": "differential", "left": "M1", "right": "M2", "invertLeft": true, "invertRight": false },
   "aliases": { "front": "D1", "left_track": "M1", "right_track": "M2", "turret": "M3" },
   "limits": { "maxPowerPercent": 50, "kidMode": true },
   "calibration": { "distance": { "D1": { "levelToCm": null } } }

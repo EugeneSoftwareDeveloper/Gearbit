@@ -8,16 +8,19 @@
 |---|---|
 | `main.ts` | Сборка экрана, подписки на уведомления хаба, клавиатура и геймпад, экран «нет связи с хабом». |
 | `hub.ts` | `HubClient`: WebSocket + JSON-RPC, автопереподключение, `call(method, params)`, `on(notification, listener)`. После каждого подключения шлёт `hub.hello` и выдаёт событие `hub.connected`. |
-| `model.ts` | Типы ответов хаба (`RobotInfo`, `Telemetry`, `EmulatorState`…) и общий `store`. |
-| `settings.ts` | Тема, цвет, крупный текст, скорость, вид управления. Хранятся в `localStorage` (`gearbit.settings`). |
+| `model.ts` | Типы ответов хаба (`RobotInfo`, `Telemetry`, `EmulatorState`…) и общий `store`. `displayName`, места датчиков (`SENSOR_PLACES`, `sensorPlace`, `sensorAngle`, `NO_SENSOR`). |
+| `settings.ts` | Тема, цвет, крупный текст, скорость, вид управления, места датчиков по сборкам (`sensorPlaces`: `"устройство/сборка" → {D1: "front" \| … \| "none"}`). Хранятся в `localStorage` (`gearbit.settings`). |
+| `trace.ts` | Общая подписка на журнал протокола (`listenTrace`): журнал, помощник замеров и запись слушают одну подписку хаба. |
 | `icons.ts` | Встроенные SVG-иконки (`currentColor`), в том числе логотип. |
 | `input/drive.ts` | Смешивание кнопок, джойстика и геймпада в `drive.arcade`. Пока есть ввод, команда повторяется раз в 100 мс, после отпускания — сразу `drive.stop`. |
 | `input/keyboard-gamepad.ts` | Клавиши и Gamepad API. |
 | `ui/topbar.ts` | Шапка: режимы, плашка робота, кнопки, СТОП. |
-| `ui/remote-view.ts` | Пульт: карточки управления, сцены, датчиков, света, моторов. Карточку сцены (`stage`) вкладка «Блоки» забирает к себе. |
+| `ui/remote-view.ts` | Пульт: карточки управления, сцены, датчиков, света, моторов. Карточку сцены (`stage`) вкладка «Блоки» забирает к себе. Название датчика — `<select>` места; для эмулятора места уходят в `emulator.setSensorAngles`. |
 | `ui/room-view.ts` | Canvas комнаты эмулятора: машинка, лучи, след, рисование препятствий. |
 | `ui/connect-dialog.ts` | Поиск и подключение. |
-| `ui/settings-popover.ts`, `help-dialog.ts`, `trace-panel.ts`, `toasts.ts` | Настройки, подсказка (F1), журнал протокола, всплывающие сообщения. |
+| `ui/settings-popover.ts`, `help-dialog.ts`, `trace-panel.ts`, `toasts.ts` | Настройки, подсказка (F1), журнал протокола (с кнопкой «Замеры»), всплывающие сообщения. |
+| `ui/files.ts` | `saveJsonFile`, `openTextFile`: File System Access API с запасным вариантом через ссылку. |
+| `measure/*` | Помощник замеров этапа 0: `helper.ts` (окно, вкладки «Кадры» и «Запись», `MeasureContext`), `power-test.ts`, `calibration.ts` (`levelToCm`), `recorder.ts` (формат [docs/captures](../captures/README.md)), `frames.ts` (кадры TUDAO). Кадры уходят через `service.*` хаба. |
 | `ui/placeholders.ts` | Заглушки режимов Python / C#. |
 | `ui/ask-dialog.ts` | `askText`, `askConfirm`, `showAlert` — свои диалоги вместо `prompt`/`confirm`/`alert`. |
 | `blocks/*` | Редактор блоков, загружается лениво. См. [Редактор блоков](blocks.md). |

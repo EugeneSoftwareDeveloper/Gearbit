@@ -7,6 +7,9 @@ public enum ControllerKind
 
     /// <summary>Программа ребёнка (Scratch, Python, C#).</summary>
     Program,
+
+    /// <summary>Замеры протокола: сырые кадры в ручном режиме робота (см. <see cref="ServiceMode"/>).</summary>
+    Service,
 }
 
 public sealed record ControlOwner(string ClientId, string ClientName, ControllerKind Kind, DateTimeOffset Since);

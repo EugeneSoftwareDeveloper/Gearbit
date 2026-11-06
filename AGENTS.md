@@ -29,6 +29,7 @@ src/Gearbit.App               Gearbit.exe: WPF + WebView2, хаб в проце�
 tests/Gearbit.Tests           xUnit
 web/studio-ui                 интерфейс: TypeScript 7 + Vite 8, без фреймворка
 web/studio-ui/src/blocks      вкладка «Блоки»: scratch-blocks + свой интерпретатор (runtime.ts)
+web/studio-ui/src/measure     помощник замеров этапа 0: кадры вручную, тест мощности, калибровка, запись
 devices/, profiles/           описания роботов и сборок (JSON, копируются рядом с exe)
 docs/user, docs/dev           документация для пользователя и разработчика
 tools/make_icon.py            генерация иконки и логотипа (Pillow)
@@ -54,6 +55,7 @@ dotnet run --project src/Gearbit.App               # окно
 
 1. **`robot.stop` разрешён любому клиенту всегда**, в обход арбитра.
 2. Каждая команда движения проходит через `ControlArbiter.Authorize` и предел мощности робота (`MaxPowerPercent`).
+   Исключение — режим замеров (`ServiceMode`, `service.*`): сырые кадры идут без предела, но только после явного `service.begin`, при этом пульт и программы отклоняются (`ControlBusy`), работает свой страж (`Hub:ServiceWatchdogMs`, 15 с), а отключение владельца или робота заканчивает замеры и останавливает моторы.
 3. **Страж**: пульт (`ControllerKind.Remote`) молчит дольше `Hub:RemoteWatchdogMs` (600 мс) — моторы в 0 и `safety.event`.
 4. Отключился клиент-владелец — моторы в 0. Потеря связи — `lost` и `safety.event`. Подключение и закрытие хаба — моторы в 0.
 5. В интерфейсе движение есть только пока держат ввод. При отпускании, `blur`, `visibilitychange` и `safety.event` ввод сбрасывается.
@@ -67,6 +69,8 @@ dotnet run --project src/Gearbit.App               # окно
 - Значения из открытых источников помечены в `devices/*.json` и `profiles/*.json` как `"verified": false` / `"status": "draft"`. **Не ставьте `verified: true` без замера на настоящем роботе**: замеры делает пользователь по [docs/STAGE0-CHECKLIST.md](docs/STAGE0-CHECKLIST.md).
 - Диапазон мощности устройства (`protocol.power.deviceMin/Max`) пока безопасная заглушка ±10. API всегда в процентах −100..100.
 - Протокол описан в [docs/PROTOCOL-SUPERBOT.md](docs/PROTOCOL-SUPERBOT.md). Новые находки записывайте туда со ссылкой на источник.
+- Замеры удобно делать в самом Gearbit: журнал протокола → «Замеры». Записи сессий (`*.capture.json`) лежат в [docs/captures](docs/captures/README.md).
+- Направление моторов «Машинки» проверено на настоящем роботе: инвертирован M1, а не M2, как в ApitorCommander. Эмулятор повторяет это (`EmulatorSettings.LeftMirrored`).
 
 ## Код
 
