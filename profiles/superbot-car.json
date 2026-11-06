@@ -1,0 +1,36 @@
+{
+  "$schemaVersion": 1,
+  "id": "superbot-car",
+  "title": "Машинка",
+  "device": "tudao-superbot",
+  "status": "draft",
+
+  "drive": {
+    "type": "differential",
+    "left": "M1",
+    "right": "M2",
+    "invertLeft": false,
+    "invertRight": true,
+    "note": "ЗАГЛУШКА: M2 инвертирован, как в ApitorCommander (зеркальный монтаж). Уточнить, какой порт левый и в какую сторону вперёд."
+  },
+
+  "aliases": {
+    "front": "D1",
+    "right": "D2",
+    "left_wheel": "M1",
+    "right_wheel": "M2",
+    "note": "Куда смотрят датчики в этой сборке. Для «робота-пса» сделать отдельную сборку с front_left/front_right."
+  },
+
+  "limits": {
+    "maxPowerPercent": 60,
+    "rampPercentPerSecond": 200,
+    "kidMode": true
+  },
+
+  "calibration": {
+    "D1": { "levelToCm": null },
+    "D2": { "levelToCm": null },
+    "note": "Заполняется мастером калибровки: уровень 0..6 → сантиметры."
+  }
+}

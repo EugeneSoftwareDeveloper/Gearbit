@@ -1,0 +1,42 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.DotSettings.user
+TestResults/
+*.binlog
+artifacts/
+publish/
+
+# Rider / VS Code
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Node / web
+node_modules/
+web/*/dist/
+*.tsbuildinfo
+.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Сгенерированный UI внутри хаба (собирается из web/studio-ui)
+src/BotStudio.Hub/wwwroot/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Локальные захваты и логи (не коммитим сырые логи с устройств)
+*.log
+captures-local/

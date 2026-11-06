@@ -1,0 +1,127 @@
+{
+  "$schemaVersion": 1,
+  "id": "tudao-superbot",
+  "title": "Apitor / Makerzoid SuperBot",
+  "status": "draft",
+  "statusNote": "Значения взяты из открытых реализаций (см. docs/PROTOCOL-SUPERBOT.md). Поля с verified=false проверяются по чек-листу docs/STAGE0-CHECKLIST.md.",
+
+  "match": {
+    "namePrefixes": ["Nordic_TUDAO", "Apitor", "TUDAO"],
+    "services": ["6e400001-b5a3-f393-e0a9-e50e24dcca9e"],
+    "verified": false
+  },
+
+  "transport": {
+    "type": "ble-gatt",
+    "service": "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
+    "write": "6e400002-b5a3-f393-e0a9-e50e24dcca9e",
+    "notify": "6e400003-b5a3-f393-e0a9-e50e24dcca9e",
+    "chunkSize": 20,
+    "writeWithResponse": false,
+    "requiresPairing": false,
+    "verified": false
+  },
+
+  "protocol": {
+    "name": "tudao-uart",
+
+    "auth": {
+      "hex": "55AA112064796F7A574F50663035326757565034",
+      "note": "55 AA + 11 authorize + 20 mode + ASCII 'dyozWOPf052gWVP4' (ApitorCommander, initialed85)",
+      "requiredForCommands": null,
+      "verified": false
+    },
+
+    "handshake": {
+      "hex": "FFFE0104FDFC",
+      "expectReplyType": "0x08",
+      "note": "Запрос UID; ответ 13 байт FF FE 08 <8 байт UID> FD FC (pez2001)",
+      "verified": false
+    },
+
+    "stateFrame": {
+      "layout": "FF FE 09 01 02 [M1] [M2] [M3] [L1] [L2] [L3] [L4] FD FC",
+      "motorSlots": ["M1", "M2", "M3"],
+      "lightSlots": ["L1", "L2", "L3", "L4"],
+      "verified": true,
+      "verifiedNote": "Совпадает в ApitorCommander, pez2001 и захватах Makerzoid Lab (BlocosLab)"
+    },
+
+    "power": {
+      "encoding": "int8-signed",
+      "deviceMin": -10,
+      "deviceMax": 10,
+      "note": "ЗАГЛУШКА (безопасная): в захватах Makerzoid ±5/±10, ApitorCommander шлёт до ±100. API всегда в процентах −100..100; сюда пишем реальный предел устройства после замера.",
+      "verified": false
+    },
+
+    "lightColors": {
+      "off": 0,
+      "red": 1,
+      "orange": 2,
+      "yellow": 3,
+      "green": 4,
+      "cyan": 5,
+      "blue": 6,
+      "purple": 7,
+      "white": 10,
+      "note": "ЗАГЛУШКА: порядок как у Apitor Robot J (apitor-ble) и как в списке цветов Makerzoid Lab. Проверить коды.",
+      "verified": false
+    },
+
+    "sendLoop": {
+      "maxRateHz": 20,
+      "resendIntervalMs": 500,
+      "note": "ЗАГЛУШКА: повторяем кадр состояния раз в 500 мс, даже если ничего не менялось (на случай watchdog в прошивке). Уточнить: останавливается ли робот сам без кадров.",
+      "verified": false
+    },
+
+    "telemetry": {
+      "frameType": "0x06",
+      "pushedByDevice": true,
+      "variants": [
+        {
+          "length": 11,
+          "firmware": "v1",
+          "fields": { "mode": 3, "battery": 5, "D1": 7, "D2": 8 }
+        },
+        {
+          "length": 19,
+          "firmware": "v2",
+          "fields": { "D1": 6, "D2": 7, "imuX": 8, "imuY": 9, "imuAcc": 10 },
+          "imuOffset": 90
+        }
+      ],
+      "noValue": 255,
+      "verified": false
+    },
+
+    "distance": {
+      "levels": { "min": 0, "max": 6 },
+      "smallerIsCloser": true,
+      "note": "ЗАГЛУШКА: шкала 0–6 из BlocosLab; направление шкалы — по смыслу блока Makerzoid «when distance < 3». Перевод в см — через калибровку в сборке.",
+      "verified": false
+    },
+
+    "battery": {
+      "scale": null,
+      "lowThreshold": null,
+      "note": "ЗАГЛУШКА: шкала неизвестна, пока показываем сырое значение.",
+      "verified": false
+    }
+  },
+
+  "components": [
+    { "id": "M1", "type": "motor", "title": "Мотор 1" },
+    { "id": "M2", "type": "motor", "title": "Мотор 2" },
+    { "id": "M3", "type": "motor", "title": "Мотор 3" },
+    { "id": "D1", "type": "distance", "title": "Датчик расстояния 1" },
+    { "id": "D2", "type": "distance", "title": "Датчик расстояния 2" },
+    { "id": "IMU", "type": "imu", "title": "Гироскоп (наклон)", "requiresFirmware": "v2" },
+    { "id": "L1", "type": "light", "title": "Свет 1" },
+    { "id": "L2", "type": "light", "title": "Свет 2" },
+    { "id": "L3", "type": "light", "title": "Свет 3" },
+    { "id": "L4", "type": "light", "title": "Свет 4" },
+    { "id": "BAT", "type": "battery", "title": "Батарея" }
+  ]
+}
