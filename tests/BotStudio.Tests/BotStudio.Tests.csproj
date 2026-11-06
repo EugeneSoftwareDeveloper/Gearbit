@@ -22,11 +22,7 @@
     <ProjectReference Include="..\..\src\BotStudio.Core\BotStudio.Core.csproj" />
     <ProjectReference Include="..\..\src\BotStudio.Protocols.Tudao\BotStudio.Protocols.Tudao.csproj" />
     <ProjectReference Include="..\..\src\BotStudio.Emulator\BotStudio.Emulator.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\..\devices\*.json" Link="devices\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\profiles\*.json" Link="profiles\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\..\src\BotStudio.Hub\BotStudio.Hub.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <RootNamespace>BotStudio.Server</RootNamespace>
+    <AssemblyName>BotStudio.Server</AssemblyName>
+    <Description>Хаб BotStudio как консольный сервер: http://localhost:5280, интерфейс открывается в браузере.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BotStudio.Hub\BotStudio.Hub.csproj" />
+    <ProjectReference Include="..\BotStudio.Transport.WinRtBle\BotStudio.Transport.WinRtBle.csproj" />
+  </ItemGroup>
+
+</Project>

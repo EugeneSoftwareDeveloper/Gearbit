@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>BotStudio.Hub</RootNamespace>
+    <Description>Хаб: единственный владелец связи с роботом. JSON-RPC 2.0 через WebSocket на localhost, безопасность, раздача веб-интерфейса.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BotStudio.Core\BotStudio.Core.csproj" />
+    <ProjectReference Include="..\BotStudio.Protocols.Tudao\BotStudio.Protocols.Tudao.csproj" />
+    <ProjectReference Include="..\BotStudio.Emulator\BotStudio.Emulator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="BotStudio.Tests" />
+  </ItemGroup>
+
+  <!-- Описания роботов и сборок лежат рядом с программой: их можно править без пересборки. -->
+  <ItemGroup>
+    <Content Include="..\..\devices\*.json" Link="devices\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\profiles\*.json" Link="profiles\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Собранный веб-интерфейс (npm run build в web/studio-ui кладёт его сюда). -->
+    <Content Include="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
