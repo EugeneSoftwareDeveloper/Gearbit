@@ -6,6 +6,18 @@
   box-sizing: border-box;
 }
 
+/* Размер иконки по умолчанию; конкретные места (кнопки, карточки) задают свой ниже по файлу. */
+svg[aria-hidden="true"] {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+}
+.dialog-head svg {
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
+}
+
 html,
 body {
   margin: 0;
@@ -47,6 +59,8 @@ select {
 #app {
   display: grid;
   grid-template-rows: var(--header-h) 1fr auto;
+  /* Колонка не шире окна: шапка и карточки сжимаются, а не раздвигают страницу. */
+  grid-template-columns: minmax(0, 1fr);
   height: 100vh;
 }
 
@@ -313,8 +327,42 @@ select {
   .remote-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Шапка в узком окне: сначала прячем подсказки, потом подписи — кнопки и СТОП остаются. */
+.robot-pill {
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 300px;
+  overflow: hidden;
+}
+.robot-pill > span:not(.dot) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.robot-pill .dot {
+  flex: none;
+}
+@media (max-width: 1320px) {
+  .robot-pill .meta,
+  .stop-btn kbd {
+    display: none;
+  }
+}
+@media (max-width: 1100px) {
+  .mode-tab .soon,
+  .brand-name {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
   .modes .label {
     display: none;
+  }
+  .topbar {
+    gap: 8px;
+    padding: 0 12px;
   }
 }
 .col {
@@ -478,6 +526,11 @@ select {
 }
 .segmented button {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
   height: 34px;
   border: none;
   border-radius: 999px;
@@ -628,7 +681,7 @@ kbd {
   padding: 48px 24px;
   color: var(--text-muted);
 }
-.stage-empty svg {
+.stage-empty > span svg {
   width: 72px;
   height: 72px;
   color: var(--accent);
@@ -739,19 +792,23 @@ kbd {
   padding: 6px 0;
 }
 .light-row .name {
-  width: 52px;
+  width: 36px;
+  flex: none;
   font-weight: 700;
   font-family: var(--font-mono);
   font-size: 0.85rem;
 }
 .swatches {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
 }
+/* Девять цветов всегда в одну строку: кружки сжимаются в узкой карточке. */
 .swatch {
-  width: 26px;
-  height: 26px;
+  width: min(28px, calc((100% - 32px) / 9));
+  aspect-ratio: 1;
+  flex: none;
   border-radius: 50%;
   border: 2px solid var(--surface);
   outline: 1px solid var(--border);
@@ -1007,9 +1064,12 @@ dialog[open] {
 .device .info {
   flex: 1;
   min-width: 0;
+  display: grid;
+  gap: 2px;
 }
 .device .title {
   font-weight: 700;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }

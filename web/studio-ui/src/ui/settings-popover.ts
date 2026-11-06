@@ -8,9 +8,9 @@ import { toast } from "./toasts";
 /** Поповер оформления: тема (день/ночь/как в системе), цвет, крупный текст, предел мощности. */
 export function createSettingsPopover(): { toggle: (anchor: HTMLElement) => void } {
   const themes: { id: ThemeMode; title: string; glyph: string }[] = [
-    { id: "light", title: "Светлая", glyph: icons.sun },
-    { id: "dark", title: "Ночная", glyph: icons.moon },
-    { id: "system", title: "Как в системе", glyph: icons.monitor },
+    { id: "light", title: "День", glyph: icons.sun },
+    { id: "dark", title: "Ночь", glyph: icons.moon },
+    { id: "system", title: "Авто", glyph: icons.monitor },
   ];
   const themeButtons = themes.map((t) => {
     const b = h("button", { "aria-pressed": "false", title: t.title }, icon(t.glyph), t.title);
