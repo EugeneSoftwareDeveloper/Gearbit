@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\BotStudio.Core\BotStudio.Core.csproj" />
     <ProjectReference Include="..\..\src\BotStudio.Protocols.Tudao\BotStudio.Protocols.Tudao.csproj" />
+    <ProjectReference Include="..\..\src\BotStudio.Emulator\BotStudio.Emulator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
