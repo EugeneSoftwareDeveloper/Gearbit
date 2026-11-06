@@ -1,6 +1,6 @@
 # AGENTS.md — инструкции для ИИ-агентов
 
-Gearbit — программа для Windows: пульт и среда программирования (Scratch / Python / C#) для робота-конструктора Apitor / Makerzoid SuperBot (BLE) с архитектурой под другие роботы. Пользователи — родитель-разработчик и ребёнок. Подробности: [docs/dev/README.md](docs/dev/README.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PLAN.md](docs/PLAN.md).
+Gearbit — программа для Windows: пульт и среда программирования (блоки в стиле Scratch / Python / C#) для робота-конструктора Apitor / Makerzoid SuperBot (BLE) с архитектурой под другие роботы. Пользователи — родитель-разработчик и ребёнок. Подробности: [docs/dev/README.md](docs/dev/README.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PLAN.md](docs/PLAN.md).
 
 ## Язык
 
@@ -28,6 +28,7 @@ src/Gearbit.Server            хаб без окна (консоль)
 src/Gearbit.App               Gearbit.exe: WPF + WebView2, хаб в процессе
 tests/Gearbit.Tests           xUnit
 web/studio-ui                 интерфейс: TypeScript 7 + Vite 8, без фреймворка
+web/studio-ui/src/blocks      вкладка «Блоки»: scratch-blocks + свой интерпретатор (runtime.ts)
 devices/, profiles/           описания роботов и сборок (JSON, копируются рядом с exe)
 docs/user, docs/dev           документация для пользователя и разработчика
 tools/make_icon.py            генерация иконки и логотипа (Pillow)
@@ -56,6 +57,7 @@ dotnet run --project src/Gearbit.App               # окно
 3. **Страж**: пульт (`ControllerKind.Remote`) молчит дольше `Hub:RemoteWatchdogMs` (600 мс) — моторы в 0 и `safety.event`.
 4. Отключился клиент-владелец — моторы в 0. Потеря связи — `lost` и `safety.event`. Подключение и закрытие хаба — моторы в 0.
 5. В интерфейсе движение есть только пока держат ввод. При отпускании, `blur`, `visibilitychange` и `safety.event` ввод сбрасывается.
+   Исключение — программа из блоков: она ездит сама, но прерывается при СТОП, `safety.event`, потере связи, уходе с вкладки и `visibilitychange`, а закончившись, выключает свои моторы.
 6. Хаб слушает только `localhost` и проверяет `Origin` у браузерных клиентов.
 
 Изменения в этих местах сопровождайте тестом (`HubTests`, `ProtocolRobotTests`; время — через `TimeProvider`).
@@ -80,6 +82,8 @@ dotnet run --project src/Gearbit.App               # окно
 - Цвета — только CSS-переменные из `styles/tokens.css`. Проверяйте в светлой и тёмной теме и при ширине окна 1024 px.
 - Иконки — встроенные SVG в `icons.ts`. Внешних ресурсов (CDN, шрифтов) нет.
 - Правила и токены: [docs/dev/ui-and-themes.md](docs/dev/ui-and-themes.md).
+- В интерфейсе режим называется «Блоки», не «Scratch» (товарный знак).
+- Блоки: новая команда роботу идёт только через `command()` в `blocks/runtime.ts` (`source:"program"`); любой новый способ уйти с вкладки или прервать программу обязан вызвать `runtime.stop()` или `halt()`. Как добавить блок и тонкости scratch-blocks — [docs/dev/blocks.md](docs/dev/blocks.md).
 
 ## Документация
 

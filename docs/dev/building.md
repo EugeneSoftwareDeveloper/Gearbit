@@ -20,7 +20,7 @@ dotnet build
 dotnet test
 ```
 
-Веб-интерфейс собирается в `src/Gearbit.Hub/wwwroot` (папка в `.gitignore`). При `dotnet build` она копируется в `bin` сервера и приложения как Content. **Сначала npm, потом dotnet.** Иначе в `bin` окажется старый или пустой интерфейс.
+Веб-интерфейс собирается в `src/Gearbit.Hub/wwwroot` (папка в `.gitignore`). Редактор блоков (Blockly + scratch-blocks) — отдельный чанк около 2 МБ, он грузится при первом открытии вкладки «Блоки». Картинки редактора плагин `scratchMedia` из `vite.config.ts` копирует из `node_modules/scratch-blocks/media` в `wwwroot/scratch-media`. При `dotnet build` она копируется в `bin` сервера и приложения как Content. **Сначала npm, потом dotnet.** Иначе в `bin` окажется старый или пустой интерфейс.
 
 ## Запуск
 

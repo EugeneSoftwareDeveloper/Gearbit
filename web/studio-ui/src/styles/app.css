@@ -1285,6 +1285,294 @@ select {
   align-items: center;
 }
 
+/* ---------- Кнопки и поля для окон-вопросов ---------- */
+.btn.danger {
+  background: var(--danger);
+  border-color: transparent;
+  color: var(--accent-contrast);
+}
+.btn.danger:hover {
+  background: var(--danger-strong);
+}
+.text-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 1rem;
+}
+.text-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+dialog.ask-dialog {
+  width: min(440px, calc(100vw - 32px));
+}
+dialog.wide {
+  width: min(780px, calc(100vw - 32px));
+}
+
+/* ---------- Блоки ---------- */
+.view.blocks-view.active {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  height: 100%;
+  min-height: 460px;
+  max-width: 1680px;
+  margin: 0 auto;
+}
+.blocks-loading {
+  grid-row: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.blocks-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.blocks-toolbar .spacer {
+  flex: 1;
+}
+.run-btn {
+  background: var(--ok);
+  border-color: transparent;
+  color: var(--accent-contrast);
+  padding: 0 20px 0 16px;
+}
+.run-btn:hover {
+  background: color-mix(in srgb, var(--ok) 86%, black);
+}
+.run-btn.running {
+  animation: run-pulse 1.4s var(--ease) infinite;
+}
+@keyframes run-pulse {
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--ok) 28%, transparent);
+  }
+}
+.run-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.run-status .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.blocks-view[data-running="true"] .run-status {
+  color: var(--text);
+}
+.blocks-view[data-running="true"] .run-status .dot {
+  background: var(--ok);
+  animation: blink 1s infinite;
+}
+.blocks-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--gap);
+  min-height: 0;
+}
+.blocks-editor-card {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  min-height: 360px;
+}
+.blocks-editor {
+  position: absolute;
+  inset: 0;
+}
+.blocks-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-height: 0;
+  overflow: auto;
+}
+.blocks-side .card:not(.stage) {
+  padding: 14px 16px;
+}
+.blocks-side .card-head {
+  margin-bottom: 10px;
+}
+.blocks-side .stage-empty {
+  padding: 24px 18px;
+}
+.blocks-side .stage-empty > span svg {
+  width: 48px;
+  height: 48px;
+}
+.blocks-side .radar {
+  max-height: 240px;
+}
+.blocks-side .stage .card-head .hint {
+  display: none;
+}
+.blocks-stage {
+  position: relative;
+  flex: none;
+}
+.say-bubble {
+  position: absolute;
+  z-index: 2;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 86%;
+  padding: 8px 16px;
+  border-radius: 18px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  animation: pop var(--normal) var(--ease);
+}
+.mini-sensors,
+.var-monitors {
+  display: grid;
+  gap: 6px;
+}
+.mini-sensor,
+.var-monitor {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 0.9rem;
+}
+.mini-sensor small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.mini-sensor .value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.var-monitor .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.var-monitor .value {
+  min-width: 44px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--block-data);
+  color: var(--accent-contrast);
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.examples {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+.example {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--fast), background var(--fast);
+}
+.example:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.example span {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+@media (max-width: 900px) {
+  .view.blocks-view.active {
+    height: auto;
+  }
+  .blocks-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .blocks-editor-card {
+    height: 62vh;
+  }
+}
+
+/* Редактор блоков (scratch-blocks) в цветах приложения. Свои значения у Scratch заданы в :root,
+   поэтому здесь селектор точнее. Текст на самих блоках остаётся белым (--colour-text не трогаем). */
+:root[data-theme] {
+  --colour-workspace: var(--surface-2);
+  --colour-toolbox: var(--surface);
+  --colour-flyout: var(--surface);
+  --colour-toolboxText: var(--text-muted);
+  --colour-toolboxSelected: var(--surface-3);
+  --colour-toolboxHover: var(--accent);
+  --colour-scrollbar: var(--border);
+  --colour-scrollbarHover: var(--text-muted);
+  --colour-textFieldText: var(--block-field-text);
+  --colour-contextualMenuHover: var(--accent-soft);
+  --colour-dropDownShadow: var(--overlay);
+}
+.blocks-editor .blocklyToolboxDiv,
+.blocks-editor .blocklyToolbox {
+  border-right: 1px solid var(--border);
+}
+/* Кнопка «Создать переменную» в палитре. */
+.blocks-editor .blocklyFlyoutButton {
+  fill: var(--surface-2);
+}
+.blocks-editor .blocklyFlyoutButton:hover {
+  fill: var(--accent-soft);
+}
+.blocks-editor .blocklyFlyoutButton .blocklyText {
+  fill: var(--text);
+}
+.blocks-editor .blocklyFlyoutButtonBackground {
+  stroke: var(--border);
+}
+.blocklyWidgetDiv .blocklyContextMenu,
+.blocklyWidgetDiv .blocklyMenu {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+}
+.blocklyWidgetDiv .blocklyMenuItem {
+  color: var(--text);
+}
+.blocklyWidgetDiv .blocklyMenuItemDisabled {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

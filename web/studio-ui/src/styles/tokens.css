@@ -32,6 +32,38 @@
   --led-blue: #3b82f6;
   --led-purple: #a855f7;
   --led-white: #f8fafc;
+
+  /*
+   * Цвета категорий блоков: привычная палитра Scratch, одинакова в обеих темах.
+   * Тройка: основной, вторичный (ячейки, выпадающие списки), рамка.
+   */
+  --block-motion: #4c97ff;
+  --block-motion-2: #4280d7;
+  --block-motion-3: #3373cc;
+  --block-looks: #9966ff;
+  --block-looks-2: #855cd6;
+  --block-looks-3: #774dcb;
+  --block-event: #ffbf00;
+  --block-event-2: #e6ac00;
+  --block-event-3: #cc9900;
+  --block-control: #ffab19;
+  --block-control-2: #ec9c13;
+  --block-control-3: #cf8b17;
+  --block-sensing: #5cb1d6;
+  --block-sensing-2: #47a8d1;
+  --block-sensing-3: #2e8eb8;
+  --block-operators: #59c059;
+  --block-operators-2: #46b946;
+  --block-operators-3: #389438;
+  --block-data: #ff8c1a;
+  --block-data-2: #ff8000;
+  --block-data-3: #db6e00;
+  --block-more: #ff6680;
+  --block-more-2: #ff4d6a;
+  --block-more-3: #ff3355;
+  --block-field: #ffffff;
+  --block-field-text: #575e75;
+  --block-glow: #fff200;
 }
 
 /* ---------- Светлая ---------- */

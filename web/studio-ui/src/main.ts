@@ -1,5 +1,6 @@
 import "./styles/app.css";
 
+import type { BlocksView } from "./blocks/view";
 import { hub } from "./hub";
 import { resetInputs } from "./input/drive";
 import { setupGamepad, setupKeyboard } from "./input/keyboard-gamepad";
@@ -21,9 +22,30 @@ const help = createHelpDialog();
 const settingsPopover = createSettingsPopover();
 const trace = createTracePanel();
 
+const remote = createRemoteView(connect.open);
+const stageHome = remote.stage.parentElement!;
+
+/* «Блоки» — большой редактор (Blockly): грузим его, только когда вкладку открыли. */
+const blocksSection = h(
+  "section",
+  { class: "view blocks-view", id: "view-blocks", "aria-label": "Блоки" },
+  h("div", { class: "blocks-loading" }, h("span", { class: "spinner" }), "Загружаю редактор блоков…"),
+);
+let blocks: BlocksView | null = null;
+let blocksLoading: Promise<BlocksView> | null = null;
+function loadBlocks(): Promise<BlocksView> {
+  blocksLoading ??= import("./blocks/view")
+    .then((m) => (blocks = m.mountBlocksView(blocksSection)))
+    .catch((e: unknown) => {
+      blocksLoading = null;
+      throw e;
+    });
+  return blocksLoading;
+}
+
 const views: Record<Mode, HTMLElement> = {
-  remote: createRemoteView(connect.open),
-  scratch: createPlaceholder("scratch"),
+  remote: remote.element,
+  blocks: blocksSection,
   python: createPlaceholder("python"),
   csharp: createPlaceholder("csharp"),
 };
@@ -38,10 +60,26 @@ const topbar = createTopbar({
 });
 
 function setMode(next: Mode): void {
+  const prev = mode;
   mode = next;
   for (const [id, view] of Object.entries(views)) view.classList.toggle("active", id === next);
   topbar.setMode(next);
-  if (next !== "remote") resetInputs();
+  if (prev === "remote" && next !== "remote") resetInputs();
+  // Ушли с «Блоков» — программа останавливается, комната возвращается в «Пульт».
+  if (prev === "blocks" && next !== "blocks") {
+    stageHome.append(remote.stage);
+    void blocks?.deactivate();
+  }
+  if (next === "blocks") {
+    loadBlocks().then(
+      (view) => {
+        if (mode !== "blocks") return;
+        view.stageSlot.append(remote.stage);
+        view.activate();
+      },
+      (e: unknown) => toast(`Не удалось загрузить редактор блоков: ${e instanceof Error ? e.message : String(e)}`, "error", 8000),
+    );
+  }
 }
 
 app.append(topbar.element, h("main", { class: "main" }, ...Object.values(views)), trace.element);

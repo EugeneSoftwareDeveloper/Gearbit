@@ -14,11 +14,13 @@
 | `input/drive.ts` | Смешивание кнопок, джойстика и геймпада в `drive.arcade`. Пока есть ввод, команда повторяется раз в 100 мс, после отпускания — сразу `drive.stop`. |
 | `input/keyboard-gamepad.ts` | Клавиши и Gamepad API. |
 | `ui/topbar.ts` | Шапка: режимы, плашка робота, кнопки, СТОП. |
-| `ui/remote-view.ts` | Пульт: карточки управления, сцены, датчиков, света, моторов. |
+| `ui/remote-view.ts` | Пульт: карточки управления, сцены, датчиков, света, моторов. Карточку сцены (`stage`) вкладка «Блоки» забирает к себе. |
 | `ui/room-view.ts` | Canvas комнаты эмулятора: машинка, лучи, след, рисование препятствий. |
 | `ui/connect-dialog.ts` | Поиск и подключение. |
 | `ui/settings-popover.ts`, `help-dialog.ts`, `trace-panel.ts`, `toasts.ts` | Настройки, подсказка (F1), журнал протокола, всплывающие сообщения. |
-| `ui/placeholders.ts` | Заглушки режимов Scratch / Python / C#. |
+| `ui/placeholders.ts` | Заглушки режимов Python / C#. |
+| `ui/ask-dialog.ts` | `askText`, `askConfirm`, `showAlert` — свои диалоги вместо `prompt`/`confirm`/`alert`. |
+| `blocks/*` | Редактор блоков, загружается лениво. См. [Редактор блоков](blocks.md). |
 | `ui/dom.ts` | `h(tag, attrs, ...children)` — маленький помощник для создания элементов, `icon(svg)`, `cssVar(name)`. |
 | `styles/tokens.css` | Дизайн-токены и темы. |
 | `styles/app.css` | Раскладка и компоненты. |
@@ -40,10 +42,13 @@
 | Акцент | `--accent`, `--accent-2`, `--accent-soft`, `--accent-contrast` |
 | Состояния | `--ok`, `--warn`, `--danger`, `--danger-strong` |
 | Светодиоды | `--led-off`, `--led-red` … `--led-white` |
+| Блоки | `--block-<категория>`, `-2`, `-3` (`motion`, `looks`, `event`, `control`, `sensing`, `operators`, `data`, `more`), `--block-field`, `--block-field-text`, `--block-glow` |
 | Форма | `--radius-sm`, `--radius`, `--radius-lg`, `--gap`, `--shadow`, `--shadow-lg`, `--header-h` |
 | Шрифты и анимация | `--font`, `--font-display`, `--font-mono`, `--ease`, `--fast`, `--normal` |
 
 **Новая цветовая схема:** добавьте `:root[data-accent="…"] { --accent; --accent-2 }` в `tokens.css` (при необходимости — тёмный вариант), затем пункт в `ACCENTS` в `settings.ts`. Проверьте контраст текста на `--accent` в обеих темах.
+
+**Редактор блоков** берёт цвета блоков из `--block-*` (тема Blockly в `blocks/theme.ts` пересобирается при смене темы), а фон поля, палитры и меню — из переменных scratch-blocks `--colour-*`, переопределённых в `app.css`.
 
 **Canvas** (комната эмулятора) не видит CSS напрямую: цвета берутся через `cssVar()` при каждой перерисовке. Поэтому смена темы подхватывается сразу.
 

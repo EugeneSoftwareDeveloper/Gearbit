@@ -84,7 +84,7 @@ export function createSettingsPopover(): { toggle: (anchor: HTMLElement) => void
       power.value = String(r.maxPowerPercent);
       powerOut.textContent = `${r.maxPowerPercent}%`;
       paintRange(power);
-      powerNote.textContent = `Сборка рекомендует до ${r.profileMaxPowerPercent}%. Действует на всех: пульт, Scratch, Python, C#.`;
+      powerNote.textContent = `Сборка рекомендует до ${r.profileMaxPowerPercent}%. Действует на всех: пульт, блоки, Python, C#.`;
     }
   });
 

@@ -10,7 +10,7 @@
 flowchart TB
     subgraph WIN["Окно Gearbit.App — WPF + WebView2 (C#)"]
         UI["Пульт, телеметрия, редактор Monaco<br/><i>TypeScript</i>"]
-        SCR["Scratch (TurboWarp)<br/>+ расширение «Робот»<br/><i>JavaScript</i>"]
+        SCR["Блоки: scratch-blocks<br/>+ интерпретатор<br/><i>TypeScript</i>"]
     end
 
     subgraph PROC["Программы пользователя — отдельные процессы"]
@@ -68,8 +68,7 @@ flowchart TB
 |---|---|---|---|
 | **Gearbit.App** | C#, WPF + WebView2 | Окно на весь экран, запуск хаба, хостинг веб-UI | 1 |
 | **studio-ui** | TypeScript, Vite, Lit/Preact, Monaco | Пульт, телеметрия, переключатель режимов, редакторы Python/C#, консоль | 1, 3, 4 |
-| **scratch-extension** | JavaScript (TurboWarp extension API) | Категория блоков «Робот» на русском, подключение к хабу | 2 |
-| **TurboWarp scratch-gui** | JavaScript (готовая сборка) | Редактор Scratch внутри окна | 2 |
+| **studio-ui / blocks** | TypeScript, scratch-blocks (Blockly 12) | Вкладка «Блоки»: редактор, блоки робота на русском, интерпретатор — клиент хаба | 2 |
 | **Gearbit.Hub** | C#, ASP.NET Core (Kestrel), JSON-RPC | Единственный владелец робота: API, арбитр, безопасность, телеметрия, запуск программ | 1 |
 | **Gearbit.Core** | C# (.NET 10, без I/O) | `IRobot`, компоненты-возможности, сборки, калибровка, лимиты | 1 |
 | **Gearbit.Protocols.Tudao** | C# (чистые функции) | Кодирование кадров `FF FE…FD FC`, разбор телеметрии 11/19 байт | 1 |
@@ -88,7 +87,7 @@ flowchart TB
 
 ```mermaid
 sequenceDiagram
-    participant S as Scratch-блок «ехать вперёд 50»
+    participant S as Блок «ехать вперёд мощность 50»
     participant H as Hub (RPC)
     participant A as Arbiter + Safety
     participant D as Драйвер SuperBot
@@ -96,7 +95,7 @@ sequenceDiagram
     participant T as WinRT BLE
     participant R as Робот
 
-    S->>H: drive.set {left:50, right:50}
+    S->>H: drive.tank {left:50, right:50, source:"program"}
     H->>A: есть lease? лимиты сборки
     A->>D: желаемое состояние M1=+50%, M2=+50% (инверсия по сборке)
     Note over D: цикл отправки ≤ 20 Гц, «последняя запись побеждает»
@@ -164,4 +163,4 @@ classDiagram
 3. если связь новая (USB, Wi-Fi), написать `ITransport`;
 4. добавить сборки в `profiles/`.
 
-Хаб, UI, Scratch-расширение, Python- и C#-клиенты при этом не меняются: они видят только возможности.
+Хаб, UI, редактор блоков, Python- и C#-клиенты при этом не меняются: они видят только возможности.

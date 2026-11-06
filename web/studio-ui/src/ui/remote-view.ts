@@ -8,8 +8,11 @@ import { h, icon, paintRange } from "./dom";
 import { levelColor, RoomView } from "./room-view";
 import { toast } from "./toasts";
 
-/** Режим «Пульт»: управление, комната/радар, датчики, свет, моторы. */
-export function createRemoteView(openConnect: () => void): HTMLElement {
+/**
+ * Режим «Пульт»: управление, комната/радар, датчики, свет, моторы.
+ * Карточка комнаты (stage) одна на всё приложение: вкладка «Блоки» на время забирает её к себе.
+ */
+export function createRemoteView(openConnect: () => void): { element: HTMLElement; stage: HTMLElement } {
   const banner = createControlBanner();
   const drive = createDriveCard();
   const stage = createStageCard(openConnect);
@@ -17,12 +20,13 @@ export function createRemoteView(openConnect: () => void): HTMLElement {
   const lights = createLightsCard();
   const motors = createMotorsCard();
 
-  return h(
+  const element = h(
     "section",
     { class: "view active", id: "view-remote", "aria-label": "Пульт" },
     banner,
     h("div", { class: "remote-grid" }, h("div", { class: "col" }, drive), h("div", { class: "col" }, stage), h("div", { class: "col col-side" }, sensors, lights, motors)),
   );
+  return { element, stage };
 }
 
 function card(title: string, glyph: string, hint?: string): { root: HTMLElement; body: HTMLElement } {

@@ -29,6 +29,8 @@ export function setupKeyboard(isEnabled: () => boolean): void {
   window.addEventListener("keydown", (e) => {
     if (typingTarget(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.code === "Space" || e.code === "Escape") {
+      // Открытое меню редактора блоков (выпадающий список, ввод числа) само обрабатывает Пробел и Esc.
+      if (e.target instanceof Element && e.target.closest(".blocklyDropDownDiv, .blocklyWidgetDiv")) return;
       // В открытом диалоге Esc закрывает диалог, а не останавливает робота дважды.
       if (e.code === "Escape" && document.querySelector("dialog[open]")) return;
       e.preventDefault();

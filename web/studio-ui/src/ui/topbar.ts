@@ -3,7 +3,7 @@ import { emergencyStop } from "../input/drive";
 import { store } from "../model";
 import { h, icon } from "./dom";
 
-export type Mode = "remote" | "scratch" | "python" | "csharp";
+export type Mode = "remote" | "blocks" | "python" | "csharp";
 
 export interface TopbarHandlers {
   onMode: (mode: Mode) => void;
@@ -15,7 +15,7 @@ export interface TopbarHandlers {
 
 const MODES: { id: Mode; title: string; glyph: string; soon?: boolean }[] = [
   { id: "remote", title: "Пульт", glyph: icons.remote },
-  { id: "scratch", title: "Scratch", glyph: icons.puzzle, soon: true },
+  { id: "blocks", title: "Блоки", glyph: icons.puzzle },
   { id: "python", title: "Python", glyph: icons.python, soon: true },
   { id: "csharp", title: "C#", glyph: icons.csharp, soon: true },
 ];
