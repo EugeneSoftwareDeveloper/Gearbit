@@ -164,6 +164,8 @@ export class RoomView {
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
     const t = this.transform();
+    // Вкладка скрыта (другой режим) — холст нулевого размера, рисовать нечего.
+    if (t.rect.width < 40 || t.rect.height < 40 || t.scale <= 0) return;
     this.canvas.width = Math.round(t.rect.width * dpr);
     this.canvas.height = Math.round(t.rect.height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -300,7 +302,7 @@ export class RoomView {
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, Math.min(r, w / 2, h / 2));
+  ctx.roundRect(x, y, w, h, Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2)));
 }
 
 function withAlpha(color: string, alpha: number): string {
