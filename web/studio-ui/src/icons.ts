@@ -4,6 +4,10 @@ const svg = (body: string) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 
 export const icons = {
+  /** Логотип Gearbit: шестерёнка (железо) с лицом робота, «бит» — улыбка-черта (код). */
+  logo: svg(
+    '<circle cx="12" cy="12" r="6.5"/><path stroke-width="3.2" stroke-linecap="butt" d="M18.5 12H21.6M16.6 16.6l2.2 2.2M12 18.5v3.1M7.4 16.6l-2.2 2.2M5.5 12H2.4M7.4 7.4 5.2 5.2M12 5.5V2.4M16.6 7.4l2.2-2.2"/><circle cx="9.7" cy="11.2" r="1.2" fill="currentColor" stroke="none"/><circle cx="14.3" cy="11.2" r="1.2" fill="currentColor" stroke="none"/><path d="M10.3 14.4h3.4"/>',
+  ),
   robot: svg('<rect x="4" y="8" width="16" height="12" rx="4"/><circle cx="9" cy="14" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><path d="M12 4v4M9 4h6"/>'),
   gamepad: svg('<path d="M6 9h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.2 2L15 14H9l-1.8 2A3 3 0 0 1 2 14v-1a4 4 0 0 1 4-4z"/><path d="M7 12v3M5.5 13.5h3"/><circle cx="16" cy="12.5" r=".8" fill="currentColor"/><circle cx="18" cy="14.5" r=".8" fill="currentColor"/>'),
   keyboard: svg('<rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>'),

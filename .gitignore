@@ -31,7 +31,7 @@ venv/
 .pytest_cache/
 
 # Сгенерированный UI внутри хаба (собирается из web/studio-ui)
-src/BotStudio.Hub/wwwroot/
+src/Gearbit.Hub/wwwroot/
 
 # OS
 Thumbs.db

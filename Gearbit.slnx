@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Gearbit.Core/Gearbit.Core.csproj" />
+    <Project Path="src/Gearbit.Emulator/Gearbit.Emulator.csproj" />
+    <Project Path="src/Gearbit.Hub/Gearbit.Hub.csproj" />
+    <Project Path="src/Gearbit.Protocols.Tudao/Gearbit.Protocols.Tudao.csproj" />
+    <Project Path="src/Gearbit.Server/Gearbit.Server.csproj" />
+    <Project Path="src/Gearbit.Transport.WinRtBle/Gearbit.Transport.WinRtBle.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Gearbit.Tests/Gearbit.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,4 +1,4 @@
-# BotStudio
+# Gearbit
 
 Программа для Windows, чтобы **управлять роботом-конструктором с ПК и программировать его** на Scratch, Python и C#. Рассчитана на занятия с ребёнком за большим монитором, с клавиатурой, мышью и геймпадом.
 
@@ -22,12 +22,12 @@
 Нужно: Windows 10/11, .NET SDK 10, Node.js 20+, Bluetooth 4.0+ (для реального робота).
 
 ```bash
-git clone https://github.com/EugeneSoftwareDeveloper/BotStudio.git
-cd BotStudio
+git clone https://github.com/EugeneSoftwareDeveloper/Gearbit.git
+cd Gearbit
 dotnet build
 dotnet test
 cd web/studio-ui && npm install && npm run build && cd ../..
-dotnet run --project src/BotStudio.Server
+dotnet run --project src/Gearbit.Server
 ```
 
 Затем откройте http://localhost:5280 и выберите робота **«Эмулятор SuperBot»**: он работает без железа.

@@ -66,13 +66,13 @@ export function createTopbar(handlers: TopbarHandlers): { element: HTMLElement; 
             : "подключить";
     const moving = Object.values(s.telemetry?.motors ?? {}).some((p) => p !== 0);
     stop.classList.toggle("moving", state === "connected" && moving);
-    document.title = r && state === "connected" ? `${r.name} — BotStudio` : "BotStudio";
+    document.title = r && state === "connected" ? `${r.name} — Gearbit` : "Gearbit";
   });
 
   const element = h(
     "header",
     { class: "topbar" },
-    h("div", { class: "brand" }, h("span", { class: "brand-logo" }, icon(icons.robot)), h("span", { class: "brand-name" }, "BotStudio")),
+    h("div", { class: "brand" }, h("span", { class: "brand-logo" }, icon(icons.logo)), h("span", { class: "brand-name" }, "Gearbit")),
     modes,
     h("div", { class: "spacer" }),
     pill,

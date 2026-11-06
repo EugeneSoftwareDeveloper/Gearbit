@@ -25,7 +25,7 @@ const SAMPLES = {
     title: "Python",
     glyph: icons.python,
     text: "Настоящий Python: пишите здесь или в любимом редакторе (VS Code, IDLE). Программа работает в отдельном процессе — СТОП прерывает её всегда.",
-    code: `from botstudio import robot, wait
+    code: `from gearbit import robot, wait
 
 while True:
     if robot.distance("front") < 2:
@@ -39,7 +39,7 @@ while True:
   csharp: {
     title: "C#",
     glyph: icons.csharp,
-    text: "C#-скрипты с готовой переменной robot. Для взрослых — пакет BotStudio.Client для своих приложений в Visual Studio.",
+    text: "C#-скрипты с готовой переменной robot. Для взрослых — пакет Gearbit.Client для своих приложений в Visual Studio.",
     code: `while (true)
 {
     if (robot.Distance("front") < 2)

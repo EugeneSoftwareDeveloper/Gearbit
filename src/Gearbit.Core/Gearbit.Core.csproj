@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Gearbit.Core</RootNamespace>
+    <Description>Модель робота (компоненты-возможности), описания устройств и сборок, абстракции транспорта и протокола.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Gearbit.Tests" />
+  </ItemGroup>
+
+</Project>

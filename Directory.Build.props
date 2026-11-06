@@ -11,8 +11,8 @@
     <NoWarn>$(NoWarn);CS1591;CS1573;CA1515;CA1707;CA1848;CA1859;CA2007</NoWarn>
     <Version>0.1.0</Version>
     <Authors>EugeneSoftwareDeveloper</Authors>
-    <Product>BotStudio</Product>
-    <RepositoryUrl>https://github.com/EugeneSoftwareDeveloper/BotStudio</RepositoryUrl>
+    <Product>Gearbit</Product>
+    <RepositoryUrl>https://github.com/EugeneSoftwareDeveloper/Gearbit</RepositoryUrl>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
 </Project>

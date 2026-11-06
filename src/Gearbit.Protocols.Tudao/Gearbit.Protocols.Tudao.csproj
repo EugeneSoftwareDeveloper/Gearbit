@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Gearbit.Protocols.Tudao</RootNamespace>
+    <Description>Протокол контроллера TUDAO (Apitor / Makerzoid SuperBot): кадры FF FE … FD FC через Nordic UART.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Gearbit.Core\Gearbit.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Gearbit.Tests" />
+  </ItemGroup>
+
+</Project>

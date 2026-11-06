@@ -1,4 +1,4 @@
-# BotStudio — архитектура компонентов
+# Gearbit — архитектура компонентов
 
 Сопутствующие документы: [PLAN.md](PLAN.md) (план и этапы), [PROTOCOL-SUPERBOT.md](PROTOCOL-SUPERBOT.md) (протокол).
 
@@ -8,18 +8,18 @@
 
 ```mermaid
 flowchart TB
-    subgraph WIN["Окно BotStudio.App — WPF + WebView2 (C#)"]
+    subgraph WIN["Окно Gearbit.App — WPF + WebView2 (C#)"]
         UI["Пульт, телеметрия, редактор Monaco<br/><i>TypeScript</i>"]
         SCR["Scratch (TurboWarp)<br/>+ расширение «Робот»<br/><i>JavaScript</i>"]
     end
 
     subgraph PROC["Программы пользователя — отдельные процессы"]
-        PY["Python-программа<br/>+ пакет botstudio<br/><i>Python</i>"]
+        PY["Python-программа<br/>+ пакет gearbit<br/><i>Python</i>"]
         CS["C#-программа<br/>ScriptHost (Roslyn)<br/><i>C#</i>"]
         IDE["Внешние IDE:<br/>VS Code, Visual Studio,<br/>Polyglot Notebooks"]
     end
 
-    subgraph HUB["BotStudio.Hub — ASP.NET Core (C#)"]
+    subgraph HUB["Gearbit.Hub — ASP.NET Core (C#)"]
         RPC["JSON-RPC API<br/>WebSocket, localhost"]
         ARB["ControlArbiter<br/>кто за рулём"]
         SAFE["SafetySupervisor<br/>СТОП, watchdog, лимиты"]
@@ -27,7 +27,7 @@ flowchart TB
         RUN["ProgramRunner<br/>запуск и kill процессов"]
     end
 
-    subgraph CORE["BotStudio.Core + драйверы (C#)"]
+    subgraph CORE["Gearbit.Core + драйверы (C#)"]
         MODEL["Модель робота<br/>IRobot, компоненты,<br/>сборки, калибровка"]
         DRV["Драйвер<br/>желаемое состояние → кадры"]
         PROTO["Протоколы (чистые функции)<br/>TudaoUart · ApitorF0FF"]
@@ -66,19 +66,19 @@ flowchart TB
 
 | Компонент | Язык / технология | Отвечает за | Этап |
 |---|---|---|---|
-| **BotStudio.App** | C#, WPF + WebView2 | Окно на весь экран, запуск хаба, хостинг веб-UI | 1 |
+| **Gearbit.App** | C#, WPF + WebView2 | Окно на весь экран, запуск хаба, хостинг веб-UI | 1 |
 | **studio-ui** | TypeScript, Vite, Lit/Preact, Monaco | Пульт, телеметрия, переключатель режимов, редакторы Python/C#, консоль | 1, 3, 4 |
 | **scratch-extension** | JavaScript (TurboWarp extension API) | Категория блоков «Робот» на русском, подключение к хабу | 2 |
 | **TurboWarp scratch-gui** | JavaScript (готовая сборка) | Редактор Scratch внутри окна | 2 |
-| **BotStudio.Hub** | C#, ASP.NET Core (Kestrel), JSON-RPC | Единственный владелец робота: API, арбитр, безопасность, телеметрия, запуск программ | 1 |
-| **BotStudio.Core** | C# (.NET 10, без I/O) | `IRobot`, компоненты-возможности, сборки, калибровка, лимиты | 1 |
-| **BotStudio.Protocols.Tudao** | C# (чистые функции) | Кодирование кадров `FF FE…FD FC`, разбор телеметрии 11/19 байт | 1 |
-| **BotStudio.Protocols.Apitor** | C# | Кадры `55 AA…` (Robot J) — проверка расширяемости | 6 |
-| **BotStudio.Transport.WinRtBle** | C#, WinRT `Windows.Devices.Bluetooth` | Скан, подключение, запись чанками, уведомления, переподключение | 1 |
-| **BotStudio.Simulator** | C# (модель) + TS (отрисовка на canvas) | Виртуальный робот с теми же компонентами | 5 |
-| **BotStudio.ScriptHost** | C#, Roslyn Scripting | Компиляция и запуск C#-скриптов в отдельном процессе | 4 |
-| **BotStudio.Client** | C# (NuGet) | Клиент хаба для своих C#-программ и Notebooks | 4 |
-| **botstudio** (pip) | Python 3 (`websockets`) | Клиент хаба для Python, простой синхронный API | 3 |
+| **Gearbit.Hub** | C#, ASP.NET Core (Kestrel), JSON-RPC | Единственный владелец робота: API, арбитр, безопасность, телеметрия, запуск программ | 1 |
+| **Gearbit.Core** | C# (.NET 10, без I/O) | `IRobot`, компоненты-возможности, сборки, калибровка, лимиты | 1 |
+| **Gearbit.Protocols.Tudao** | C# (чистые функции) | Кодирование кадров `FF FE…FD FC`, разбор телеметрии 11/19 байт | 1 |
+| **Gearbit.Protocols.Apitor** | C# | Кадры `55 AA…` (Robot J) — проверка расширяемости | 6 |
+| **Gearbit.Transport.WinRtBle** | C#, WinRT `Windows.Devices.Bluetooth` | Скан, подключение, запись чанками, уведомления, переподключение | 1 |
+| **Gearbit.Simulator** | C# (модель) + TS (отрисовка на canvas) | Виртуальный робот с теми же компонентами | 5 |
+| **Gearbit.ScriptHost** | C#, Roslyn Scripting | Компиляция и запуск C#-скриптов в отдельном процессе | 4 |
+| **Gearbit.Client** | C# (NuGet) | Клиент хаба для своих C#-программ и Notebooks | 4 |
+| **gearbit** (pip) | Python 3 (`websockets`) | Клиент хаба для Python, простой синхронный API | 3 |
 | **Python embeddable** | CPython (portable) | Python без установки | 3 |
 | **devices/\*.json** | JSON | Описание модели робота: как найти, UUID, компоненты, параметры протокола | 1 |
 | **profiles/\*.json** | JSON | Сборки: какой мотор левый, инверсия, куда смотрят датчики, лимиты | 1 |

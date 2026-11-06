@@ -1,8 +1,8 @@
 {
-  "name": "botstudio-studio-ui",
+  "name": "gearbit-studio-ui",
   "private": true,
   "version": "0.1.0",
-  "description": "Веб-интерфейс BotStudio: пульт, датчики, эмулятор, темы.",
+  "description": "Веб-интерфейс Gearbit: пульт, датчики, эмулятор, темы.",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -19,7 +19,7 @@ export const ACCENTS: { id: Accent; name: string; color: string }[] = [
   { id: "candy", name: "Конфета", color: "#e5488f" },
 ];
 
-const KEY = "botstudio.settings";
+const KEY = "gearbit.settings";
 const defaults: Settings = { theme: "system", accent: "ocean", largeText: false, speed: 70, driveMode: "buttons" };
 const listeners = new Set<(s: Settings) => void>();
 const media = window.matchMedia("(prefers-color-scheme: dark)");

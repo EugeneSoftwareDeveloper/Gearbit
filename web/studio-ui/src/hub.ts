@@ -126,4 +126,4 @@ export class HubClient {
 }
 
 const protocol = location.protocol === "https:" ? "wss" : "ws";
-export const hub = new HubClient(`${protocol}://${location.host}/ws`, "Пульт BotStudio");
+export const hub = new HubClient(`${protocol}://${location.host}/ws`, "Пульт Gearbit");

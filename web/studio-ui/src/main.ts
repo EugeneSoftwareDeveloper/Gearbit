@@ -55,7 +55,7 @@ const offline = h(
     "div",
     { class: "card", style: "padding:20px 24px" },
     h("span", { class: "spinner" }),
-    h("div", {}, h("div", {}, "Нет связи с хабом BotStudio"), h("div", { class: "muted", style: "font-weight:400" }, "Запустите BotStudio (или BotStudio.Server) — пульт подключится сам.")),
+    h("div", {}, h("div", {}, "Нет связи с хабом Gearbit"), h("div", { class: "muted", style: "font-weight:400" }, "Запустите Gearbit (или Gearbit.Server) — пульт подключится сам.")),
   ),
 );
 document.body.append(offline);
@@ -111,8 +111,8 @@ hub.start();
 
 // Подсказка для первого запуска.
 try {
-  if (!localStorage.getItem("botstudio.seen")) {
-    localStorage.setItem("botstudio.seen", "1");
+  if (!localStorage.getItem("gearbit.seen")) {
+    localStorage.setItem("gearbit.seen", "1");
     window.setTimeout(() => toast("Нажмите F1 — подсказка по клавишам и геймпаду", "info", 6000), 1500);
   }
 } catch {

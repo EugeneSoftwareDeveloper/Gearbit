@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1861;CA2000</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Gearbit.Core\Gearbit.Core.csproj" />
+    <ProjectReference Include="..\..\src\Gearbit.Protocols.Tudao\Gearbit.Protocols.Tudao.csproj" />
+    <ProjectReference Include="..\..\src\Gearbit.Emulator\Gearbit.Emulator.csproj" />
+    <ProjectReference Include="..\..\src\Gearbit.Hub\Gearbit.Hub.csproj" />
+  </ItemGroup>
+
+</Project>

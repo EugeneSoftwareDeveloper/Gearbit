@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Gearbit.Emulator</RootNamespace>
+    <Description>Эмулятор прошивки TUDAO: виртуальная машинка в 2D-комнате с датчиками расстояния. Позволяет работать без робота.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Gearbit.Core\Gearbit.Core.csproj" />
+    <ProjectReference Include="..\Gearbit.Protocols.Tudao\Gearbit.Protocols.Tudao.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Gearbit.Tests" />
+  </ItemGroup>
+
+</Project>

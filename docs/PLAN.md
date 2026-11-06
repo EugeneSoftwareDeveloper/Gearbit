@@ -1,6 +1,6 @@
-# BotStudio — план реализации
+# Gearbit — план реализации
 
-> Рабочее название: **BotStudio**. Это программа для Windows, через которую ребёнок за ПК (большой монитор, клавиатура, мышь, геймпад) управляет роботом-конструктором и программирует его на **Scratch**, **Python** и **C#**.
+> Рабочее название: **Gearbit**. Это программа для Windows, через которую ребёнок за ПК (большой монитор, клавиатура, мышь, геймпад) управляет роботом-конструктором и программирует его на **Scratch**, **Python** и **C#**.
 > Первый робот — **Apitor / Makerzoid SuperBot** (контроллер TUDAO). Архитектура сразу рассчитана на другие похожие роботы.
 
 Сопутствующие документы:
@@ -39,13 +39,13 @@
 - пользовательские программы можно запускать **в отдельном процессе** и при необходимости просто убить его.
 
 ```
-┌──────────────────────────── BotStudio (окно WPF + WebView2) ─────────────────────────────┐
+┌──────────────────────────── Gearbit (окно WPF + WebView2) ─────────────────────────────┐
 │  [Пульт]   [Scratch]   [Python]   [C#]          Робот ▾   Сборка ▾   🔋   ● Подключён  [СТОП] │
 │                                                                                           │
 │   UI (HTML/TS): пульт, редактор Monaco, встроенный Scratch (TurboWarp), телеметрия, консоль │
 └───────────────┬───────────────────────────────────────────────────────────────────────────┘
                 │ JSON-RPC / WebSocket  ws://localhost:PORT
-┌───────────────▼───────────────────── BotStudio.Hub (ASP.NET Core) ────────────────────────┐
+┌───────────────▼───────────────────── Gearbit.Hub (ASP.NET Core) ────────────────────────┐
 │ RobotManager ─ ControlArbiter ─ SafetySupervisor (СТОП, watchdog, лимиты) ─ Telemetry bus │
 │ ProgramRunner: запускает Python/C# в отдельных процессах, СТОП = kill + motors off       │
 └───────────────┬───────────────────────────────────────────────────────────────────────────┘
@@ -57,7 +57,7 @@
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
        ▲                         ▲                              ▲
  Python-скрипт            C#-скрипт / NuGet              Scratch-расширение
- (пакет `botstudio`)     (`BotStudio.Client`)           (JS, тот же WebSocket)
+ (пакет `gearbit`)     (`Gearbit.Client`)           (JS, тот же WebSocket)
 ```
 
 ### 2.2. Модель робота: возможности, а не классы
@@ -177,8 +177,8 @@ log         {dir:"tx"|"rx", hex}      (режим разработчика)
 | Язык | Где редактируется | Как запускается | СТОП |
 |---|---|---|---|
 | Scratch | Встроенный TurboWarp (scratch-gui) + наше расширение | Внутри Scratch VM. Расширение — клиент хаба | Красный флаг/стоп Scratch + общий СТОП |
-| Python | Monaco в BotStudio **или** любой внешний редактор (VS Code, IDLE) | Отдельный процесс: встроенный portable Python + пакет `botstudio` | Kill процесса + motors off |
-| C# | Monaco в BotStudio **или** Visual Studio / Polyglot Notebooks | Отдельный процесс `BotStudio.ScriptHost` (Roslyn Scripting), глобальная переменная `robot` | Kill процесса + motors off |
+| Python | Monaco в Gearbit **или** любой внешний редактор (VS Code, IDLE) | Отдельный процесс: встроенный portable Python + пакет `gearbit` | Kill процесса + motors off |
+| C# | Monaco в Gearbit **или** Visual Studio / Polyglot Notebooks | Отдельный процесс `Gearbit.ScriptHost` (Roslyn Scripting), глобальная переменная `robot` | Kill процесса + motors off |
 
 Пользовательский код работает в отдельном процессе, потому что бесконечный цикл `while(true){}` в .NET нельзя прервать внутри процесса. Kill процесса надёжен всегда.
 
@@ -202,7 +202,7 @@ log         {dir:"tx"|"rx", hex}      (режим разработчика)
 
 **Python:**
 ```python
-from botstudio import robot, wait
+from gearbit import robot, wait
 
 while True:
     if robot.distance("front") < 2:
@@ -241,7 +241,7 @@ while (true)
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ BotStudio   [🎮 Пульт][🧩 Scratch][🐍 Python][C#]   SuperBot ▾ Машинка ▾ 🔋78% ●  [ СТОП ] │
+│ Gearbit   [🎮 Пульт][🧩 Scratch][🐍 Python][C#]   SuperBot ▾ Машинка ▾ 🔋78% ●  [ СТОП ] │
 ├──────────────────────────────────────────────────────┬────────────────────────┤
 │                                                      │ Датчики                │
 │        Рабочая область режима                        │ впереди ███░░ 3        │
@@ -269,7 +269,7 @@ while (true)
 - **Детский / взрослый режим**: во взрослом видны лог байтов, сырые кадры, настройки сборки и калибровки.
 - **Мастер калибровки датчиков**: «поставь коробку на 5 см → нажми» → таблица уровень → см в сборке.
 - **Задания** (этап 6): карточки «Умный тормоз», «Исследователь», «Лабиринт», «Робот-пёс» с подсказками и шаблонами на трёх языках.
-- Проекты хранятся обычными файлами в `Документы\BotStudio\` (`.sb3`, `.py`, `.cs`) с автосохранением.
+- Проекты хранятся обычными файлами в `Документы\Gearbit\` (`.sb3`, `.py`, `.cs`) с автосохранением.
 
 ---
 
@@ -284,7 +284,7 @@ while (true)
 | UI | TypeScript + Vite (Lit или Preact), Monaco Editor | Лёгкий фронтенд, Monaco — тот же редактор, что в VS Code |
 | Scratch | Сборка **TurboWarp scratch-gui** + наше расширение | Быстрее и стабильнее vanilla Scratch, удобные пользовательские расширения |
 | C#-скрипты | Roslyn Scripting в процессе `ScriptHost` | Компиляция на лету, понятные ошибки с номерами строк |
-| Python | Встроенный **Python embeddable** (portable) + пакет `botstudio` (`websockets`) | Ничего не нужно ставить. Пакет работает и из внешних IDE |
+| Python | Встроенный **Python embeddable** (portable) + пакет `gearbit` (`websockets`) | Ничего не нужно ставить. Пакет работает и из внешних IDE |
 | Тесты | xUnit + «золотые» кадры из реальных захватов, Playwright для UI | Протокол — чистые функции, тестировать легко |
 | Установка | Один каталог или MSIX, позже — автообновление | — |
 
@@ -295,20 +295,20 @@ while (true)
 ```
 /docs                       PLAN.md, PROTOCOL-SUPERBOT.md, заметки по захватам
 /src
-  BotStudio.Core            абстракции: IRobot, компоненты, телеметрия, сборки, безопасность (без I/O)
-  BotStudio.Protocols.Tudao кодек FF FE…FD FC + тесты на золотых кадрах
-  BotStudio.Protocols.Apitor  (этап 6) кодек 55 AA… — проверка расширяемости
-  BotStudio.Transport.WinRtBle
-  BotStudio.Simulator       виртуальный робот: 2D-физика, лучи для датчиков расстояния
-  BotStudio.Hub             ASP.NET Core: RobotManager, Arbiter, Safety, JSON-RPC, ProgramRunner
-  BotStudio.ScriptHost      раннер C#-скриптов (Roslyn)
-  BotStudio.Client          NuGet для своих C#-программ (Polyglot Notebooks, консоль)
-  BotStudio.App             WPF + WebView2 оболочка
+  Gearbit.Core            абстракции: IRobot, компоненты, телеметрия, сборки, безопасность (без I/O)
+  Gearbit.Protocols.Tudao кодек FF FE…FD FC + тесты на золотых кадрах
+  Gearbit.Protocols.Apitor  (этап 6) кодек 55 AA… — проверка расширяемости
+  Gearbit.Transport.WinRtBle
+  Gearbit.Simulator       виртуальный робот: 2D-физика, лучи для датчиков расстояния
+  Gearbit.Hub             ASP.NET Core: RobotManager, Arbiter, Safety, JSON-RPC, ProgramRunner
+  Gearbit.ScriptHost      раннер C#-скриптов (Roslyn)
+  Gearbit.Client          NuGet для своих C#-программ (Polyglot Notebooks, консоль)
+  Gearbit.App             WPF + WebView2 оболочка
 /web
   studio-ui                 пульт, редакторы, телеметрия (TS)
   scratch-extension         расширение «Робот» для TurboWarp
 /python
-  botstudio                 Python-клиент (pip install -e)
+  gearbit                 Python-клиент (pip install -e)
 /devices                    дескрипторы устройств (*.json)
 /profiles                   сборки (*.json)
 /tools
@@ -344,20 +344,20 @@ while (true)
 
 ### Этап 2. Scratch (≈1 неделя)
 - [ ] Расширение «Робот» для TurboWarp: блоки на русском (моторы, езда, свет, расстояние, наклон, батарея; события «когда расстояние < N», «когда наклон»).
-- [ ] Встроить сборку TurboWarp в BotStudio, расширение загружается автоматически.
+- [ ] Встроить сборку TurboWarp в Gearbit, расширение загружается автоматически.
 - [ ] Блоки показываются по возможностям подключённого робота.
 - [ ] Примеры: «Умный тормоз», «Исследователь».
 - **Результат:** программирование блоками на большом экране, робот выполняет программу вживую.
 
 ### Этап 3. Python (≈1 неделя)
-- [ ] Пакет `botstudio`: синхронный и простой API для детей (`robot.forward(50)`), внутри — WebSocket к хабу.
+- [ ] Пакет `gearbit`: синхронный и простой API для детей (`robot.forward(50)`), внутри — WebSocket к хабу.
 - [ ] Встроенный portable Python, `ProgramRunner` (запуск, stdout/stderr, СТОП = kill).
 - [ ] Monaco-редактор: подсветка, автодополнение по stub-файлу `.pyi`, ошибка с номером строки.
 - [ ] Возможность работать из VS Code (`pip install -e python/`).
 - **Результат:** те же задания текстом на Python.
 
 ### Этап 4. C# (≈1 неделя)
-- [ ] `BotStudio.Client` (NuGet): async API, `IAsyncDisposable`, события.
+- [ ] `Gearbit.Client` (NuGet): async API, `IAsyncDisposable`, события.
 - [ ] `ScriptHost`: Roslyn Scripting, глобальная переменная `robot`, ошибки компиляции → строки в редакторе.
 - [ ] Monaco для C# с подсветкой и автодополнением по API робота.
 - [ ] Примеры для Polyglot Notebooks в VS Code («ячейка → робот едет»).

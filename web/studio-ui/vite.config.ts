@@ -1,13 +1,13 @@
 import { defineConfig } from "vite";
 
-// Сборка кладётся в хаб: src/BotStudio.Hub/wwwroot (оттуда её раздаёт сервер и WPF-приложение).
+// Сборка кладётся в хаб: src/Gearbit.Hub/wwwroot (оттуда её раздаёт сервер и WPF-приложение).
 // В режиме разработки (npm run dev) запросы /ws и /api уходят на запущенный хаб.
-const hub = process.env.BOTSTUDIO_HUB ?? "http://localhost:5280";
+const hub = process.env.GEARBIT_HUB ?? "http://localhost:5280";
 
 export default defineConfig({
   base: "./",
   build: {
-    outDir: "../../src/BotStudio.Hub/wwwroot",
+    outDir: "../../src/Gearbit.Hub/wwwroot",
     emptyOutDir: true,
     target: "es2022",
   },
