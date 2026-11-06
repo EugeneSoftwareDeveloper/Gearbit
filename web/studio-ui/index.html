@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>BotStudio</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='8' width='24' height='18' rx='6' fill='%232f7cf6'/%3E%3Ccircle cx='12' cy='17' r='3' fill='white'/%3E%3Ccircle cx='20' cy='17' r='3' fill='white'/%3E%3Crect x='14' y='2' width='4' height='7' rx='2' fill='%232f7cf6'/%3E%3C/svg%3E" />
+    <script>
+      // Тема применяется до отрисовки, чтобы не было вспышки светлого экрана ночью.
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem("botstudio.settings") || "{}");
+          var mode = s.theme || "system";
+          var dark = mode === "dark" || (mode === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+          document.documentElement.dataset.accent = s.accent || "ocean";
+          if (s.largeText) document.documentElement.dataset.large = "true";
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

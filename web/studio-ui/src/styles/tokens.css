@@ -1,0 +1,89 @@
+/*
+ * Дизайн-токены. Тема (светлая/тёмная) — data-theme на <html>, акцент — data-accent.
+ * Все компоненты берут цвета только отсюда, поэтому новая тема — это новый блок переменных.
+ */
+:root {
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "Cascadia Mono", Consolas, ui-monospace, monospace;
+
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 22px;
+  --gap: 16px;
+  --header-h: 64px;
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --fast: 120ms;
+  --normal: 220ms;
+
+  --danger: #e5383b;
+  --danger-strong: #c81d25;
+  --ok: #1fa36b;
+  --warn: #f2a516;
+
+  /* Цвета светодиодов робота: одинаковы во всех темах. */
+  --led-off: #6b7280;
+  --led-red: #ef4444;
+  --led-orange: #f97316;
+  --led-yellow: #facc15;
+  --led-green: #22c55e;
+  --led-cyan: #06b6d4;
+  --led-blue: #3b82f6;
+  --led-purple: #a855f7;
+  --led-white: #f8fafc;
+}
+
+/* ---------- Светлая ---------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #eef2f9;
+  --bg-grad: radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%);
+  --surface: #ffffff;
+  --surface-2: #f3f5fb;
+  --surface-3: #e7ebf5;
+  --border: #dbe1ee;
+  --text: #121628;
+  --text-muted: #5b647c;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 8px 24px rgb(16 24 40 / 0.06);
+  --shadow-lg: 0 24px 64px rgb(16 24 40 / 0.18);
+  --grid: rgb(18 22 40 / 0.06);
+  --overlay: rgb(18 22 40 / 0.35);
+}
+
+/* ---------- Тёмная (ночной режим) ---------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0f1c;
+  --bg-grad: radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%);
+  --surface: #141a2d;
+  --surface-2: #1b2238;
+  --surface-3: #252e4a;
+  --border: #29324f;
+  --text: #e8ecf8;
+  --text-muted: #9aa4c2;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+  --shadow-lg: 0 24px 64px rgb(0 0 0 / 0.5);
+  --grid: rgb(232 236 248 / 0.05);
+  --overlay: rgb(0 0 0 / 0.55);
+}
+
+/* ---------- Акценты (палитры) ---------- */
+:root[data-accent="ocean"]  { --accent: #2f7cf6; --accent-2: #18b4e8; }
+:root[data-accent="forest"] { --accent: #17a06a; --accent-2: #7cc84a; }
+:root[data-accent="sunset"] { --accent: #f2762e; --accent-2: #f2b134; }
+:root[data-accent="cosmos"] { --accent: #8b5cf6; --accent-2: #ec4899; }
+:root[data-accent="candy"]  { --accent: #e5488f; --accent-2: #f59e0b; }
+
+:root[data-theme="dark"][data-accent="ocean"]  { --accent: #4d8ff8; }
+:root[data-theme="dark"][data-accent="cosmos"] { --accent: #9d78f8; }
+
+:root {
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-contrast: #ffffff;
+}
+
+/* Крупный текст (удобно с расстояния и для чтения ребёнком). */
+:root[data-large="true"] {
+  font-size: 18px;
+}
