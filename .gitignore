@@ -40,3 +40,6 @@ Thumbs.db
 # Локальные захваты и логи (не коммитим сырые логи с устройств)
 *.log
 captures-local/
+
+# Claude Code: личные настройки не коммитим, launch.json — общий
+.claude/settings.local.json

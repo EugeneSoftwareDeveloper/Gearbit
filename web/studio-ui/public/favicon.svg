@@ -6,6 +6,6 @@
     <path stroke-width="3.2" stroke-linecap="butt" d="M18.5 12H21.6M16.6 16.6l2.2 2.2M12 18.5v3.1M7.4 16.6l-2.2 2.2M5.5 12H2.4M7.4 7.4 5.2 5.2M12 5.5V2.4M16.6 7.4l2.2-2.2"/>
     <circle cx="9.7" cy="11.2" r="1.2" fill="#fff" stroke="none"/>
     <circle cx="14.3" cy="11.2" r="1.2" fill="#fff" stroke="none"/>
-    <path d="M10.3 14.4h3.4"/>
+    <path d="M10.2 14q1.8 1.7 3.6 0"/>
   </g>
 </svg>

@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Gearbit.App/Gearbit.App.csproj" />
     <Project Path="src/Gearbit.Core/Gearbit.Core.csproj" />
     <Project Path="src/Gearbit.Emulator/Gearbit.Emulator.csproj" />
     <Project Path="src/Gearbit.Hub/Gearbit.Hub.csproj" />

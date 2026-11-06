@@ -63,6 +63,9 @@ function apply(): void {
   root.dataset.accent = current.accent;
   if (current.largeText) root.dataset.large = "true";
   else delete root.dataset.large;
+  // В окне Gearbit (WebView2) сообщаем тему, чтобы заголовок окна тоже стал тёмным ночью.
+  const host = (window as Window & { chrome?: { webview?: { postMessage(message: unknown): void } } }).chrome?.webview;
+  host?.postMessage({ type: "theme", theme: root.dataset.theme });
   for (const l of listeners) l(current);
 }
 

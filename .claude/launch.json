@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gearbit-server",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Gearbit.Server"],
+      "port": 5280
+    }
+  ]
+}

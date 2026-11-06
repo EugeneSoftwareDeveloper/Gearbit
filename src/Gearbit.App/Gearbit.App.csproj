@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Gearbit.App</RootNamespace>
+    <AssemblyName>Gearbit</AssemblyName>
+    <ApplicationIcon>Assets\gearbit.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Description>Gearbit для Windows: окно с пультом и средами программирования, хаб и Bluetooth внутри одного процесса.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Gearbit.Hub\Gearbit.Hub.csproj" />
+    <ProjectReference Include="..\Gearbit.Transport.WinRtBle\Gearbit.Transport.WinRtBle.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\gearbit.ico" />
+  </ItemGroup>
+
+</Project>
