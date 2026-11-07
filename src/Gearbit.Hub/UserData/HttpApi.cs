@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Http.Features;
 namespace Gearbit.Hub.UserData;
 
 /// <summary>
-/// HTTP-часть хаба для интерфейса: настройки (/api/settings). Робот через HTTP не управляется — только через /ws.
+/// HTTP-часть хаба для интерфейса: настройки (/api/settings) и история программ (/api/history).
+/// Робот через HTTP не управляется — только через /ws.
 /// </summary>
 internal static class HttpApi
 {
@@ -32,7 +33,40 @@ internal static class HttpApi
             store.Write(settings);
             return Results.NoContent();
         });
+
+        app.MapGet("/api/history/{kind}", (string kind, HistoryStore history) =>
+            HistoryStore.IsKind(kind) ? Results.Json(history.List(kind)) : Results.NotFound());
+
+        app.MapGet("/api/history/{kind}/{id}", (string kind, string id, HistoryStore history) =>
+            HistoryStore.IsKind(kind) && history.Get(kind, id) is { } snapshot ? Results.Json(snapshot) : Results.NotFound());
+
+        app.MapPost("/api/history/{kind}", async (string kind, HttpContext context, HistoryStore history) =>
+        {
+            if (!HistoryStore.IsKind(kind))
+            {
+                return Results.NotFound();
+            }
+
+            var (body, refused) = await ReadJsonAsync(context, allowedOrigins, HistoryStore.MaxBytes).ConfigureAwait(false);
+            if (refused is not null)
+            {
+                return refused;
+            }
+
+            if (body is not JsonObject request
+                || Text(request["content"]) is not { } content
+                || Text(request["reason"]) is not { } reason
+                || !HistoryStore.IsReason(reason))
+            {
+                return Results.BadRequest();
+            }
+
+            var (entry, saved) = history.Add(kind, reason, Text(request["name"]), content);
+            return Results.Json(new { entry, saved }, statusCode: saved ? StatusCodes.Status201Created : StatusCodes.Status200OK);
+        });
     }
+
+    private static string? Text(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
     /// <summary>
     /// Тело запроса на запись, если его можно принять. Писать может только свой интерфейс:

@@ -1,4 +1,5 @@
 import * as SB from "scratch-blocks";
+import { createHistory, type HistorySnapshot } from "../history";
 import { lang, messages } from "../i18n";
 import { icons } from "../icons";
 import { emergencyStop, onStop } from "../input/drive";
@@ -6,6 +7,7 @@ import { onSettings, settings } from "../settings";
 import { askConfirm, askText, showAlert } from "../ui/ask-dialog";
 import { h, icon } from "../ui/dom";
 import { createExamplesDialog } from "../ui/examples-dialog";
+import { createHistoryDialog } from "../ui/history-dialog";
 import { openTextFile, saveJsonFile } from "../ui/files";
 import { createSensorsCard } from "../ui/mini-sensors";
 import { toast } from "../ui/toasts";
@@ -35,6 +37,8 @@ const M = messages({
     open: "Открыть",
     saveTitle: "Сохранить программу в файл",
     save: "Сохранить",
+    historyTitle: "История: вернуть прежнюю версию программы",
+    history: "История",
     newProgram: "Новая программа",
     variables: "Переменные",
     variable: "Переменная",
@@ -42,17 +46,21 @@ const M = messages({
     addFlag: "Добавьте блок «когда флажок нажат» из «Событий» и соберите программу под ним.",
     hidden: "Программа остановлена: окно свернули.",
     noVariables: "Создайте переменную в «Переменных» и отметьте её галочкой — здесь появится её значение.",
-    newConfirm: "Убрать все блоки и начать с чистого листа? Сохраните программу в файл, если она ещё нужна.",
+    newConfirm: "Убрать все блоки и начать с чистого листа? Прежняя программа останется в «Истории».",
     startOver: "Начать заново",
     openFailed: "Не получилось открыть",
     notProgram: "Это не программа Gearbit. Выберите файл, который сохранили кнопкой «Сохранить».",
     openConfirmTitle: "Открыть программу?",
-    openConfirm: "Программа из файла заменит блоки на экране. Сохраните свою программу, если она ещё нужна.",
+    openConfirm: "Программа из файла заменит блоки на экране. Прежняя программа останется в «Истории».",
     opened: "Программа открыта",
     broken: (details: string) => `Файл повреждён или сделан в другой версии Gearbit. ${details}`,
     examplesIntro: "Откройте пример, запустите его и попробуйте поменять числа или блоки.",
     exampleConfirmTitle: "Открыть пример?",
-    exampleConfirm: (title: string) => `Пример «${title}» заменит блоки на экране. Сохраните свою программу в файл, если она ещё нужна.`,
+    exampleConfirm: (title: string) => `Пример «${title}» заменит блоки на экране. Прежняя программа останется в «Истории».`,
+    blocksCount: (blocks: number) => `Блоков: ${blocks}`,
+    summary: (blocks: number, scripts: number, variables: number) => `Блоков: ${blocks} · скриптов: ${scripts} · переменных: ${variables}`,
+    summaryHint: "Верните версию, чтобы увидеть блоки. Текущая программа сохранится в истории.",
+    restoreFailed: "Эту версию не получилось открыть.",
     deleteTitle: "Удалить?",
     delete: "Удалить",
     fileDescription: "Программа Gearbit",
@@ -73,6 +81,8 @@ const M = messages({
     open: "Open",
     saveTitle: "Save the program to a file",
     save: "Save",
+    historyTitle: "History: bring back an earlier version of the program",
+    history: "History",
     newProgram: "New program",
     variables: "Variables",
     variable: "Variable",
@@ -80,17 +90,21 @@ const M = messages({
     addFlag: "Add the «when flag clicked» block from «Events» and build the program under it.",
     hidden: "The program stopped: the window was minimized.",
     noVariables: "Create a variable in «Variables» and tick it: its value will appear here.",
-    newConfirm: "Remove all blocks and start from scratch? Save the program to a file if you still need it.",
+    newConfirm: "Remove all blocks and start from scratch? The previous program will stay in the «History».",
     startOver: "Start over",
     openFailed: "Could not open",
     notProgram: "This is not a Gearbit program. Choose a file saved with the «Save» button.",
     openConfirmTitle: "Open the program?",
-    openConfirm: "The program from the file will replace the blocks on the screen. Save your program if you still need it.",
+    openConfirm: "The program from the file will replace the blocks on the screen. The previous program will stay in the «History».",
     opened: "Program opened",
     broken: (details) => `The file is damaged or made in another version of Gearbit. ${details}`,
     examplesIntro: "Open an example, run it and try changing the numbers or blocks.",
     exampleConfirmTitle: "Open the example?",
-    exampleConfirm: (title) => `The «${title}» example will replace the blocks on the screen. Save your program to a file if you still need it.`,
+    exampleConfirm: (title) => `The «${title}» example will replace the blocks on the screen. The previous program will stay in the «History».`,
+    blocksCount: (blocks) => `Blocks: ${blocks}`,
+    summary: (blocks, scripts, variables) => `Blocks: ${blocks} · scripts: ${scripts} · variables: ${variables}`,
+    summaryHint: "Restore the version to see the blocks. The current program will be saved in the history.",
+    restoreFailed: "Could not open this version.",
     deleteTitle: "Delete?",
     delete: "Delete",
     fileDescription: "Gearbit program",
@@ -153,7 +167,8 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
   const openBtn = h("button", { class: "btn ghost icon", title: M.openTitle, "aria-label": M.open }, icon(icons.folder));
   const saveBtn = h("button", { class: "btn ghost icon", title: M.saveTitle, "aria-label": M.save }, icon(icons.save));
   const newBtn = h("button", { class: "btn ghost icon", title: M.newProgram, "aria-label": M.newProgram }, icon(icons.filePlus));
-  const toolbar = h("div", { class: "program-toolbar" }, runBtn, stopBtn, status, h("div", { class: "spacer" }), examplesBtn, newBtn, openBtn, saveBtn);
+  const historyBtn = h("button", { class: "btn ghost icon", title: M.historyTitle, "aria-label": M.history }, icon(icons.history));
+  const toolbar = h("div", { class: "program-toolbar" }, runBtn, stopBtn, status, h("div", { class: "spacer" }), examplesBtn, newBtn, openBtn, saveBtn, historyBtn);
 
   const editor = h("div", { class: "blocks-editor" });
   const bubble = h("div", { class: "say-bubble hidden", role: "status", "aria-live": "polite" });
@@ -215,6 +230,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
       toast(M.addFlag, "info", 5000);
       return;
     }
+    void history.snapshot("run");
     runtime.start();
   };
   stopBtn.onclick = () => void emergencyStop();
@@ -325,10 +341,20 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
   const isEmpty = () => workspace.getTopBlocks(false).length === 0;
   const hasUnsavedWork = () => !isEmpty() && snapshot() !== baseline;
 
+  // Локальная история: снимки только своей, изменённой программы (не пустой, не примера как есть, не файла).
+  const history = createHistory("blocks", () => {
+    if (!hasUnsavedWork()) return null;
+    const file = project();
+    return { name: M.blocksCount(countBlocks(file).blocks), content: JSON.stringify(file) };
+  });
+
   let saveTimer: number | undefined;
   function scheduleSave(): void {
     clearTimeout(saveTimer);
-    saveTimer = window.setTimeout(saveLocal, 400);
+    saveTimer = window.setTimeout(() => {
+      saveLocal();
+      history.changed();
+    }, 400);
   }
 
   function project(): ProjectFile {
@@ -388,6 +414,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
 
   newBtn.onclick = async () => {
     if (hasUnsavedWork() && !(await askConfirm(M.newProgram, M.newConfirm, M.startOver, true))) return;
+    await history.snapshot("new");
     void runtime.stop();
     workspace.clear();
     applyLoaded([]);
@@ -412,6 +439,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
       return;
     }
     if (hasUnsavedWork() && !(await askConfirm(M.openConfirmTitle, M.openConfirm, M.open))) return;
+    await history.snapshot("open");
     try {
       loadProject(file);
       toast(M.opened, "ok");
@@ -422,9 +450,36 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
 
   const examples = createExamplesDialog(EXAMPLES, M.examplesIntro, async (example) => {
     if (hasUnsavedWork() && !(await askConfirm(M.exampleConfirmTitle, M.exampleConfirm(example.title), M.open))) return;
+    await history.snapshot("example");
     loadExample(example);
   });
   examplesBtn.onclick = examples.open;
+
+  const historyDialog = createHistoryDialog({
+    history,
+    preview(snapshot) {
+      const file = parseSnapshot(snapshot);
+      if (!file) return h("p", { class: "muted history-message" }, M.restoreFailed);
+      const count = countBlocks(file);
+      return h(
+        "div",
+        { class: "history-summary" },
+        icon(icons.puzzle),
+        h("strong", {}, M.summary(count.blocks, count.scripts, count.variables)),
+        h("p", { class: "muted" }, M.summaryHint),
+      );
+    },
+    restore(snapshot) {
+      const file = parseSnapshot(snapshot);
+      try {
+        if (!file) throw new Error();
+        loadProject(file, false);
+      } catch {
+        void showAlert(M.openFailed, M.restoreFailed);
+      }
+    },
+  });
+  historyBtn.onclick = historyDialog.open;
 
   /* ---------- Тема и размер ---------- */
   let large = settings().largeText;
@@ -442,6 +497,8 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
 
   restore();
   renderVariables();
+  // Черновик, восстановленный при старте, — в историю (хаб не запишет такой же снимок второй раз).
+  void history.snapshot("start");
 
   return {
     stageSlot,
@@ -472,6 +529,30 @@ function setupScratchBlocks(): void {
 
   // Галочка у переменной в палитре отмечена, если её табличка показана.
   (SB.CheckboxBubble.prototype as unknown as { isChecked(id: string): boolean }).isChecked = (id) => monitors.has(id);
+}
+
+/* ---------- История ---------- */
+function parseSnapshot(snapshot: HistorySnapshot): ProjectFile | null {
+  try {
+    const file = JSON.parse(snapshot.content) as ProjectFile;
+    return file.format === FILE_FORMAT && typeof file.workspace === "object" ? file : null;
+  } catch {
+    return null;
+  }
+}
+
+interface SerializedBlock {
+  next?: { block?: SerializedBlock };
+  inputs?: Record<string, { block?: SerializedBlock }>;
+}
+
+/** Сколько в программе блоков (без теневых — чисел в окошках), скриптов и переменных. */
+function countBlocks(file: ProjectFile): { blocks: number; scripts: number; variables: number } {
+  const workspace = file.workspace as { blocks?: { blocks?: SerializedBlock[] }; variables?: unknown[] };
+  const count = (block: SerializedBlock | undefined): number =>
+    block ? 1 + count(block.next?.block) + Object.values(block.inputs ?? {}).reduce((sum, input) => sum + count(input.block), 0) : 0;
+  const top = workspace.blocks?.blocks ?? [];
+  return { blocks: top.reduce((sum, b) => sum + count(b), 0), scripts: top.length, variables: workspace.variables?.length ?? 0 };
 }
 
 /* ---------- Файлы ---------- */

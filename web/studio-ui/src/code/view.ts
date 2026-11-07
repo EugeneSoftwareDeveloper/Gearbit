@@ -1,5 +1,6 @@
 import type { CompletionSource } from "@codemirror/autocomplete";
 import type { Extension } from "@codemirror/state";
+import { createHistory } from "../history";
 import { hub } from "../hub";
 import { lang, messages } from "../i18n";
 import { icons } from "../icons";
@@ -9,6 +10,7 @@ import { sensorPlaces } from "../settings";
 import { askConfirm, showAlert } from "../ui/ask-dialog";
 import { h, icon } from "../ui/dom";
 import { createExamplesDialog } from "../ui/examples-dialog";
+import { createHistoryDialog } from "../ui/history-dialog";
 import { openFile, saveTextFile, type FileKind } from "../ui/files";
 import { createSensorsCard } from "../ui/mini-sensors";
 import { toast } from "../ui/toasts";
@@ -39,6 +41,8 @@ const M = messages({
     open: "Открыть",
     saveTitle: (suffix: string) => `Сохранить программу в файл ${suffix}`,
     save: "Сохранить",
+    historyTitle: "История: вернуть прежнюю версию программы",
+    history: "История",
     recheck: "Проверить снова",
     outputLabel: "Вывод программы",
     clearOutput: "Очистить вывод",
@@ -61,18 +65,18 @@ const M = messages({
     hidden: "Программа остановлена: окно свернули.",
     changed: "изменена",
     changedTitle: "Программа изменена и ещё не сохранена в файл",
-    newConfirm: "Стереть текст и начать с чистого листа? Сохраните программу в файл, если она ещё нужна.",
+    newConfirm: "Стереть текст и начать с чистого листа? Прежняя программа останется в «Истории».",
     startOver: "Начать заново",
     saved: "Программа сохранена",
     saveFailed: "Не получилось сохранить файл",
     openFailed: "Не получилось открыть",
     notText: (suffix: string) => `Это не текст программы. Выберите файл ${suffix}.`,
     openConfirmTitle: "Открыть программу?",
-    openConfirm: "Программа из файла заменит текст на экране. Сохраните свою программу, если она ещё нужна.",
+    openConfirm: "Программа из файла заменит текст на экране. Прежняя программа останется в «Истории».",
     opened: "Программа открыта",
     examplesIntro: "Откройте пример, запустите его и попробуйте поменять числа или команды.",
     exampleConfirmTitle: "Открыть пример?",
-    exampleConfirm: (title: string) => `Пример «${title}» заменит текст на экране. Сохраните свою программу в файл, если она ещё нужна.`,
+    exampleConfirm: (title: string) => `Пример «${title}» заменит текст на экране. Прежняя программа останется в «Истории».`,
     insert: "Вставить в программу",
     commands: "Команды",
     clickToInsert: "щелчок — вставить",
@@ -93,6 +97,8 @@ const M = messages({
     open: "Open",
     saveTitle: (suffix) => `Save the program to a ${suffix} file`,
     save: "Save",
+    historyTitle: "History: bring back an earlier version of the program",
+    history: "History",
     recheck: "Check again",
     outputLabel: "Program output",
     clearOutput: "Clear the output",
@@ -115,18 +121,18 @@ const M = messages({
     hidden: "The program stopped: the window was minimized.",
     changed: "changed",
     changedTitle: "The program has changed and is not saved to a file yet",
-    newConfirm: "Erase the text and start from scratch? Save the program to a file if you still need it.",
+    newConfirm: "Erase the text and start from scratch? The previous program will stay in the «History».",
     startOver: "Start over",
     saved: "Program saved",
     saveFailed: "Could not save the file",
     openFailed: "Could not open",
     notText: (suffix) => `This is not program text. Choose a ${suffix} file.`,
     openConfirmTitle: "Open the program?",
-    openConfirm: "The program from the file will replace the text on the screen. Save your program if you still need it.",
+    openConfirm: "The program from the file will replace the text on the screen. The previous program will stay in the «History».",
     opened: "Program opened",
     examplesIntro: "Open an example, run it and try changing the numbers or commands.",
     exampleConfirmTitle: "Open the example?",
-    exampleConfirm: (title) => `The «${title}» example will replace the text on the screen. Save your program to a file if you still need it.`,
+    exampleConfirm: (title) => `The «${title}» example will replace the text on the screen. The previous program will stay in the «History».`,
     insert: "Insert into the program",
     commands: "Commands",
     clickToInsert: "click to insert",
@@ -205,7 +211,8 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
   const newBtn = h("button", { class: "btn ghost icon", title: M.newProgram, "aria-label": M.newProgram }, icon(icons.filePlus));
   const openBtn = h("button", { class: "btn ghost icon", title: M.openTitle(spec.file.suffix), "aria-label": M.open }, icon(icons.folder));
   const saveBtn = h("button", { class: "btn ghost icon", title: M.saveTitle(spec.file.suffix), "aria-label": M.save }, icon(icons.save));
-  const toolbar = h("div", { class: "program-toolbar" }, runBtn, stopBtn, status, h("div", { class: "spacer" }), examplesBtn, newBtn, openBtn, saveBtn);
+  const historyBtn = h("button", { class: "btn ghost icon", title: M.historyTitle, "aria-label": M.history }, icon(icons.history));
+  const toolbar = h("div", { class: "program-toolbar" }, runBtn, stopBtn, status, h("div", { class: "spacer" }), examplesBtn, newBtn, openBtn, saveBtn, historyBtn);
 
   const noticeText = h("div", { class: "text" });
   const recheckBtn = h("button", { class: "btn", onclick: () => void checkLanguage(true) }, icon(icons.refresh), h("span", {}, M.recheck));
@@ -311,6 +318,7 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
       }
     }
 
+    void history.snapshot("run");
     starting = true;
     runId = null;
     early = [];
@@ -487,10 +495,16 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
     fileState.title = dirty ? M.changedTitle : "";
   }
 
+  // Локальная история: снимки только своей, изменённой программы (не пустой, не примера как есть, не файла).
+  const history = createHistory(spec.id, () => (hasUnsavedWork() ? { name: programName, content: editor.text() } : null));
+
   let saveTimer: number | undefined;
   function scheduleSave(): void {
     clearTimeout(saveTimer);
-    saveTimer = window.setTimeout(saveLocal, 400);
+    saveTimer = window.setTimeout(() => {
+      saveLocal();
+      history.changed();
+    }, 400);
   }
   function saveLocal(): void {
     try {
@@ -527,6 +541,7 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
 
   newBtn.onclick = async () => {
     if (hasUnsavedWork() && !(await askConfirm(M.newProgram, M.newConfirm, M.startOver, true))) return;
+    await history.snapshot("new");
     load(spec.starter, DEFAULT_NAME);
     editor.focus();
   };
@@ -553,17 +568,31 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
       return;
     }
     if (hasUnsavedWork() && !(await askConfirm(M.openConfirmTitle, M.openConfirm, M.open))) return;
+    await history.snapshot("open");
     load(file.text.replace(/\r\n/g, "\n"), stripSuffix(file.name, spec.file.suffix));
     toast(M.opened, "ok");
   };
 
   const examples = createExamplesDialog(spec.examples, M.examplesIntro, async (example) => {
     if (hasUnsavedWork() && !(await askConfirm(M.exampleConfirmTitle, M.exampleConfirm(example.title), M.open))) return;
+    await history.snapshot("example");
     load(example.code, example.title);
   });
   examplesBtn.onclick = examples.open;
 
+  const historyDialog = createHistoryDialog({
+    history,
+    preview: (snapshot) => h("pre", { class: "history-code" }, snapshot.content),
+    restore(snapshot) {
+      load(snapshot.content, snapshot.name ?? DEFAULT_NAME, false);
+      editor.focus();
+    },
+  });
+  historyBtn.onclick = historyDialog.open;
+
   restore();
+  // Черновик, восстановленный при старте, — в историю (хаб не запишет такой же снимок второй раз).
+  void history.snapshot("start");
 
   return {
     stageSlot,

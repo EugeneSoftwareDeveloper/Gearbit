@@ -74,6 +74,7 @@ public static class GearbitHub
         }
 
         services.AddSingleton<SettingsStore>();
+        services.AddSingleton<HistoryStore>();
         services.AddSingleton<RobotManager>();
         services.AddSingleton<ControlArbiter>();
         services.AddSingleton<ServiceMode>();
