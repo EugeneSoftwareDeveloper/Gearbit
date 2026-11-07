@@ -34,5 +34,6 @@ The first supported robot is the **Apitor / Makerzoid SuperBot** (the box may sa
 8. [Safety](safety.md): rules for working with a child.
 9. [Questions and problems](faq.md): if the robot isn't found, doesn't move or goes the wrong way.
 10. [Measurements](measurements.md): for grown-ups — how to check the robot and help Gearbit know it better.
+11. [Lessons with a child](lessons.md): a program by age from 6 — games without a computer, Blocks, Python and C#.
 
 > Gearbit is an unofficial app, not affiliated with Apitor or Makerzoid. Everything runs only on your computer: no internet, cloud, accounts or data collection.

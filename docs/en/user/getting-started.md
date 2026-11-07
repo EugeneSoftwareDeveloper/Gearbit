@@ -51,4 +51,5 @@ The robot moves only while the key is held. The **Speed** slider sets how fast. 
 - [Python](python.md): when blocks are not enough.
 - [C#](csharp.md): the language Gearbit itself is written in.
 - [Safety](safety.md): read it before working with a child.
+- [Lessons with a child](lessons.md): a program by age from 6.
 - [Questions and problems](faq.md): if something didn't work.

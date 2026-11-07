@@ -62,6 +62,7 @@ dotnet run --project src/Gearbit.App
 - [Python](docs/user/python.md) и [C#](docs/user/csharp.md)
 - [Езда по линии](docs/user/line-following.md)
 - [Безопасность](docs/user/safety.md)
+- [Занятия с ребёнком](docs/user/lessons.md): программа от 6 лет
 - [Вопросы и проблемы](docs/user/faq.md)
 - [Замеры](docs/user/measurements.md)
 

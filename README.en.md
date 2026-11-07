@@ -64,6 +64,7 @@ The hub without a window (for a browser and external clients): `dotnet run --pro
 - [Python](docs/en/user/python.md) and [C#](docs/en/user/csharp.md)
 - [Line following](docs/en/user/line-following.md)
 - [Safety](docs/en/user/safety.md)
+- [Lessons with a child](docs/en/user/lessons.md): a program from age 6
 - [Questions and problems](docs/en/user/faq.md)
 - [Measurements](docs/en/user/measurements.md)
 
