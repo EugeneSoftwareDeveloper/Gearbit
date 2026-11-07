@@ -83,7 +83,8 @@ public sealed class ServiceMode
                     return;
                 }
 
-                throw new HubException(HubErrors.ControlBusy, $"Замеры уже ведёт «{current.ClientName}».");
+                var owner = current.ClientName;
+                throw new HubException(HubErrors.ControlBusy, t => t.ServiceAlreadyRunning(owner));
             }
 
             _arbiter.Authorize(client.Id, client.Name, ControllerKind.Service);
@@ -94,11 +95,11 @@ public sealed class ServiceMode
         {
             await robot.EnterManualModeAsync().ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
             Forget();
             _arbiter.Release(client.Id);
-            throw new HubException(HubErrors.NotConnected, ex.Message);
+            throw new HubException(HubErrors.NotConnected, t => t.RobotNotConnected);
         }
 
         _logger.LogInformation("Замеры начал «{Client}»", client.Name);
@@ -116,12 +117,13 @@ public sealed class ServiceMode
         {
             if (_session is not { } session)
             {
-                throw new HubException(HubErrors.NotSupported, "Сначала включите режим замеров.");
+                throw new HubException(HubErrors.NotSupported, t => t.ServiceNotStarted);
             }
 
             if (session.ClientId != client.Id)
             {
-                throw new HubException(HubErrors.ControlBusy, $"Замеры ведёт «{session.ClientName}».");
+                var owner = session.ClientName;
+                throw new HubException(HubErrors.ControlBusy, t => t.ServiceOwnedBy(owner));
             }
 
             // Управление могли забрать кнопкой «Забрать управление» — тогда кадры не шлём.
@@ -135,9 +137,14 @@ public sealed class ServiceMode
         {
             await robot.WriteRawAsync(frame, cancellationToken).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex)
+        catch (RobotException ex) when (ex.Code == RobotErrorCode.ManualModeRequired)
         {
-            throw new HubException(HubErrors.NotConnected, ex.Message);
+            // Замеры закончились (СТОП, «Закончить») между проверкой и отправкой.
+            throw new HubException(HubErrors.NotSupported, t => t.ServiceNotStarted);
+        }
+        catch (InvalidOperationException)
+        {
+            throw new HubException(HubErrors.NotConnected, t => t.RobotNotConnected);
         }
 
         return frame.Length;
@@ -225,7 +232,7 @@ public sealed class ServiceMode
         await robot.StopAllAsync().ConfigureAwait(false);
         var seconds = _options.ServiceWatchdogMs / 1000.0;
         _logger.LogInformation("Замеры: {Ms} мс без кадров — робот остановлен", _options.ServiceWatchdogMs);
-        _clients.Broadcast("safety.event", new { reason = "watchdog", message = $"Замеры: {seconds:0.#} с без новых кадров — моторы остановлены." });
+        _clients.BroadcastText("safety.event", t => new { reason = "watchdog", message = t.ServiceWatchdog(seconds) });
         return true;
     }
 
@@ -236,12 +243,12 @@ public sealed class ServiceMode
         var compact = string.Concat(text.Where(c => !char.IsWhiteSpace(c) && c != '-' && c != ':'));
         if (compact.Length == 0)
         {
-            throw new HubException(HubErrors.InvalidParams, "Пустой кадр: введите байты в hex, например FF FE 01 04 FD FC.");
+            throw new HubException(HubErrors.InvalidParams, t => t.FrameEmpty);
         }
 
         if (compact.Length % 2 != 0)
         {
-            throw new HubException(HubErrors.InvalidParams, "Нечётное число hex-символов: у каждого байта две цифры (0A, а не A).");
+            throw new HubException(HubErrors.InvalidParams, t => t.FrameOddDigits);
         }
 
         byte[] bytes;
@@ -251,12 +258,12 @@ public sealed class ServiceMode
         }
         catch (FormatException)
         {
-            throw new HubException(HubErrors.InvalidParams, "В кадре есть символы, которых нет в hex: допустимы 0–9 и A–F.");
+            throw new HubException(HubErrors.InvalidParams, t => t.FrameBadChars);
         }
 
         if (bytes.Length > MaxFrameBytes)
         {
-            throw new HubException(HubErrors.InvalidParams, $"Кадр длиннее {MaxFrameBytes} байт.");
+            throw new HubException(HubErrors.InvalidParams, t => t.FrameTooLong(MaxFrameBytes));
         }
 
         return bytes;

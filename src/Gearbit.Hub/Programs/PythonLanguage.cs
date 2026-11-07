@@ -10,9 +10,6 @@ namespace Gearbit.Hub.Programs;
 /// </summary>
 public sealed class PythonLanguage(HubOptions options, ILogger<PythonLanguage> logger) : IProgramLanguage
 {
-    public const string NotFoundMessage =
-        "Python не найден. Установите Python 3 с сайта python.org (при установке отметьте «Add python.exe to PATH») и перезапустите Gearbit.";
-
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(10);
 
     private readonly SemaphoreSlim _probeLock = new(1, 1);
@@ -30,18 +27,18 @@ public sealed class PythonLanguage(HubOptions options, ILogger<PythonLanguage> l
     public async Task<LanguageStatus> CheckAsync(CancellationToken cancellationToken)
     {
         var python = await FindAsync(cancellationToken).ConfigureAwait(false);
-        return python is null ? new LanguageStatus(false, null, NotFoundMessage) : new LanguageStatus(true, python.Version, null);
+        return python is null ? new LanguageStatus(false, null, t => t.PythonNotFound) : new LanguageStatus(true, python.Version, null);
     }
 
     public async Task<ProgramCommand> PrepareAsync(string programPath, CancellationToken cancellationToken)
     {
         var python = await FindAsync(cancellationToken).ConfigureAwait(false)
-            ?? throw new HubException(HubErrors.NotSupported, NotFoundMessage);
+            ?? throw new HubException(HubErrors.NotSupported, t => t.PythonNotFound);
 
         var package = PackageDirectory;
         if (!File.Exists(Path.Combine(package, "gearbit", "__init__.py")))
         {
-            throw new HubException(HubErrors.NotSupported, $"Не найден пакет gearbit в папке {package}. Переустановите Gearbit.");
+            throw new HubException(HubErrors.NotSupported, t => t.PythonPackageMissing(package));
         }
 
         var existing = Environment.GetEnvironmentVariable("PYTHONPATH");

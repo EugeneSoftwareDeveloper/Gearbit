@@ -96,12 +96,13 @@ public sealed class ProgramRunner : IHostedService, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(code);
         if (!_languages.TryGetValue(languageId, out var language))
         {
-            throw new HubException(HubErrors.NotSupported, $"Язык «{languageId}» не поддерживается. Есть: {string.Join(", ", _languages.Keys)}.");
+            var available = string.Join(", ", _languages.Keys);
+            throw new HubException(HubErrors.NotSupported, t => t.LanguageNotSupported(languageId, available));
         }
 
         if (code.Length > MaxCodeLength)
         {
-            throw new HubException(HubErrors.InvalidParams, "Программа слишком большая.");
+            throw new HubException(HubErrors.InvalidParams, t => t.ProgramTooLarge);
         }
 
         await _runLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -126,7 +127,7 @@ public sealed class ProgramRunner : IHostedService, IAsyncDisposable
                 throw;
             }
 
-            var title = string.IsNullOrWhiteSpace(name) ? "программа" : name.Trim();
+            var title = string.IsNullOrWhiteSpace(name) ? owner.Text.DefaultProgramName : name.Trim();
             if (title.Length > 60)
             {
                 title = title[..60];
@@ -162,7 +163,8 @@ public sealed class ProgramRunner : IHostedService, IAsyncDisposable
 
                 run.Dispose();
                 TryDelete(directory);
-                throw new HubException(HubErrors.NotSupported, $"Не удалось запустить {language.Title}: {ex.Message}");
+                var detail = ex.Message;
+                throw new HubException(HubErrors.NotSupported, t => t.ProgramStartFailed(language.Title, detail));
             }
 
             _logger.LogInformation("Запущена программа {RunId} ({Language}, «{Name}»)", runId, language.Id, title);
@@ -249,13 +251,15 @@ public sealed class ProgramRunner : IHostedService, IAsyncDisposable
     /// <summary>Этого клиента-программу остановил сам хаб: о его отключении не надо сообщать как об аварии.</summary>
     public bool ConsumeStopped(string clientId) => _stoppedClients.TryRemove(clientId, out _);
 
-    public async Task<IReadOnlyList<object>> DescribeLanguagesAsync(CancellationToken cancellationToken)
+    /// <param name="text">Тексты на языке клиента: в них описано, что сделать, если запустить нечем.</param>
+    public async Task<IReadOnlyList<object>> DescribeLanguagesAsync(IHubText text, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(text);
         var result = new List<object>();
         foreach (var language in _languages.Values)
         {
             var status = await language.CheckAsync(cancellationToken).ConfigureAwait(false);
-            result.Add(new { id = language.Id, title = language.Title, status.Available, status.Version, status.Problem });
+            result.Add(new { id = language.Id, title = language.Title, status.Available, status.Version, problem = status.Problem?.Invoke(text) });
         }
 
         return result;
@@ -460,7 +464,7 @@ public sealed class ProgramRunner : IHostedService, IAsyncDisposable
                 case "error":
                     lock (_outputLock)
                     {
-                        _error = new ProgramError(Int(node!["line"]), Int(node["column"]), (string?)node["message"] ?? "Ошибка");
+                        _error = new ProgramError(Int(node!["line"]), Int(node["column"]), (string?)node["message"] ?? Owner.Text.ProgramErrorFallback);
                     }
 
                     return true;
@@ -499,7 +503,7 @@ public sealed class ProgramRunner : IHostedService, IAsyncDisposable
 
             if (dropped)
             {
-                Send("program.output", new { runId = Id, stream = "err", text = "… программа печатает слишком быстро: часть строк пропущена." });
+                Send("program.output", new { runId = Id, stream = "err", text = Owner.Text.OutputDropped });
             }
         }
 

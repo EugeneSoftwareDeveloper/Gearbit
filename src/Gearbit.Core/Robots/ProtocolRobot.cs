@@ -275,7 +275,7 @@ public sealed class ProtocolRobot : IRobot
     {
         if (State != RobotConnectionState.Connected)
         {
-            throw new InvalidOperationException("Робот не подключён.");
+            throw new RobotException(RobotErrorCode.NotConnected, "Робот не подключён.");
         }
 
         lock (_stateLock)
@@ -314,7 +314,7 @@ public sealed class ProtocolRobot : IRobot
         {
             if (!_manual)
             {
-                throw new InvalidOperationException("Кадры вручную можно отправлять только в режиме замеров.");
+                throw new RobotException(RobotErrorCode.ManualModeRequired, "Кадры вручную можно отправлять только в режиме замеров.");
             }
 
             seq = ++_frameSeq;
@@ -322,7 +322,7 @@ public sealed class ProtocolRobot : IRobot
 
         if (State != RobotConnectionState.Connected)
         {
-            throw new InvalidOperationException("Робот не подключён.");
+            throw new RobotException(RobotErrorCode.NotConnected, "Робот не подключён.");
         }
 
         await WriteAsync(data, "вручную", seq, cancellationToken).ConfigureAwait(false);

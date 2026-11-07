@@ -1,7 +1,7 @@
 import { messages, text } from "../i18n";
 import { icons } from "../icons";
 import { emergencyStop } from "../input/drive";
-import { store } from "../model";
+import { robotName, store } from "../model";
 import { h, icon } from "./dom";
 
 export type Mode = "remote" | "blocks" | "python" | "csharp";
@@ -95,7 +95,7 @@ export function createTopbar(handlers: TopbarHandlers): { element: HTMLElement; 
     const r = s.robot;
     const state = r?.state ?? "disconnected";
     pill.dataset.state = state;
-    name.textContent = r && state !== "disconnected" ? r.name : M.noRobot;
+    name.textContent = r && state !== "disconnected" ? robotName(r) : M.noRobot;
     meta.textContent =
       state === "connected"
         ? text(r?.profileTitle ?? r?.deviceTitle)
@@ -106,7 +106,7 @@ export function createTopbar(handlers: TopbarHandlers): { element: HTMLElement; 
             : M.connect;
     const moving = Object.values(s.telemetry?.motors ?? {}).some((p) => p !== 0);
     stop.classList.toggle("moving", state === "connected" && moving);
-    document.title = r && state === "connected" ? `${r.name} — Gearbit` : "Gearbit";
+    document.title = r && state === "connected" ? `${robotName(r)} — Gearbit` : "Gearbit";
   });
 
   const element = h(

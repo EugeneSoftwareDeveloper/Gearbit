@@ -20,10 +20,33 @@ public static class HubErrors
     public const int ConnectFailed = -32005;
 }
 
-/// <summary>Ошибка, которую можно показать пользователю: уходит клиенту как error JSON-RPC.</summary>
-public sealed class HubException(int code, string message) : Exception(message)
+/// <summary>
+/// Ошибка, которую можно показать пользователю: уходит клиенту как error JSON-RPC.
+/// Текст задаётся через <see cref="IHubText"/> и выбирается по языку клиента (<see cref="MessageFor"/>);
+/// <see cref="Exception.Message"/> — русский текст для журнала.
+/// </summary>
+public sealed class HubException : Exception
 {
-    public int Code { get; } = code;
+    private readonly Func<IHubText, string>? _text;
+
+    public HubException(int code, Func<IHubText, string> text)
+        : base(text(HubText.Russian))
+    {
+        Code = code;
+        _text = text;
+    }
+
+    /// <summary>Текст без перевода: например, сообщение, которое уже составил клиент на своём языке.</summary>
+    public HubException(int code, string message)
+        : base(message)
+    {
+        Code = code;
+    }
+
+    public int Code { get; }
+
+    /// <summary>Текст ошибки на языке клиента.</summary>
+    public string MessageFor(IHubText text) => _text is null ? Message : _text(text);
 }
 
 internal static class JsonRpc
@@ -71,13 +94,13 @@ public sealed class RpcParams(JsonNode? node)
     public JsonNode? Node { get; } = node;
 
     public string String(string name) =>
-        OptionalString(name) ?? throw new HubException(HubErrors.InvalidParams, $"Не задан параметр «{name}».");
+        OptionalString(name) ?? throw new HubException(HubErrors.InvalidParams, t => t.MissingParam(name));
 
     public string? OptionalString(string name) =>
         Node?[name] is JsonValue value && value.TryGetValue<string>(out var s) && !string.IsNullOrWhiteSpace(s) ? s : null;
 
     public int Int(string name) =>
-        OptionalInt(name) ?? throw new HubException(HubErrors.InvalidParams, $"Не задан числовой параметр «{name}».");
+        OptionalInt(name) ?? throw new HubException(HubErrors.InvalidParams, t => t.MissingNumber(name));
 
     public int? OptionalInt(string name)
     {
@@ -101,5 +124,5 @@ public sealed class RpcParams(JsonNode? node)
         where T : struct, Enum =>
         System.Enum.TryParse<T>(String(name), ignoreCase: true, out var result) && System.Enum.IsDefined(result)
             ? result
-            : throw new HubException(HubErrors.InvalidParams, $"Недопустимое значение «{name}». Возможные: {string.Join(", ", System.Enum.GetNames<T>()).ToLowerInvariant()}.");
+            : throw new HubException(HubErrors.InvalidParams, t => t.BadValue(name, string.Join(", ", System.Enum.GetNames<T>()).ToLowerInvariant()));
 }

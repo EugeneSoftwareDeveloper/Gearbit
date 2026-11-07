@@ -1,14 +1,13 @@
 import { hub } from "../hub";
 import { messages, text } from "../i18n";
 import { icons } from "../icons";
-import { store, type ScanDevice } from "../model";
+import { robotName, store, type ScanDevice } from "../model";
 import { remember, settings } from "../settings";
 import { h, icon } from "./dom";
 import { toast } from "./toasts";
 
 const M = messages({
   ru: {
-    emulatorName: "Nordic_TUDAO (эмулятор)",
     emulatorTitle: "Виртуальная машинка на экране",
     found: "Найденные устройства",
     build: "Сборка",
@@ -35,7 +34,6 @@ const M = messages({
     disconnected: "Робот отключён",
   },
   en: {
-    emulatorName: "Nordic_TUDAO (emulator)",
     emulatorTitle: "Virtual car on the screen",
     found: "Found devices",
     build: "Build",
@@ -65,7 +63,7 @@ const M = messages({
 
 const EMULATOR: ScanDevice = {
   id: "emulator:superbot",
-  name: M.emulatorName,
+  name: "Nordic_TUDAO",
   rssi: -40,
   transport: "emulator",
   deviceId: "tudao-superbot",
@@ -137,7 +135,7 @@ export function createConnectDialog(): { open: () => void } {
         "button",
         { class: `device ${d.known ? "known" : ""}`, role: "option", "aria-pressed": String(d.id === selected), onclick: () => select(d.id) },
         h("span", { class: "ico" }, icon(d.transport === "emulator" ? icons.monitor : d.known ? icons.robot : icons.bluetooth)),
-        h("span", { class: "info" }, h("span", { class: "title" }, d.name), h("span", { class: "sub" }, sub)),
+        h("span", { class: "info" }, h("span", { class: "title" }, robotName(d)), h("span", { class: "sub" }, sub)),
         d.transport === "emulator" ? null : signal(d.rssi),
       );
       item.addEventListener("dblclick", () => void connect());
@@ -234,7 +232,7 @@ export function createConnectDialog(): { open: () => void } {
       rememberProfile();
       const robot = await hub.call("robot.connect", params, 45000);
       store.set({ robot });
-      toast(M.connected(device.name), "ok");
+      toast(M.connected(robotName(device)), "ok");
       close();
     } catch (e) {
       showError(M.connectFailed((e as Error).message));

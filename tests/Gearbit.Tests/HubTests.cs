@@ -94,6 +94,43 @@ public sealed class HubTests : IAsyncLifetime
         await first.CallAsync("robot.disconnect");
     }
 
+    [Fact]
+    public async Task Messages_come_in_the_language_of_each_client()
+    {
+        await using var program = await RpcClient.ConnectAsync(_port);
+        await using var english = await RpcClient.ConnectAsync(_port);
+        await using var russian = await RpcClient.ConnectAsync(_port);
+        await program.CallAsync("hub.hello", new JsonObject { ["name"] = "Python: demo" });
+        await english.CallAsync("hub.hello", new JsonObject { ["name"] = "remote", ["lang"] = "en-US" });
+        // Без lang — по-русски, как в прежних версиях.
+        await russian.CallAsync("hub.hello", new JsonObject { ["name"] = "пульт" });
+        await program.CallAsync("robot.connect", new JsonObject { ["id"] = "emulator:superbot" });
+        await program.CallAsync("drive.tank", new JsonObject { ["left"] = 10, ["right"] = 10, ["source"] = "program" });
+
+        var drive = new JsonObject { ["left"] = 10, ["right"] = 10 };
+        var en = await Assert.ThrowsAsync<RpcError>(() => english.CallAsync("drive.tank", drive.DeepClone().AsObject()));
+        Assert.Equal(HubErrors.ControlBusy, en.Code);
+        Assert.Equal("The robot is controlled by the program «Python: demo» right now. Press «Take control» or STOP.", en.Message);
+        var ru = await Assert.ThrowsAsync<RpcError>(() => russian.CallAsync("drive.tank", drive.DeepClone().AsObject()));
+        Assert.Equal(HubErrors.ControlBusy, ru.Code);
+        Assert.Equal("Роботом сейчас управляет программа «Python: demo». Нажмите «Забрать управление» или СТОП.", ru.Message);
+
+        // Ошибки параметров и неизвестный метод — тоже на языке клиента.
+        var color = await Assert.ThrowsAsync<RpcError>(() => english.CallAsync("light.setColor", new JsonObject { ["id"] = "L1", ["color"] = "pink" }));
+        Assert.StartsWith("Invalid value of «color»", color.Message, StringComparison.Ordinal);
+        var method = await Assert.ThrowsAsync<RpcError>(() => english.CallAsync("robot.fly"));
+        Assert.Equal("There is no method «robot.fly».", method.Message);
+
+        // Одно событие СТОП: каждый клиент получает его на своём языке.
+        await english.CallAsync("robot.stop");
+        var enStop = await english.WaitNotificationAsync("safety.event", n => (string?)n["reason"] == "stop", TimeSpan.FromSeconds(3));
+        Assert.Equal("Stopped with the STOP button", (string?)enStop["message"]);
+        var ruStop = await russian.WaitNotificationAsync("safety.event", n => (string?)n["reason"] == "stop", TimeSpan.FromSeconds(3));
+        Assert.Equal("Остановлено кнопкой СТОП", (string?)ruStop["message"]);
+
+        await program.CallAsync("robot.disconnect");
+    }
+
     /// <summary>Кадр состояния с M1 = 0x0A (в эмуляторе это предел устройства).</summary>
     private const string MotorFrame = "FF FE 09 01 02 0A 00 00 00 00 00 00 FD FC";
 

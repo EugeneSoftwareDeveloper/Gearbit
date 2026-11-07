@@ -28,9 +28,10 @@ public sealed class HubMethods(
     {
         ArgumentNullException.ThrowIfNull(rpc);
 
-        rpc.Register("hub.hello", "Представиться: {name, runId?}. runId передаёт программа, которую запустил хаб. Возвращает версию хаба, id клиента и текущее состояние.", (client, p) =>
+        rpc.Register("hub.hello", "Представиться: {name, lang?, runId?}. lang — язык сообщений (ru, en; по умолчанию ru). runId передаёт программа, которую запустил хаб. Возвращает версию хаба, id клиента и текущее состояние.", (client, p) =>
         {
             client.Name = p.OptionalString("name") ?? client.Name;
+            client.Text = HubText.Find(p.OptionalString("lang")) ?? client.Text;
             if (p.OptionalString("runId") is { } runId)
             {
                 programs.Bind(client, runId);
@@ -55,16 +56,16 @@ public sealed class HubMethods(
         rpc.Register(
             "robot.scan",
             "Поиск устройств: {durationMs?}. Возвращает {devices, warnings}.",
-            async (_, p, ct) =>
+            async (client, p, ct) =>
             {
                 var duration = TimeSpan.FromMilliseconds(Math.Clamp(p.OptionalInt("durationMs") ?? options.ScanDurationMs, 0, 30_000));
                 var report = await robots.ScanAsync(duration, ct).ConfigureAwait(false);
                 return new
                 {
                     devices = report.Devices.Select(r => new ScanDeviceDto(
-                        r.Device.Id, string.IsNullOrEmpty(r.Device.Name) ? "(без имени)" : r.Device.Name, r.Device.Rssi,
+                        r.Device.Id, string.IsNullOrEmpty(r.Device.Name) ? client.Text.UnnamedDevice : r.Device.Name, r.Device.Rssi,
                         r.Device.TransportKind, r.DescriptorId, r.DescriptorTitle, r.DescriptorId is not null)),
-                    warnings = report.Warnings,
+                    warnings = report.Warnings.Select(w => client.Text.ScanFailed(w.TransportKind, w.Detail)),
                 };
             },
             concurrent: true);
@@ -109,7 +110,7 @@ public sealed class HubMethods(
                 service.Disarm();
                 await programs.StopProgramAsync("stopped", wait: false).ConfigureAwait(false);
 
-                clients.Broadcast("safety.event", new { reason = "stop", message = "Остановлено кнопкой СТОП" });
+                clients.BroadcastText("safety.event", t => new { reason = "stop", message = t.StoppedByStop });
                 return true;
             },
             concurrent: true);
@@ -125,7 +126,7 @@ public sealed class HubMethods(
         rpc.Register("motor.setPower", "Мощность мотора: {id, power, source?}. id — M1 или псевдоним сборки (left_wheel).", (client, p) =>
         {
             var robot = RequireMotion(client, p);
-            var motor = robot.Find<IMotor>(p.String("id")) ?? throw new HubException(HubErrors.NotFound, $"Нет мотора «{p.String("id")}».");
+            var motor = robot.Find<IMotor>(p.String("id")) ?? throw new HubException(HubErrors.NotFound, t => t.NoMotor(p.String("id")));
             motor.SetPower(p.Int("power"));
             return motor.Power;
         });
@@ -152,7 +153,7 @@ public sealed class HubMethods(
         {
             var robot = RequireRobot();
             RequireNoService();
-            var light = robot.Find<ILight>(p.String("id")) ?? throw new HubException(HubErrors.NotFound, $"Нет светодиода «{p.String("id")}».");
+            var light = robot.Find<ILight>(p.String("id")) ?? throw new HubException(HubErrors.NotFound, t => t.NoLight(p.String("id")));
             light.SetColor(p.Enum<RobotColor>("color"));
             return true;
         });
@@ -192,7 +193,7 @@ public sealed class HubMethods(
         rpc.Register(
             "program.languages",
             "Языки программ: [{id, title, available, version, problem}]. problem — что сделать, если запустить нечем.",
-            async (_, _, ct) => await programs.DescribeLanguagesAsync(ct).ConfigureAwait(false),
+            async (client, _, ct) => await programs.DescribeLanguagesAsync(client.Text, ct).ConfigureAwait(false),
             concurrent: true);
 
         rpc.Register(
@@ -238,7 +239,7 @@ public sealed class HubMethods(
         {
             if (emulator is null)
             {
-                throw new HubException(HubErrors.NotSupported, "Эмулятор не включён.");
+                throw new HubException(HubErrors.NotSupported, t => t.EmulatorOff);
             }
 
             var list = p.Node?["obstacles"]?.AsArray()
@@ -257,7 +258,7 @@ public sealed class HubMethods(
             {
                 if (emulator is null)
                 {
-                    throw new HubException(HubErrors.NotSupported, "Эмулятор не включён.");
+                    throw new HubException(HubErrors.NotSupported, t => t.EmulatorOff);
                 }
 
                 return emulator.World.SetSensorMounts(Numbers(p.Node?["angles"]), Numbers(p.Node?["down"]));
@@ -267,7 +268,7 @@ public sealed class HubMethods(
         {
             if (emulator is null)
             {
-                throw new HubException(HubErrors.NotSupported, "Эмулятор не включён.");
+                throw new HubException(HubErrors.NotSupported, t => t.EmulatorOff);
             }
 
             var scene = p.Enum<EmulatorScene>("scene");
@@ -278,7 +279,7 @@ public sealed class HubMethods(
 
         rpc.Register("emulator.setTilt", "Наклонить виртуальную машинку: {x, y} в градусах −90..90 (y больше 0 — вперёд, x больше 0 — вправо). {x: 0, y: 0} — ровно. Возвращает {x, y}.", (_, p) =>
         {
-            var current = emulator?.Current ?? throw new HubException(HubErrors.NotConnected, "Эмулятор не подключён.");
+            var current = emulator?.Current ?? throw new HubException(HubErrors.NotConnected, t => t.EmulatorNotConnected);
             var (x, y) = current.SetTilt(p.OptionalInt("x") ?? 0, p.OptionalInt("y") ?? 0);
             return new { x, y };
         });
@@ -302,7 +303,7 @@ public sealed class HubMethods(
     private ProtocolRobot RequireRobot() =>
         robots.Active is { State: RobotConnectionState.Connected } robot
             ? robot
-            : throw new HubException(HubErrors.NotConnected, "Робот не подключён.");
+            : throw new HubException(HubErrors.NotConnected, t => t.RobotNotConnected);
 
     private ProtocolRobot RequireMotion(HubClient client, RpcParams p)
     {
@@ -317,12 +318,13 @@ public sealed class HubMethods(
     {
         if (service.IsActive)
         {
-            throw new HubException(HubErrors.ControlBusy, $"Идут замеры протокола («{service.OwnerName}»): пульт и программы выключены. Закончите замеры в журнале протокола или нажмите СТОП.");
+            var owner = service.OwnerName ?? "";
+            throw new HubException(HubErrors.ControlBusy, t => t.ServiceBlocksControl(owner));
         }
     }
 
     private static DifferentialDrive RequireDrive(ProtocolRobot robot) =>
-        robot.Drive ?? throw new HubException(HubErrors.NotSupported, "У этой сборки нет привода. Управляйте моторами по отдельности.");
+        robot.Drive ?? throw new HubException(HubErrors.NotSupported, t => t.NoDrive);
 
     private static ControllerKind Source(RpcParams p) =>
         string.Equals(p.OptionalString("source"), "program", StringComparison.OrdinalIgnoreCase) ? ControllerKind.Program : ControllerKind.Remote;

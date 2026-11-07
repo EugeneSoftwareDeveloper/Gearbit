@@ -10,7 +10,10 @@ namespace Gearbit.Hub;
 /// <summary>Найденное устройство вместе с подобранным описанием.</summary>
 public sealed record ScanResult(DiscoveredDevice Device, string? DescriptorId, LocalizedText? DescriptorTitle);
 
-public sealed record ScanReport(IReadOnlyList<ScanResult> Devices, IReadOnlyList<string> Warnings);
+/// <summary>Транспорт не смог искать устройства: текст для пользователя хаб составляет на его языке.</summary>
+public sealed record ScanWarning(string TransportKind, string Detail);
+
+public sealed record ScanReport(IReadOnlyList<ScanResult> Devices, IReadOnlyList<ScanWarning> Warnings);
 
 /// <summary>
 /// Находит устройства через все транспорты, подбирает описание и сборку, создаёт и держит
@@ -56,7 +59,7 @@ public sealed class RobotManager : IAsyncDisposable
 
     public async Task<ScanReport> ScanAsync(TimeSpan duration, CancellationToken cancellationToken)
     {
-        var warnings = new List<string>();
+        var warnings = new List<ScanWarning>();
         var tasks = _scanners.Select(async scanner =>
         {
             try
@@ -68,9 +71,7 @@ public sealed class RobotManager : IAsyncDisposable
                 _logger.LogWarning(ex, "Сканер {Kind} не сработал", scanner.TransportKind);
                 lock (warnings)
                 {
-                    warnings.Add(scanner.TransportKind == "ble"
-                        ? $"Bluetooth недоступен: {ex.Message}"
-                        : $"{scanner.TransportKind}: {ex.Message}");
+                    warnings.Add(new ScanWarning(scanner.TransportKind, ex.Message));
                 }
 
                 return (IReadOnlyList<DiscoveredDevice>)[];
@@ -104,20 +105,20 @@ public sealed class RobotManager : IAsyncDisposable
         try
         {
             var scan = await FindScannedAsync(deviceId, cancellationToken).ConfigureAwait(false)
-                ?? throw new HubException(HubErrors.NotFound, "Устройство не найдено. Запустите поиск ещё раз.");
+                ?? throw new HubException(HubErrors.NotFound, t => t.DeviceGone);
 
             var descriptor = (descriptorId ?? scan.DescriptorId) is { } id
-                ? Catalog.FindDevice(id) ?? throw new HubException(HubErrors.NotFound, $"Нет описания устройства «{id}».")
-                : throw new HubException(HubErrors.NotFound, "Не удалось определить модель робота. Выберите её вручную.");
+                ? Catalog.FindDevice(id) ?? throw new HubException(HubErrors.NotFound, t => t.NoDeviceDescription(id))
+                : throw new HubException(HubErrors.NotFound, t => t.ModelUnknown);
 
             var profile = profileId is not null
-                ? Catalog.FindProfile(profileId) ?? throw new HubException(HubErrors.NotFound, $"Нет сборки «{profileId}».")
+                ? Catalog.FindProfile(profileId) ?? throw new HubException(HubErrors.NotFound, t => t.NoProfile(profileId))
                 : Catalog.ProfilesFor(descriptor.Id).FirstOrDefault();
 
             var transportFactory = _transports.FirstOrDefault(t => t.TransportKind == scan.Device.TransportKind)
-                ?? throw new HubException(HubErrors.NotSupported, $"Нет транспорта «{scan.Device.TransportKind}».");
+                ?? throw new HubException(HubErrors.NotSupported, t => t.NoTransport(scan.Device.TransportKind));
             var protocolFactory = _protocols.FirstOrDefault(p => p.Name == descriptor.ProtocolName)
-                ?? throw new HubException(HubErrors.NotSupported, $"Протокол «{descriptor.ProtocolName}» не поддерживается.");
+                ?? throw new HubException(HubErrors.NotSupported, t => t.ProtocolNotSupported(descriptor.ProtocolName));
 
             await DisconnectCoreAsync().ConfigureAwait(false);
 
@@ -135,7 +136,10 @@ public sealed class RobotManager : IAsyncDisposable
             {
                 Detach(robot);
                 await robot.DisposeAsync().ConfigureAwait(false);
-                throw new HubException(HubErrors.ConnectFailed, ex.Message);
+                _logger.LogWarning(ex, "Не удалось подключиться к {Id}", scan.Device.Id);
+                throw ex is RobotException robotError
+                    ? new HubException(HubErrors.ConnectFailed, t => t.RobotError(robotError.Code, robotError.Detail))
+                    : new HubException(HubErrors.ConnectFailed, t => t.ConnectFailed(ex.Message));
             }
 
             Active = robot;

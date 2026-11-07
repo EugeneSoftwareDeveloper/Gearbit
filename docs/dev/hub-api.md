@@ -12,11 +12,13 @@
 2. Первым вызовите `hub.hello`:
 
 ```json
-→ {"jsonrpc":"2.0","id":1,"method":"hub.hello","params":{"name":"Python: исследователь"}}
+→ {"jsonrpc":"2.0","id":1,"method":"hub.hello","params":{"name":"Python: исследователь","lang":"ru"}}
 ← {"jsonrpc":"2.0","id":1,"result":{"hub":"Gearbit","version":"0.1.0","clientId":"c3","transports":["emulator","ble"],"robot":null,"control":{"clientId":null,"clientName":null,"kind":null,"mine":false}}}
 ```
 
 `name` показывается другим клиентам в полоске «Сейчас управляет…».
+
+`lang` — язык сообщений для этого клиента: `ru` или `en` (подходит и `en-US`). На нём приходят `message` в ошибках, `safety.event`, `warnings` поиска и `problem` в `program.languages`. Без `lang` или с незнакомым языком — по-русски, как в прежних версиях. Одно событие разные клиенты получают каждый на своём языке. Описания в `hub.methods` и журнал хаба — всегда по-русски.
 
 ## Методы
 
@@ -24,7 +26,7 @@
 
 | Метод | Параметры | Результат |
 |---|---|---|
-| `hub.hello` | `{name, runId?}` | `{hub, version, clientId, transports, robot, control}`. `runId` передаёт программа, которую запустил хаб (`GEARBIT_RUN_ID`): так хаб узнаёт её соединение. |
+| `hub.hello` | `{name, lang?, runId?}` | `{hub, version, clientId, transports, robot, control}`. `lang` — язык сообщений (`ru`, `en`). `runId` передаёт программа, которую запустил хаб (`GEARBIT_RUN_ID`): так хаб узнаёт её соединение. |
 | `hub.methods` | — | список `{name, summary}` |
 | `catalog.get` | — | `{devices: [{id, title, status, protocol, components}], profiles: [{id, title, device, status, maxPowerPercent, aliases}]}` |
 
@@ -78,7 +80,7 @@
 
 | Метод | Параметры | Поведение |
 |---|---|---|
-| `program.languages` | — | `[{id, title, available, version, problem}]`. `problem` — что сделать, если запустить нечем (по-русски, для показа). Python ищется при каждом вызове, пока не найден; найденный запоминается. |
+| `program.languages` | — | `[{id, title, available, version, problem}]`. `problem` — что сделать, если запустить нечем (на языке клиента, для показа). Python ищется при каждом вызове, пока не найден; найденный запоминается. |
 | `program.run` | `{language, code, name?, sensors?}` | Запустить. `language`: `python` или `csharp`. `sensors` — где стоят датчики: `{D1: "front", D2: "none"}`. Предыдущая программа останавливается (`reason: "replaced"`). Возвращает `{runId}`. Нет языка — `NotSupported` с подсказкой. Код длиннее 256 КБ — `InvalidParams`. |
 | `program.stop` | — | Завершить процесс программы. Если управляла она, моторы в 0. `false` — ничего не работало. |
 | `program.status` | — | `{runId, language, name, startedAt}` или `null`. |
@@ -178,7 +180,9 @@
 | −32004 | NotSupported | Нет транспорта или протокола, компонент недоступен в прошивке |
 | −32005 | ConnectFailed | Не удалось подключиться |
 
-`message` в ошибке написан по-русски и годится для показа пользователю.
+`message` в ошибке написан на языке клиента (`hub.hello {lang}`) и годится для показа пользователю.
+
+Тексты хаба — в `src/Gearbit.Hub/HubText.cs`: интерфейс `IHubText` и классы `RuHubText`, `EnHubText`. Новый текст добавьте в интерфейс и в оба класса — без перевода проект не соберётся. Ошибку бросайте так: `throw new HubException(HubErrors.NotFound, t => t.NoMotor(id))`; `Message` исключения — русский текст для журнала. Уведомление с текстом рассылайте через `ClientRegistry.BroadcastText`. Ошибки робота и транспорта (`RobotException`) несут код `RobotErrorCode`, хаб показывает по нему `IHubText.RobotError`.
 
 ## HTTP
 

@@ -22,6 +22,7 @@ const M = messages({
     tilt: { forward: "вперёд", backward: "назад", left: "влево", right: "вправо", any: "куда-нибудь" },
     leftWheel: "Левое колесо",
     rightWheel: "Правое колесо",
+    emulatorName: "Nordic_TUDAO (эмулятор)",
   },
   en: {
     colors: { off: "Off", red: "Red", orange: "Orange", yellow: "Yellow", green: "Green", cyan: "Light blue", blue: "Blue", purple: "Purple", white: "White" },
@@ -41,6 +42,7 @@ const M = messages({
     tilt: { forward: "forward", backward: "backward", left: "left", right: "right", any: "any way" },
     leftWheel: "Left wheel",
     rightWheel: "Right wheel",
+    emulatorName: "Nordic_TUDAO (emulator)",
   },
 });
 
@@ -181,6 +183,14 @@ class Store {
 }
 
 export const store = new Store();
+
+/** Id устройства эмулятора: у таких роботов имя переводится в интерфейсе, а не приходит от хаба. */
+const EMULATOR_PREFIX = "emulator:";
+
+/** Имя робота или найденного устройства для показа: у эмулятора — на языке интерфейса. */
+export function robotName(r: { id: string; name: string }): string {
+  return r.id.startsWith(EMULATOR_PREFIX) ? M.emulatorName : r.name;
+}
 
 /** Понятное имя компонента: «Спереди», если у сборки есть псевдоним или датчик переставлен. */
 export function displayName(c: ComponentInfo): string {

@@ -28,7 +28,7 @@ public sealed class RpcDispatcher(ILogger<RpcDispatcher> logger)
         {
             if (wantsReply)
             {
-                client.Send(JsonRpc.Error(id, HubErrors.MethodNotFound, $"Нет метода «{method}»."));
+                client.Send(JsonRpc.Error(id, HubErrors.MethodNotFound, client.Text.MethodNotFound(method)));
             }
 
             return;
@@ -46,7 +46,7 @@ public sealed class RpcDispatcher(ILogger<RpcDispatcher> logger)
         {
             if (wantsReply)
             {
-                client.Send(JsonRpc.Error(id, ex.Code, ex.Message));
+                client.Send(JsonRpc.Error(id, ex.Code, ex.MessageFor(client.Text)));
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -58,7 +58,7 @@ public sealed class RpcDispatcher(ILogger<RpcDispatcher> logger)
             logger.LogError(ex, "Ошибка в методе {Method}", method);
             if (wantsReply)
             {
-                client.Send(JsonRpc.Error(id, HubErrors.Internal, $"Внутренняя ошибка: {ex.Message}"));
+                client.Send(JsonRpc.Error(id, HubErrors.Internal, client.Text.InternalError(ex.Message)));
             }
         }
     }

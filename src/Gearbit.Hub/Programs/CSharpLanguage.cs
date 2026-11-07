@@ -23,13 +23,13 @@ public sealed class CSharpLanguage(HubOptions options) : IProgramLanguage
     public Task<LanguageStatus> CheckAsync(CancellationToken cancellationToken) =>
         Task.FromResult(File.Exists(HostPath)
             ? new LanguageStatus(true, LanguageVersion, null)
-            : new LanguageStatus(false, null, NotFound));
+            : new LanguageStatus(false, null, t => t.CSharpHostMissing(HostFileName)));
 
     public Task<ProgramCommand> PrepareAsync(string programPath, CancellationToken cancellationToken)
     {
         if (!File.Exists(HostPath))
         {
-            throw new HubException(HubErrors.NotSupported, NotFound);
+            throw new HubException(HubErrors.NotSupported, t => t.CSharpHostMissing(HostFileName));
         }
 
         var environment = new Dictionary<string, string>
@@ -40,6 +40,4 @@ public sealed class CSharpLanguage(HubOptions options) : IProgramLanguage
         };
         return Task.FromResult(new ProgramCommand(HostPath, [programPath], environment));
     }
-
-    private string NotFound => $"Не найден запускатель программ на C# ({HostFileName}). Переустановите Gearbit.";
 }

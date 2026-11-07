@@ -69,8 +69,8 @@ public sealed class ControlArbiter(TimeProvider time)
             }
             else if (_owner.ClientId != clientId)
             {
-                var who = _owner.Kind == ControllerKind.Program ? "программа" : "пульт";
-                throw new HubException(HubErrors.ControlBusy, $"Роботом сейчас управляет {who} «{_owner.ClientName}». Нажмите «Забрать управление» или СТОП.");
+                var owner = _owner;
+                throw new HubException(HubErrors.ControlBusy, t => t.ControlBusy(owner.Kind, owner.ClientName));
             }
 
             _lastMotionTimestamp = time.GetTimestamp();

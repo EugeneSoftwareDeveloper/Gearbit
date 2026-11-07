@@ -32,6 +32,12 @@ public sealed class HubClient
     /// <summary>Как клиент представился (hub.hello): «Пульт», «Python: obstacle.py»…</summary>
     public string Name { get; set; } = "клиент";
 
+    /// <summary>
+    /// Тексты на языке клиента (<c>hub.hello</c> с <c>lang</c>). Пока клиент не назвал язык — по-русски,
+    /// как в прежних версиях.
+    /// </summary>
+    public IHubText Text { get; set; } = HubText.Russian;
+
     /// <summary>Присылать ли журнал байтов протокола.</summary>
     public bool TraceEnabled { get; set; }
 
@@ -66,13 +72,13 @@ public sealed class HubClient
                 }
                 catch (JsonException)
                 {
-                    Send(JsonRpc.Error(null, HubErrors.ParseError, "Некорректный JSON."));
+                    Send(JsonRpc.Error(null, HubErrors.ParseError, Text.InvalidJson));
                     continue;
                 }
 
                 if (request is not JsonObject obj || obj["method"] is not JsonValue methodValue || !methodValue.TryGetValue<string>(out var method))
                 {
-                    Send(JsonRpc.Error(request?["id"], HubErrors.InvalidRequest, "Ожидался объект JSON-RPC с полем method."));
+                    Send(JsonRpc.Error(request?["id"], HubErrors.InvalidRequest, Text.InvalidRequest));
                     continue;
                 }
 
@@ -189,6 +195,29 @@ public sealed class ClientRegistry
             if (filter is null || filter(client))
             {
                 message ??= JsonRpc.Notification(method, payload);
+                client.Send(message);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Уведомление с текстом для человека (<c>safety.event</c>): каждый клиент получает его на своём языке.
+    /// Сообщение собирается один раз на язык.
+    /// </summary>
+    public void BroadcastText(string method, Func<IHubText, object?> payload, Func<HubClient, bool>? filter = null)
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+        var messages = new Dictionary<IHubText, byte[]>();
+        foreach (var client in _clients.Values)
+        {
+            if (filter is null || filter(client))
+            {
+                if (!messages.TryGetValue(client.Text, out var message))
+                {
+                    message = JsonRpc.Notification(method, payload(client.Text));
+                    messages[client.Text] = message;
+                }
+
                 client.Send(message);
             }
         }

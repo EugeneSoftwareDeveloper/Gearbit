@@ -103,7 +103,8 @@ public class ProtocolRobotTests
 
         await robot.ExitManualModeAsync();
         Assert.False(robot.ManualMode);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => robot.WriteRawAsync([0xFF, 0xFE, 0x01, 0x04, 0xFD, 0xFC], CancellationToken.None));
+        var error = await Assert.ThrowsAsync<RobotException>(() => robot.WriteRawAsync([0xFF, 0xFE, 0x01, 0x04, 0xFD, 0xFC], CancellationToken.None));
+        Assert.Equal(RobotErrorCode.ManualModeRequired, error.Code);
 
         // Цикл снова работает.
         robot.Find<IMotor>("M1")!.SetPower(50);

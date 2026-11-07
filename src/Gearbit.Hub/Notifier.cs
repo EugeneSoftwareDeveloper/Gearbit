@@ -101,7 +101,7 @@ public sealed class Notifier(
         clients.Broadcast("robot.state", new { state = e.State, reason = e.Reason });
         if (e.State == RobotConnectionState.Lost)
         {
-            clients.Broadcast("safety.event", new { reason = "lost", message = "Связь с роботом потеряна. Проверьте питание и расстояние." });
+            clients.BroadcastText("safety.event", t => new { reason = "lost", message = t.RobotLost });
         }
     }
 

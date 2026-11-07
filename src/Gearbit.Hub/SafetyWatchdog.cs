@@ -63,7 +63,7 @@ public sealed class SafetyWatchdog(
 
         await robot.StopAllAsync().ConfigureAwait(false);
         logger.LogInformation("Пульт молчит {Ms} мс — робот остановлен", options.RemoteWatchdogMs);
-        clients.Broadcast("safety.event", new { reason = "watchdog", message = "Пульт перестал отвечать — робот остановлен." });
+        clients.BroadcastText("safety.event", t => new { reason = "watchdog", message = t.RemoteSilent });
         return true;
     }
 
@@ -88,7 +88,7 @@ public sealed class SafetyWatchdog(
             await robot.StopAllAsync().ConfigureAwait(false);
             if (!stoppedProgram)
             {
-                clients.Broadcast("safety.event", new { reason = "clientLeft", message = $"«{client.Name}» отключился — робот остановлен." });
+                clients.BroadcastText("safety.event", t => new { reason = "clientLeft", message = t.ClientLeft(client.Name) });
             }
         }
         catch (InvalidOperationException ex)

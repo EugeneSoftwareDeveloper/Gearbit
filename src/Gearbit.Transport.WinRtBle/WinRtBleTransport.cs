@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices.WindowsRuntime;
 using Gearbit.Core.Descriptors;
+using Gearbit.Core.Robots;
 using Gearbit.Core.Transport;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
@@ -58,14 +59,14 @@ public sealed class WinRtBleTransport : ITransport
         try
         {
             _device = await BluetoothLEDevice.FromBluetoothAddressAsync(_address).AsTask(cancellationToken).ConfigureAwait(false)
-                ?? throw new InvalidOperationException("Устройство не найдено. Включён ли робот и Bluetooth на ПК?");
+                ?? throw new RobotException(RobotErrorCode.DeviceNotFound, "Устройство не найдено. Включён ли робот и Bluetooth на ПК?");
             _device.ConnectionStatusChanged += OnConnectionStatusChanged;
 
             var serviceId = ParseUuid(_settings.Service, "service");
             var services = await _device.GetGattServicesForUuidAsync(serviceId, BluetoothCacheMode.Uncached).AsTask(cancellationToken).ConfigureAwait(false);
             if (services.Status != GattCommunicationStatus.Success || services.Services.Count == 0)
             {
-                throw new InvalidOperationException($"Сервис {serviceId} не найден (статус {services.Status}).");
+                throw new RobotException(RobotErrorCode.ServiceNotFound, $"Сервис {serviceId} не найден (статус {services.Status}).", $"{serviceId}: {services.Status}");
             }
 
             _service = services.Services[0];
@@ -77,7 +78,7 @@ public sealed class WinRtBleTransport : ITransport
                 .AsTask(cancellationToken).ConfigureAwait(false);
             if (cccd != GattCommunicationStatus.Success)
             {
-                throw new InvalidOperationException($"Не удалось подписаться на уведомления (статус {cccd}).");
+                throw new RobotException(RobotErrorCode.SubscribeFailed, $"Не удалось подписаться на уведомления (статус {cccd}).", cccd.ToString());
             }
 
             SetState(TransportState.Connected, null);
@@ -108,7 +109,7 @@ public sealed class WinRtBleTransport : ITransport
         var characteristic = _write;
         if (State != TransportState.Connected || characteristic is null)
         {
-            throw new InvalidOperationException("Транспорт не подключён.");
+            throw new RobotException(RobotErrorCode.NotConnected, "Транспорт не подключён.");
         }
 
         var option = _settings.WriteWithResponse ? GattWriteOption.WriteWithResponse : GattWriteOption.WriteWithoutResponse;
@@ -119,7 +120,7 @@ public sealed class WinRtBleTransport : ITransport
             var result = await characteristic.WriteValueWithResultAsync(chunk.AsBuffer(), option).AsTask(cancellationToken).ConfigureAwait(false);
             if (result.Status != GattCommunicationStatus.Success)
             {
-                throw new InvalidOperationException($"Ошибка записи BLE: {result.Status}.");
+                throw new RobotException(RobotErrorCode.WriteFailed, $"Ошибка записи BLE: {result.Status}.", result.Status.ToString());
             }
         }
     }
@@ -131,11 +132,11 @@ public sealed class WinRtBleTransport : ITransport
         var result = await service.GetCharacteristicsForUuidAsync(uuid, BluetoothCacheMode.Uncached).AsTask(cancellationToken).ConfigureAwait(false);
         return result.Status == GattCommunicationStatus.Success && result.Characteristics.Count > 0
             ? result.Characteristics[0]
-            : throw new InvalidOperationException($"Характеристика {uuid} не найдена (статус {result.Status}).");
+            : throw new RobotException(RobotErrorCode.ServiceNotFound, $"Характеристика {uuid} не найдена (статус {result.Status}).", $"{uuid}: {result.Status}");
     }
 
     private static Guid ParseUuid(string? value, string name) =>
-        Guid.TryParse(value, out var uuid) ? uuid : throw new InvalidOperationException($"В описании устройства не задан UUID «{name}».");
+        Guid.TryParse(value, out var uuid) ? uuid : throw new RobotException(RobotErrorCode.BadDescriptor, $"В описании устройства не задан UUID «{name}».", name);
 
     private void OnValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args) =>
         DataReceived?.Invoke(this, new DataReceivedEventArgs(args.CharacteristicValue.ToArray()));

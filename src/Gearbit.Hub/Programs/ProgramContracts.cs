@@ -11,7 +11,8 @@ public enum ProgramStream
 public sealed record ProgramCommand(string FileName, IReadOnlyList<string> Arguments, IReadOnlyDictionary<string, string> Environment);
 
 /// <summary>Можно ли запускать программы на языке: нашёлся ли Python, собран ли запускатель C#.</summary>
-public sealed record LanguageStatus(bool Available, string? Version, string? Problem);
+/// <param name="Problem">Что сделать, если запустить нечем, — текст на языке клиента.</param>
+public sealed record LanguageStatus(bool Available, string? Version, Func<IHubText, string>? Problem);
 
 /// <summary>
 /// Язык программ ребёнка (Python, C#). Программа всегда работает в отдельном процессе

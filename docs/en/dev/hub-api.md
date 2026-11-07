@@ -12,11 +12,13 @@ The hub listens on `ws://localhost:5280/ws`. Messages are JSON-RPC 2.0, one JSON
 2. Call `hub.hello` first:
 
 ```json
-→ {"jsonrpc":"2.0","id":1,"method":"hub.hello","params":{"name":"Python: исследователь"}}
+→ {"jsonrpc":"2.0","id":1,"method":"hub.hello","params":{"name":"Python: explorer","lang":"en"}}
 ← {"jsonrpc":"2.0","id":1,"result":{"hub":"Gearbit","version":"0.1.0","clientId":"c3","transports":["emulator","ble"],"robot":null,"control":{"clientId":null,"clientName":null,"kind":null,"mine":false}}}
 ```
 
 `name` is shown to other clients in the «Сейчас управляет…» (Now in control…) bar.
+
+`lang` is the message language for this client: `ru` or `en` (`en-US` works too). The error `message`, `safety.event`, the scan `warnings` and `problem` in `program.languages` come in it. Without `lang`, or with an unknown language, they are in Russian, as in earlier versions. Each client gets the same event in its own language. Descriptions in `hub.methods` and the hub log are always in Russian.
 
 ## Methods
 
@@ -24,7 +26,7 @@ The hub listens on `ws://localhost:5280/ws`. Messages are JSON-RPC 2.0, one JSON
 
 | Method | Parameters | Result |
 |---|---|---|
-| `hub.hello` | `{name, runId?}` | `{hub, version, clientId, transports, robot, control}`. `runId` is passed by a program the hub started (`GEARBIT_RUN_ID`): this is how the hub recognizes its connection. |
+| `hub.hello` | `{name, lang?, runId?}` | `{hub, version, clientId, transports, robot, control}`. `lang` — the message language (`ru`, `en`). `runId` is passed by a program the hub started (`GEARBIT_RUN_ID`): this is how the hub recognizes its connection. |
 | `hub.methods` | — | a list of `{name, summary}` |
 | `catalog.get` | — | `{devices: [{id, title, status, protocol, components}], profiles: [{id, title, device, status, maxPowerPercent, aliases}]}` |
 
@@ -78,7 +80,7 @@ The hub starts the program in a separate process itself, and the process connect
 
 | Method | Parameters | Behavior |
 |---|---|---|
-| `program.languages` | — | `[{id, title, available, version, problem}]`. `problem` — what to do if there is nothing to run with (in Russian, for display). Python is searched for on every call until found; once found, it is remembered. |
+| `program.languages` | — | `[{id, title, available, version, problem}]`. `problem` — what to do if there is nothing to run with (in the client's language, for display). Python is searched for on every call until found; once found, it is remembered. |
 | `program.run` | `{language, code, name?, sensors?}` | Run. `language`: `python` or `csharp`. `sensors` — where the sensors are: `{D1: "front", D2: "none"}`. The previous program is stopped (`reason: "replaced"`). Returns `{runId}`. No language — `NotSupported` with a hint. Code longer than 256 KB — `InvalidParams`. |
 | `program.stop` | — | End the program process. If it was in control, motors to 0. `false` — nothing was running. |
 | `program.status` | — | `{runId, language, name, startedAt}` or `null`. |
@@ -178,7 +180,9 @@ While measurements run, `motor.setPower`, `drive.*` and `light.setColor` are rej
 | −32004 | NotSupported | No transport or protocol, the component is unavailable in the firmware |
 | −32005 | ConnectFailed | Could not connect |
 
-The error `message` is in Russian and is fit to show to the user.
+The error `message` is in the client's language (`hub.hello {lang}`) and is fit to show to the user.
+
+The hub texts live in `src/Gearbit.Hub/HubText.cs`: the `IHubText` interface and the `RuHubText`, `EnHubText` classes. Add a new text to the interface and to both classes — the project will not build without a translation. Throw an error like this: `throw new HubException(HubErrors.NotFound, t => t.NoMotor(id))`; the exception `Message` is the Russian text for the log. Broadcast a notification with text through `ClientRegistry.BroadcastText`. Robot and transport errors (`RobotException`) carry a `RobotErrorCode`, and the hub shows `IHubText.RobotError` for it.
 
 ## HTTP
 

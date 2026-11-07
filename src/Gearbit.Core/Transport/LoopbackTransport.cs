@@ -1,3 +1,5 @@
+using Gearbit.Core.Robots;
+
 namespace Gearbit.Core.Transport;
 
 /// <summary>Виртуальное устройство на другом конце <see cref="LoopbackTransport"/> (эмулятор прошивки, тестовый двойник).</summary>
@@ -65,7 +67,7 @@ public sealed class LoopbackTransport : ITransport
     {
         if (State != TransportState.Connected)
         {
-            throw new InvalidOperationException("Транспорт не подключён.");
+            throw new RobotException(RobotErrorCode.NotConnected, "Транспорт не подключён.");
         }
 
         // Режем на части так же, как настоящий BLE, — чтобы ловить ошибки сборки кадров в тестах.
