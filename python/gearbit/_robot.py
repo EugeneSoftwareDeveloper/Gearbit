@@ -52,6 +52,25 @@ _PLACE_NAMES = {
     "down_right": "вниз справа",
 }
 
+#: С какого угла (градусы) робот считается наклонённым. Как в блоках Makerzoid.
+TILT_LEVEL = 15
+#: Куда можно наклонить робота: y больше 0 — вперёд, x больше 0 — вправо.
+TILT_DIRECTIONS = ("forward", "backward", "left", "right", "any")
+_TILT_WORDS = {
+    "вперёд": "forward",
+    "вперед": "forward",
+    "front": "forward",
+    "назад": "backward",
+    "back": "backward",
+    "влево": "left",
+    "налево": "left",
+    "вправо": "right",
+    "направо": "right",
+    "куда-нибудь": "any",
+    "куда нибудь": "any",
+    "куда угодно": "any",
+}
+
 COLORS = ("off", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "white")
 _COLOR_WORDS = {
     "выкл": "off",
@@ -322,6 +341,29 @@ class Robot:
         time.sleep(_SENSOR_PAUSE)
         tilt = (self._check().telemetry or {}).get("tilt") or {}
         return int(tilt.get("x") or 0), int(tilt.get("y") or 0)
+
+    def tilted(self, direction: str = "any") -> bool:
+        """Наклонён ли робот больше чем на 15°: "forward", "backward", "left", "right" или "any" (куда угодно)."""
+        key = str(direction).strip().lower()
+        key = _TILT_WORDS.get(key, key)
+        if key not in TILT_DIRECTIONS:
+            raise GearbitError(
+                f"Не знаю, куда это — «{direction}». Напишите \"forward\", \"backward\", \"left\", \"right\" или \"any\"."
+            )
+        info = self._info()
+        has_gyro = any(c.get("kind") == "imu" and c.get("available") for c in info.get("components", []))
+        if info.get("firmware") and not has_gyro:
+            raise GearbitError("У этого робота нет гироскопа: наклон знают только роботы с новой прошивкой.")
+        x, y = self.tilt()
+        if key == "forward":
+            return y >= TILT_LEVEL
+        if key == "backward":
+            return y <= -TILT_LEVEL
+        if key == "left":
+            return x <= -TILT_LEVEL
+        if key == "right":
+            return x >= TILT_LEVEL
+        return abs(x) >= TILT_LEVEL or abs(y) >= TILT_LEVEL
 
     def battery(self) -> int:
         """Заряд батареи, как его сообщает робот."""

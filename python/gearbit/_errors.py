@@ -12,7 +12,7 @@ from ._hub import GearbitError
 # Команды робота, которые дети пишут без «robot.».
 _ROBOT_COMMANDS = {
     "forward", "backward", "turn_left", "turn_right", "tank", "drive", "stop", "motor",
-    "light", "lights_off", "distance", "distance_cm", "obstacle", "tilt", "battery", "say",
+    "light", "lights_off", "distance", "distance_cm", "obstacle", "on_line", "tilt", "tilted", "battery", "say",
 }
 
 

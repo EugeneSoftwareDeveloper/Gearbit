@@ -137,6 +137,7 @@
 | `emulator.setObstacles` | `{obstacles: [{x, y, width, height}]}` | Препятствия в сантиметрах. |
 | `emulator.setSensorAngles` | `{angles: {D1: 0}, down: {D2: 2.5}}` | Куда смотрят виртуальные датчики. `angles` — вбок: градусы от «вперёд» по часовой стрелке. `down` — в пол: сдвиг вбок от оси робота в сантиметрах (меньше 0 — левее, больше 0 — правее; не дальше `robotRadius − 1`), точка на `downSensorForward` см впереди центра. Датчик живёт в одном из двух словарей: попал в `down` — убран из `angles` и наоборот. Неизвестные id пропускаются. Возвращает `{angles, down}`. Интерфейс вызывает его, когда пользователь переставляет датчики в карточке «Датчики». |
 | `emulator.setScene` | `{scene: "room" \| "line"}` | Сцена: `room` — комната с препятствиями, `line` — белый лист с чёрным стадионом (центр 120×80, прямые 90 см, радиус 45, линия 3 см) без препятствий. Машинка встаёт на старт сцены. Возвращает `{scene}`; неизвестная сцена — `InvalidParams`. |
+| `emulator.setTilt` | `{x, y}` | Наклонить машинку (гироскоп), градусы −90..90: `y` больше 0 — вперёд, `x` больше 0 — вправо (как у Makerzoid). Без параметров — ровно. Наклон держится, пока его не вернут в 0; `emulator.reset` и выключение тоже обнуляют. Возвращает `{x, y}`. Интерфейс вызывает его, пока держат кнопки «Наклонить». |
 
 ## Уведомления (хаб → клиент)
 
@@ -151,7 +152,7 @@
 | `program.output` | программа напечатала строки (пачками раз в 100 мс, до 32 КБ) | `{runId, stream: "out"\|"err", text}` — строки через `\n`, без `\n` в конце |
 | `program.say` | программа вызвала `robot.say` | `{runId, text}` |
 | `program.exited` | программа закончилась | `{runId, exitCode, reason, error, durationMs}`. `reason`: `finished` (код 0), `error`, `stopped` (СТОП, `program.stop` или код 2 — программа сама поймала остановку), `replaced`, `ownerLeft`, `robotLost`, `hubStopping`. `error`: `{line, column, message}` или `null`. |
-| `emulator.state` | ~15 Гц (если подписаны) | `{active, roomWidth, roomHeight, robotRadius, x, y, heading, bumped, motors, lights, sensorCm, sensorLevels, sensorAngles, battery, obstacles, sensorDown, downSensorForward, scene, line}`. `line` — `{points: [{x, y}], width, closed}` или `null` вне сцены `line`. Для датчиков из `sensorDown` уровень в `sensorLevels` — пол под ними: 0 белое … 6 чёрное. |
+| `emulator.state` | ~15 Гц (если подписаны) | `{active, roomWidth, roomHeight, robotRadius, x, y, heading, bumped, motors, lights, sensorCm, sensorLevels, sensorAngles, battery, obstacles, sensorDown, downSensorForward, scene, line, tiltX, tiltY}`. `line` — `{points: [{x, y}], width, closed}` или `null` вне сцены `line`. Для датчиков из `sensorDown` уровень в `sensorLevels` — пол под ними: 0 белое … 6 чёрное. |
 
 ## Безопасность
 

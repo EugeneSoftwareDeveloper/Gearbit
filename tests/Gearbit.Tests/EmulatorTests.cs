@@ -78,6 +78,27 @@ public class EmulatorTests
     }
 
     [Fact]
+    public void Tilt_goes_to_telemetry_until_reset()
+    {
+        var time = new ManualTime();
+        using var emulator = new TudaoEmulator(Options, new EmulatorWorld(new EmulatorSettings()), time);
+        var reader = new TudaoProtocol(Options).CreateReader();
+        var received = new List<byte[]>();
+        emulator.SendToHost += (_, e) => received.Add(e.Data.ToArray());
+        emulator.PowerOn();
+
+        // Больше 90° гироскоп не показывает.
+        Assert.Equal((90, -30), emulator.SetTilt(120, -30));
+        emulator.SendTelemetry();
+        var telemetry = Assert.IsType<Core.Protocol.TelemetryMessage>(Assert.Single(reader.Feed(received.Single()))).Telemetry;
+        Assert.Equal(new TiltReading(90, -30, 10), telemetry.Tilt);
+        Assert.Equal((90, -30), (emulator.GetSnapshot().TiltX, emulator.GetSnapshot().TiltY));
+
+        emulator.Reset();
+        Assert.Equal((0, 0), (emulator.GetSnapshot().TiltX, emulator.GetSnapshot().TiltY));
+    }
+
+    [Fact]
     public void Sensors_can_be_moved_to_another_place()
     {
         var world = new EmulatorWorld(new EmulatorSettings { Obstacles = [new Obstacle(70, 0, 10, 160)], StartPose = new Pose(50, 80, 0) });

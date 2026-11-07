@@ -1,7 +1,7 @@
 import * as SB from "scratch-blocks";
 import { hub } from "../hub";
-import { COLORS, seesLine, sensorPlace, store, type ComponentInfo, type RobotColor } from "../model";
-import { LIGHTS, LINE_SENSORS, OBSTACLE_LEVEL, SENSORS } from "./robot-blocks";
+import { COLORS, isTilted, lacksTilt, seesLine, sensorPlace, store, type ComponentInfo, type RobotColor } from "../model";
+import { LIGHTS, LINE_SENSORS, OBSTACLE_LEVEL, SENSORS, TILT_DIRS } from "./robot-blocks";
 
 /**
  * Интерпретатор блоков. Работает прямо по блокам рабочей области (как Scratch):
@@ -17,11 +17,13 @@ export type Value = number | string | boolean;
 
 /** Пауза в конце каждого шага цикла: даёт обновиться экрану и датчикам. */
 const TICK_MS = 20;
-/** Как часто проверяются события «когда расстояние < …». */
+/** Как часто проверяются события «когда расстояние < …» и «когда наклонён …». */
 const HAT_POLL_MS = 50;
 /** Наибольший уровень датчика расстояния: «ничего не видно». */
 const DISTANCE_MAX = 6;
-const HATS = new Set(["event_whenflagclicked", "robot_when_distance"]);
+/** События датчиков: следят за роботом, пока программа запущена флажком. */
+const SENSOR_HATS = ["robot_when_distance", "robot_when_tilted"];
+const HATS = new Set(["event_whenflagclicked", ...SENSOR_HATS]);
 
 /** Поток остановлен (СТОП или «стоп этот скрипт») — это не ошибка. */
 class Halt extends Error {}
@@ -217,7 +219,7 @@ export class Runtime {
   /** Потоков не осталось: если некого ждать (нет событий «когда …»), программа закончена. */
   private settle(): void {
     if (!this.active || this.threads.size > 0) return;
-    if (this.armed && this.tops("robot_when_distance").length > 0) return;
+    if (this.armed && this.sensorHats().length > 0) return;
     void this.finish();
   }
 
@@ -255,14 +257,25 @@ export class Runtime {
     }
   }
 
-  /** События «когда расстояние < N» срабатывают по фронту: было «нет», стало «да». */
+  private sensorHats(): SB.BlockSvg[] {
+    return SENSOR_HATS.flatMap((type) => this.tops(type));
+  }
+
+  /** Условие события датчика прямо сейчас. */
+  private hatCondition(top: SB.BlockSvg): boolean {
+    return top.type === "robot_when_tilted"
+      ? this.tilted(top.getFieldValue("DIR"), top.id)
+      : this.distance(top.getFieldValue("SENSOR"), top.id) < this.num(top, "VALUE");
+  }
+
+  /** События «когда расстояние < N» и «когда наклонён» срабатывают по фронту: было «нет», стало «да». */
   private pollHats(): void {
     if (!this.armed) return;
-    const hats = this.tops("robot_when_distance");
+    const hats = this.sensorHats();
     for (const top of hats) {
       let now: boolean;
       try {
-        now = this.distance(top.getFieldValue("SENSOR"), top.id) < this.num(top, "VALUE");
+        now = this.hatCondition(top);
       } catch (e) {
         this.fail(e);
         return;
@@ -315,6 +328,7 @@ export class Runtime {
     switch (b.type) {
       case "event_whenflagclicked":
       case "robot_when_distance":
+      case "robot_when_tilted":
         return;
 
       /* Управление */
@@ -474,6 +488,8 @@ export class Runtime {
         const sensor = this.sensor(b.getFieldValue("SENSOR"), b.id, LINE_SENSORS);
         return sensor ? seesLine(sensor, store.state.telemetry?.distances[sensor.id]) : false;
       }
+      case "robot_tilted":
+        return this.tilted(b.getFieldValue("DIR"), b.id);
       case "robot_tilt": {
         const tilt = store.state.telemetry?.tilt;
         return tilt ? (b.getFieldValue("AXIS") === "y" ? tilt.y : tilt.x) : 0;
@@ -513,6 +529,19 @@ export class Runtime {
   private distance(key: string, blockId: string): number {
     const sensor = this.sensor(key, blockId, SENSORS);
     return (sensor && store.state.telemetry?.distances[sensor.id]) ?? DISTANCE_MAX;
+  }
+
+  /** Наклонён ли робот в эту сторону; без робота — «нет». */
+  private tilted(direction: string, blockId: string): boolean {
+    const robot = store.state.robot;
+    if (!robot || robot.state !== "connected") return false;
+    if (lacksTilt(robot)) {
+      throw new ProgramError(
+        `Этот робот не знает, наклонён ли он «${label(TILT_DIRS, direction)}»: гироскоп есть только у роботов с новой прошивкой.`,
+        blockId,
+      );
+    }
+    return isTilted(store.state.telemetry?.tilt, direction);
   }
 
   /** Датчик по месту или порту; null — робот не подключён. */

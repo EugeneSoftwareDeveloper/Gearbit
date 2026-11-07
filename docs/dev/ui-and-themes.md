@@ -16,7 +16,7 @@
 | `input/keyboard-gamepad.ts` | Клавиши и Gamepad API. |
 | `ui/topbar.ts` | Шапка: режимы, плашка робота, кнопки, СТОП. |
 | `ui/remote-view.ts` | Пульт: карточки управления, сцены, датчиков, света, моторов. Карточку сцены (`stage`) вкладка «Блоки» забирает к себе. Название датчика — `<select>` места; для эмулятора места уходят в `emulator.setSensorAngles`. |
-| `ui/room-view.ts` | Canvas комнаты эмулятора: машинка, лучи, след, рисование препятствий, переключатель сцены «Комната» / «Линия», датчики «вниз» квадратиками. |
+| `ui/room-view.ts` | Canvas комнаты эмулятора: машинка, лучи, след, рисование препятствий, переключатель сцены «Комната» / «Линия», датчики «вниз» квадратиками, кнопки «Наклонить» (`emulator.setTilt`, только пока держат; сброс при отпускании, `blur`, `visibilitychange`). |
 | `ui/connect-dialog.ts` | Поиск и подключение. |
 | `ui/settings-popover.ts`, `help-dialog.ts`, `trace-panel.ts`, `toasts.ts` | Настройки, подсказка (F1), журнал протокола (с кнопкой «Замеры»), всплывающие сообщения. |
 | `ui/files.ts` | `saveTextFile`, `saveJsonFile`, `openFile`, `openTextFile`: File System Access API с запасным вариантом через ссылку. Тип файла — `FileKind {description, suffix, mime?}`. |

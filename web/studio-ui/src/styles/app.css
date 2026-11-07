@@ -695,6 +695,22 @@ kbd {
   flex-wrap: wrap;
   align-items: center;
 }
+.tilt-pad {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+}
+.tilt-pad .btn {
+  width: 32px;
+  padding: 0;
+  touch-action: none;
+}
+.tilt-pad .btn[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-contrast);
+}
 .stage-empty {
   display: grid;
   place-items: center;

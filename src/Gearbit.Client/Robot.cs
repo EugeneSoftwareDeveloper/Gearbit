@@ -29,6 +29,12 @@ public sealed class Robot : IDisposable
     /// <summary>Места «смотрит в пол» — для езды по линии.</summary>
     public static readonly IReadOnlyList<string> DownPlaces = ["down_left", "down", "down_right"];
 
+    /// <summary>С какого угла (градусы) робот считается наклонённым. Как в блоках Makerzoid.</summary>
+    public const int TiltLevel = 15;
+
+    /// <summary>Куда можно наклонить робота: Y больше 0 — вперёд, X больше 0 — вправо.</summary>
+    public static readonly IReadOnlyList<string> TiltDirections = ["forward", "backward", "left", "right", "any"];
+
     /// <summary>Цвета огоньков.</summary>
     public static readonly IReadOnlyList<string> Colors = ["off", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "white"];
 
@@ -56,6 +62,22 @@ public sealed class Robot : IDisposable
         ["down"] = "вниз",
         ["down_left"] = "вниз слева",
         ["down_right"] = "вниз справа",
+    };
+
+    private static readonly Dictionary<string, string> TiltWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["вперёд"] = "forward",
+        ["вперед"] = "forward",
+        ["front"] = "forward",
+        ["назад"] = "backward",
+        ["back"] = "backward",
+        ["влево"] = "left",
+        ["налево"] = "left",
+        ["вправо"] = "right",
+        ["направо"] = "right",
+        ["куда-нибудь"] = "any",
+        ["куда нибудь"] = "any",
+        ["куда угодно"] = "any",
     };
 
     private static readonly Dictionary<string, string> ColorWords = new(StringComparer.OrdinalIgnoreCase)
@@ -307,6 +329,37 @@ public sealed class Robot : IDisposable
         Pause();
         var tilt = Check().Telemetry?["tilt"];
         return (Int(tilt?["x"]), Int(tilt?["y"]));
+    }
+
+    /// <summary>
+    /// Наклонён ли робот больше чем на 15°: "forward", "backward", "left", "right" или "any" (куда угодно).
+    /// </summary>
+    public bool Tilted(string direction = "any")
+    {
+        var key = direction?.Trim() ?? "";
+        key = TiltWords.TryGetValue(key, out var word) ? word : key.ToLowerInvariant();
+        if (!TiltDirections.Contains(key))
+        {
+            throw new GearbitException($"Не знаю, куда это — «{direction}». Напишите \"forward\", \"backward\", \"left\", \"right\" или \"any\".");
+        }
+
+        var info = Info();
+        var hasGyro = (info["components"] as JsonArray ?? []).OfType<JsonObject>()
+            .Any(c => (string?)c["kind"] == "imu" && c["available"] is JsonValue available && available.TryGetValue<bool>(out var yes) && yes);
+        if (info["firmware"] is JsonValue firmware && !string.IsNullOrEmpty((string?)firmware) && !hasGyro)
+        {
+            throw new GearbitException("У этого робота нет гироскопа: наклон знают только роботы с новой прошивкой.");
+        }
+
+        var (x, y) = Tilt();
+        return key switch
+        {
+            "forward" => y >= TiltLevel,
+            "backward" => y <= -TiltLevel,
+            "left" => x <= -TiltLevel,
+            "right" => x >= TiltLevel,
+            _ => Math.Abs(x) >= TiltLevel || Math.Abs(y) >= TiltLevel,
+        };
     }
 
     /// <summary>Заряд батареи, как его сообщает робот.</summary>

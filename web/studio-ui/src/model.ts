@@ -97,6 +97,9 @@ export interface EmulatorState {
   scene: EmulatorScene;
   /** Чёрная линия на полу (только на сцене «линия»). */
   line: { points: { x: number; y: number }[]; width: number; closed: boolean } | null;
+  /** Наклон машинки (гироскоп), градусы: Y больше 0 — вперёд, X больше 0 — вправо. */
+  tiltX: number;
+  tiltY: number;
 }
 
 /** Что лежит в комнате эмулятора: препятствия или белый лист с чёрной линией. */
@@ -206,6 +209,44 @@ export function sensorDownOffset(c: ComponentInfo, robot = store.state.robot): n
 /** Видит ли датчик, смотрящий вниз, чёрную линию при таком уровне (тёмное отражает меньше света — уровень выше). */
 export function seesLine(c: ComponentInfo, level: number | null | undefined): boolean {
   return level !== null && level !== undefined && level >= (c.lineLevel ?? DEFAULT_LINE_LEVEL);
+}
+
+/** С какого угла (градусы) робот считается наклонённым. Как в блоках Makerzoid (BlocosLab, TILT_THRESHOLD). */
+export const TILT_LEVEL = 15;
+
+export type TiltDirection = "forward" | "backward" | "left" | "right" | "any";
+
+/** Куда можно наклонить робота: Y больше 0 — вперёд, X больше 0 — вправо (как у Makerzoid, на роботе не проверено). */
+export const TILT_DIRECTIONS: { id: TiltDirection; title: string }[] = [
+  { id: "forward", title: "вперёд" },
+  { id: "backward", title: "назад" },
+  { id: "left", title: "влево" },
+  { id: "right", title: "вправо" },
+  { id: "any", title: "куда-нибудь" },
+];
+
+/** Наклонён ли робот в эту сторону. Нет гироскопа или данных — «нет». */
+export function isTilted(tilt: { x: number; y: number } | null | undefined, direction: string): boolean {
+  if (!tilt) return false;
+  switch (direction) {
+    case "forward":
+      return tilt.y >= TILT_LEVEL;
+    case "backward":
+      return tilt.y <= -TILT_LEVEL;
+    case "left":
+      return tilt.x <= -TILT_LEVEL;
+    case "right":
+      return tilt.x >= TILT_LEVEL;
+    case "any":
+      return Math.abs(tilt.x) >= TILT_LEVEL || Math.abs(tilt.y) >= TILT_LEVEL;
+    default:
+      return false;
+  }
+}
+
+/** Гироскопа точно нет: прошивка уже известна, а компонента наклона в ней нет (старая прошивка). */
+export function lacksTilt(robot = store.state.robot): boolean {
+  return !!robot?.firmware && !robot.components.some((c) => c.kind === "imu" && c.available);
 }
 
 const ALIAS_NAMES: Record<string, string> = {

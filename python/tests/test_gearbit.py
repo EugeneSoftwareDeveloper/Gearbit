@@ -128,6 +128,23 @@ class RobotTests(unittest.TestCase):
         finally:
             del os.environ["GEARBIT_SENSOR_PLACES"]
 
+    def test_tilted_by_direction(self):
+        self.assertFalse(self.robot.tilted())  # данных о наклоне нет — «нет»
+        self.hub.notify("robot.telemetry", {"distances": {}, "tilt": {"x": 0, "y": 20, "acceleration": 10}})
+        self.assertTrue(until(lambda: self.robot.tilted("forward")))
+        self.assertTrue(self.robot.tilted("вперёд"))
+        self.assertTrue(self.robot.tilted())
+        self.assertFalse(self.robot.tilted("backward"))
+        self.assertFalse(self.robot.tilted("влево"))
+        with self.assertRaises(GearbitError) as ctx:
+            self.robot.tilted("вверх")
+        self.assertIn("Не знаю, куда", str(ctx.exception))
+        # Прошивка известна, а гироскопа в ней нет.
+        self.robot._info()["firmware"] = "v1"
+        with self.assertRaises(GearbitError) as ctx:
+            self.robot.tilted()
+        self.assertIn("гироскопа", str(ctx.exception))
+
     def test_lights_all_and_russian_colors(self):
         self.robot.light("all", "красный")
         self.robot.light("L1", "red")  # уже красный — не отправляется

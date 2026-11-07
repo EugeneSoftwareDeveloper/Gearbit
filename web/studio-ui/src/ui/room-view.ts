@@ -1,9 +1,12 @@
 import { hub } from "../hub";
 import { icons } from "../icons";
-import { NO_SENSOR, seesLine, sensorPlace, store, type EmulatorScene, type EmulatorState, type Obstacle } from "../model";
+import { lacksTilt, NO_SENSOR, seesLine, sensorPlace, store, type EmulatorScene, type EmulatorState, type Obstacle } from "../model";
 import { onSettings } from "../settings";
 import { cssVar, h, icon } from "./dom";
 import { toast } from "./toasts";
+
+/** На сколько градусов кнопки «Наклонить» наклоняют виртуальную машинку: больше порога 15°. */
+const TILT_DEGREES = 30;
 
 const LED_VARS = ["--led-off", "--led-red", "--led-orange", "--led-yellow", "--led-green", "--led-cyan", "--led-blue", "--led-purple"];
 
@@ -22,6 +25,7 @@ export function levelColor(level: number, max = 6): string {
  * 2D-вид комнаты эмулятора: машинка, лучи датчиков, препятствия и след.
  * Сцена «Линия» — белый лист с чёрной линией: датчики, смотрящие в пол, рисуются квадратиками у носа машинки.
  * Мышью: протяните по пустому месту — новое препятствие; двойной щелчок по препятствию — убрать.
+ * Кнопки «Наклонить» наклоняют машинку (гироскоп), только пока их держат.
  */
 export class RoomView {
   readonly element: HTMLElement;
@@ -33,6 +37,9 @@ export class RoomView {
   private frame = 0;
   private readonly sceneButtons: Record<EmulatorScene, HTMLButtonElement>;
   private readonly clear: HTMLButtonElement;
+  private readonly tiltPad: HTMLElement;
+  private readonly tiltButtons: HTMLButtonElement[];
+  private tilt = { x: 0, y: 0 };
 
   constructor() {
     this.canvas = h("canvas", { class: "stage-canvas", "aria-label": "Комната эмулятора" });
@@ -44,6 +51,19 @@ export class RoomView {
       line: h("button", { "aria-pressed": "false", title: "Белый лист с чёрной линией: езда по линии", onclick: () => this.setScene("line") }, "Линия"),
     };
     const scene = h("div", { class: "segmented compact", role: "group", "aria-label": "Что на полу" }, this.sceneButtons.room, this.sceneButtons.line);
+    // Наклон держится, пока держат кнопку: отпустили — машинка снова ровная.
+    this.tiltButtons = [
+      this.tiltButton("Наклонить вперёд", icons.up, 0, TILT_DEGREES),
+      this.tiltButton("Наклонить назад", icons.down, 0, -TILT_DEGREES),
+      this.tiltButton("Наклонить влево", icons.left, -TILT_DEGREES, 0),
+      this.tiltButton("Наклонить вправо", icons.right, TILT_DEGREES, 0),
+    ];
+    this.tiltPad = h(
+      "div",
+      { class: "tilt-pad", role: "group", "aria-label": "Наклонить машинку" },
+      h("span", { class: "muted" }, "Наклонить:"),
+      ...this.tiltButtons,
+    );
     this.element = h(
       "div",
       {},
@@ -54,6 +74,7 @@ export class RoomView {
         scene,
         reset,
         this.clear,
+        this.tiltPad,
         h("span", { class: "muted", style: "font-size:.8rem;margin-left:auto" }, "Протяните мышью — новое препятствие, двойной щелчок — убрать"),
       ),
     );
@@ -62,6 +83,10 @@ export class RoomView {
     this.canvas.addEventListener("pointermove", (e) => this.onMove(e));
     this.canvas.addEventListener("pointerup", () => this.onUp());
     this.canvas.addEventListener("dblclick", (e) => this.onDoubleClick(e));
+    window.addEventListener("blur", () => this.holdTilt(0, 0));
+    document.addEventListener("visibilitychange", () => this.holdTilt(0, 0));
+    // У робота со старой прошивкой гироскопа нет — и кнопок наклона тоже.
+    store.subscribe((s) => this.tiltPad.classList.toggle("hidden", lacksTilt(s.robot)));
     new ResizeObserver(() => this.schedule()).observe(this.canvas);
     onSettings(() => {
       // Цвета темы читаются после применения data-theme.
@@ -85,6 +110,38 @@ export class RoomView {
     for (const [scene, button] of Object.entries(this.sceneButtons)) button.setAttribute("aria-pressed", String(state.scene === scene));
     this.clear.classList.toggle("hidden", state.obstacles.length === 0);
     this.schedule();
+  }
+
+  private tiltButton(title: string, svg: string, x: number, y: number): HTMLButtonElement {
+    const button = h("button", { class: "btn small", title, "aria-label": title, "aria-pressed": "false", "data-tilt": `${x},${y}` }, icon(svg));
+    const release = () => this.holdTilt(0, 0);
+    button.addEventListener("pointerdown", (e) => {
+      button.setPointerCapture(e.pointerId);
+      this.holdTilt(x, y);
+    });
+    button.addEventListener("pointerup", release);
+    button.addEventListener("pointercancel", release);
+    button.addEventListener("lostpointercapture", release);
+    button.addEventListener("blur", release);
+    button.addEventListener("keydown", (e) => {
+      if ((e.key === " " || e.key === "Enter") && !e.repeat) {
+        e.preventDefault();
+        this.holdTilt(x, y);
+      }
+    });
+    button.addEventListener("keyup", (e) => {
+      if (e.key === " " || e.key === "Enter") release();
+    });
+    return button;
+  }
+
+  /** Наклонить машинку (0, 0 — ровно). Одинаковый наклон второй раз не отправляется. */
+  private holdTilt(x: number, y: number): void {
+    if (this.tilt.x === x && this.tilt.y === y) return;
+    this.tilt = { x, y };
+    for (const b of this.tiltButtons) b.setAttribute("aria-pressed", String(b.dataset.tilt === `${x},${y}`));
+    if (store.state.robot?.id.startsWith("emulator:") !== true) return;
+    hub.call("emulator.setTilt", { x, y }).catch((e) => toast(String(e.message ?? e), "error"));
   }
 
   private async reset(): Promise<void> {

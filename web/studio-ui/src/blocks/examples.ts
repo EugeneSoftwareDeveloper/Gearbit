@@ -42,6 +42,7 @@ const say = (value: string) => item("robot_say", text("TEXT", value));
 const obstacle = (sensor: string) => item("robot_obstacle", field("SENSOR", sensor));
 const onLine = (sensor: string) => item("robot_on_line", field("SENSOR", sensor));
 const wait = (secs: number) => item("control_wait", num("DURATION", secs, "math_positive_number"));
+const tilted = (dir: string) => item("robot_when_tilted", field("DIR", dir));
 
 const xml = (body: string, variables = "") => `<xml xmlns="https://developers.google.com/blockly/xml">${variables}${body}</xml>`;
 
@@ -190,6 +191,18 @@ export const EXAMPLES: Example[] = [
         ),
       ),
       '<variables><variable type="" id="var-count" islocal="false" iscloud="false">счёт</variable></variables>',
+    ),
+  },
+  {
+    id: "tilt-me",
+    title: "Наклони меня",
+    text: "События «когда наклонён»: огоньки показывают, куда наклонили робота. В эмуляторе — кнопки «Наклонить».",
+    xml: xml(
+      at(40, 40, flag(), light("white"), say("Наклони меня!")) +
+        at(40, 240, tilted("forward"), light("green"), say("Вперёд!")) +
+        at(380, 240, tilted("backward"), light("red"), say("Назад!")) +
+        at(40, 450, tilted("left"), light("blue"), say("Влево!")) +
+        at(380, 450, tilted("right"), light("yellow"), say("Вправо!")),
     ),
   },
 ];

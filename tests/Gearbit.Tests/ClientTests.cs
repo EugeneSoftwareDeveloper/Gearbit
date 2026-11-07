@@ -92,6 +92,25 @@ public sealed class ClientTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Robot_knows_where_it_is_tilted()
+    {
+        await _tab.CallAsync("emulator.setTilt", new JsonObject { ["x"] = -30, ["y"] = 0 });
+
+        await Task.Run(() =>
+        {
+            using var robot = new Robot(Url, "C#: наклон");
+            Assert.True(SpinWait.SpinUntil(() => robot.Tilt().X == -30, TimeSpan.FromSeconds(3)));
+            Assert.True(robot.Tilted("left"));
+            Assert.True(robot.Tilted("Влево"));
+            Assert.True(robot.Tilted());
+            Assert.False(robot.Tilted("right"));
+            Assert.False(robot.Tilted("forward"));
+            var error = Assert.Throws<GearbitException>(() => robot.Tilted("вверх"));
+            Assert.Contains("Не знаю, куда", error.Message, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
     public async Task Stop_button_interrupts_wait()
     {
         using var robot = new Robot(Url, "C#: ждёт");

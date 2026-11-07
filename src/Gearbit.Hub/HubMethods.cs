@@ -275,6 +275,13 @@ public sealed class HubMethods(
             emulator.Current?.Reset();
             return scene;
         });
+
+        rpc.Register("emulator.setTilt", "Наклонить виртуальную машинку: {x, y} в градусах −90..90 (y больше 0 — вперёд, x больше 0 — вправо). {x: 0, y: 0} — ровно. Возвращает {x, y}.", (_, p) =>
+        {
+            var current = emulator?.Current ?? throw new HubException(HubErrors.NotConnected, "Эмулятор не подключён.");
+            var (x, y) = current.SetTilt(p.OptionalInt("x") ?? 0, p.OptionalInt("y") ?? 0);
+            return new { x, y };
+        });
     }
 
     /// <summary>Объект {id: число} из параметров; не числа пропускаются.</summary>

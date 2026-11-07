@@ -37,7 +37,11 @@ export function buildToolbox(withVariables = true): SB.utils.toolbox.ToolboxDefi
   const toolbox = {
     kind: "categoryToolbox",
     contents: [
-      category("События", "event", [block("event_whenflagclicked"), block("robot_when_distance", { VALUE: num(2) })]),
+      category("События", "event", [
+        block("event_whenflagclicked"),
+        block("robot_when_distance", { VALUE: num(2) }),
+        block("robot_when_tilted"),
+      ]),
       category("Движение", "motion", [
         block("robot_move", { POWER: num(50) }),
         block("robot_turn", { POWER: num(40) }),
@@ -72,6 +76,7 @@ export function buildToolbox(withVariables = true): SB.utils.toolbox.ToolboxDefi
         block("robot_obstacle"),
         block("robot_on_line"),
         gap(),
+        block("robot_tilted"),
         block("robot_tilt"),
         block("robot_battery"),
         gap(),

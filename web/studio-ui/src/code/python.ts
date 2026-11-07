@@ -1,7 +1,7 @@
 import { snippetCompletion, type Completion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { python } from "@codemirror/lang-python";
 import { syntaxTree } from "@codemirror/language";
-import { COLOR_NAMES, COLORS, DOWN_PLACES, SENSOR_PLACES, store } from "../model";
+import { COLOR_NAMES, COLORS, DOWN_PLACES, SENSOR_PLACES, store, TILT_DIRECTIONS } from "../model";
 import { mountCodeView, type CodeExample, type CodeLanguageSpec, type CodeView } from "./view";
 
 /** Вкладка Python: пакет gearbit (python/gearbit), программа работает в отдельном процессе python.exe. */
@@ -138,6 +138,33 @@ robot.say("")
 `,
   },
   {
+    id: "tilt-me",
+    title: "Наклони меня",
+    text: "Огоньки показывают, куда наклонили робота. В эмуляторе — кнопки «Наклонить».",
+    code: `# Наклони меня: огоньки показывают, куда наклонили робота.
+# В эмуляторе робота наклоняют кнопки «Наклонить» под комнатой.
+${IMPORT}
+
+while True:
+    if robot.tilted("forward"):
+        robot.light("all", "green")
+        robot.say("Вперёд!")
+    elif robot.tilted("backward"):
+        robot.light("all", "red")
+        robot.say("Назад!")
+    elif robot.tilted("left"):
+        robot.light("all", "blue")
+        robot.say("Влево!")
+    elif robot.tilted("right"):
+        robot.light("all", "yellow")
+        robot.say("Вправо!")
+    else:
+        robot.light("all", "white")
+        robot.say("Наклони меня!")
+    wait(0.1)
+`,
+  },
+  {
     id: "counter",
     title: "Считалка",
     text: "Переменные, цикл и print. Робот не нужен.",
@@ -183,6 +210,7 @@ const COMMANDS: CodeLanguageSpec["commands"] = [
       { code: 'robot.distance("front")', text: "Расстояние: 0 — вплотную, 6 — далеко" },
       { code: 'robot.obstacle("front")', text: "True, если препятствие близко" },
       { code: "robot.on_line()", text: "True, если датчик «вниз» видит чёрную линию" },
+      { code: 'robot.tilted("forward")', text: "True, если робот наклонён вперёд (или назад, влево…)" },
       { code: "robot.tilt()", text: "Наклон робота: (x, y)" },
     ],
   },
@@ -219,7 +247,8 @@ const ROBOT_METHODS: Completion[] = [
     "(датчик)",
     "True, если датчик, смотрящий в пол, видит чёрную линию. Без датчика — первый, поставленный «Вниз»: robot.on_line().",
   ),
-  method("tilt()", "tilt", "()", "Наклон робота (x, y)."),
+  method('tilted("${1:any}")', "tilted", "(сторона)", "True, если робот наклонён больше чем на 15°: forward, backward, left, right или any — куда угодно."),
+  method("tilt()", "tilt", "()", "Наклон робота (x, y) в градусах: y больше 0 — вперёд, x больше 0 — вправо."),
   method("battery()", "battery", "()", "Заряд батареи."),
   method('light("${1:all}", "${2:green}")', "light", "(огонёк, цвет)", "Включить огонёк: robot.light(\"L1\", \"red\") или все сразу: robot.light(\"all\", \"green\")."),
   method("lights_off()", "lights_off", "()", "Выключить все огоньки."),
@@ -244,6 +273,14 @@ function stringOptions(context: CompletionContext): CompletionResult | null {
     return {
       from: sensor.to - inside(sensor.text).length,
       options: places.map((p) => ({ label: p.id, detail: p.title.toLowerCase(), type: "constant" })),
+      validFor: /^\w*$/,
+    };
+  }
+  const tilt = context.matchBefore(/\btilted\(\s*["']\w*/);
+  if (tilt) {
+    return {
+      from: tilt.to - inside(tilt.text).length,
+      options: TILT_DIRECTIONS.map((d) => ({ label: d.id, detail: d.title, type: "constant" })),
       validFor: /^\w*$/,
     };
   }

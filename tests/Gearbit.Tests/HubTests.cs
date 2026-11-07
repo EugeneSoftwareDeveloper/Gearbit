@@ -239,6 +239,25 @@ public sealed class HubTests : IAsyncLifetime
         await rpc.CallAsync("robot.disconnect");
     }
 
+    [Fact]
+    public async Task Emulator_tilt_reaches_robot_telemetry()
+    {
+        await using var rpc = await RpcClient.ConnectAsync(_port);
+        var robot = await rpc.CallAsync("robot.connect", new JsonObject { ["id"] = "emulator:superbot" });
+        // Эмулятор — прошивка v2: гироскоп есть.
+        Assert.True((bool)robot["components"]!.AsArray().First(c => (string?)c!["kind"] == "imu")!["available"]!);
+
+        var tilt = await rpc.CallAsync("emulator.setTilt", new JsonObject { ["x"] = 0, ["y"] = 30 });
+        Assert.Equal(30, (int)tilt["y"]!);
+        Assert.Equal(30, (int)(await rpc.CallAsync("emulator.state"))["tiltY"]!);
+        await WaitUntilAsync(async () => (int?)(await rpc.CallAsync("robot.telemetry"))["tilt"]?["y"] == 30);
+
+        // Без параметров — ровно.
+        Assert.Equal(0, (int)(await rpc.CallAsync("emulator.setTilt", new JsonObject()))["y"]!);
+        await WaitUntilAsync(async () => (int?)(await rpc.CallAsync("robot.telemetry"))["tilt"]?["y"] == 0);
+        await rpc.CallAsync("robot.disconnect");
+    }
+
     private static async Task<int> EmulatorMotor(RpcClient rpc) => (int)(await rpc.CallAsync("emulator.state"))["motors"]![0]!;
 
     private static async Task WaitUntilAsync(Func<Task<bool>> condition)

@@ -130,7 +130,9 @@ public sealed record EmulatorDto(
     IReadOnlyDictionary<string, double> SensorDown,
     double DownSensorForward,
     EmulatorScene Scene,
-    LineTrack? Line)
+    LineTrack? Line,
+    int TiltX,
+    int TiltY)
 {
     public static EmulatorDto From(EmulatorSnapshot s)
     {
@@ -139,6 +141,6 @@ public sealed record EmulatorDto(
             s.PoweredOn, s.RoomWidth, s.RoomHeight, s.RobotRadius,
             Math.Round(s.Pose.X, 2), Math.Round(s.Pose.Y, 2), Math.Round(s.Pose.Heading, 1),
             s.Bumped, s.Motors, s.Lights.Select(b => (int)b).ToList(), s.SensorCm, s.SensorLevels, s.SensorAngles, s.Battery, s.Obstacles,
-            s.SensorDown, s.DownSensorForward, s.Scene, s.Line);
+            s.SensorDown, s.DownSensorForward, s.Scene, s.Line, s.TiltX, s.TiltY);
     }
 }

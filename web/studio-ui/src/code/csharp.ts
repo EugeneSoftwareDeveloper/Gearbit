@@ -1,7 +1,7 @@
 import { snippetCompletion, type Completion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { StreamLanguage, syntaxTree } from "@codemirror/language";
 import { csharp } from "@codemirror/legacy-modes/mode/clike";
-import { COLOR_NAMES, COLORS, DOWN_PLACES, SENSOR_PLACES, store } from "../model";
+import { COLOR_NAMES, COLORS, DOWN_PLACES, SENSOR_PLACES, store, TILT_DIRECTIONS } from "../model";
 import { CURSOR_MARK as C } from "./editor";
 import { mountCodeView, type CodeExample, type CodeLanguageSpec, type CodeView } from "./view";
 
@@ -166,6 +166,43 @@ robot.Say("");
 `,
   },
   {
+    id: "tilt-me",
+    title: "Наклони меня",
+    text: "Огоньки показывают, куда наклонили робота. В эмуляторе — кнопки «Наклонить».",
+    code: `// Наклони меня: огоньки показывают, куда наклонили робота.
+// В эмуляторе робота наклоняют кнопки «Наклонить» под комнатой.
+while (true)
+{
+    if (robot.Tilted("forward"))
+    {
+        robot.Light("all", "green");
+        robot.Say("Вперёд!");
+    }
+    else if (robot.Tilted("backward"))
+    {
+        robot.Light("all", "red");
+        robot.Say("Назад!");
+    }
+    else if (robot.Tilted("left"))
+    {
+        robot.Light("all", "blue");
+        robot.Say("Влево!");
+    }
+    else if (robot.Tilted("right"))
+    {
+        robot.Light("all", "yellow");
+        robot.Say("Вправо!");
+    }
+    else
+    {
+        robot.Light("all", "white");
+        robot.Say("Наклони меня!");
+    }
+    Wait(0.1);
+}
+`,
+  },
+  {
     id: "counter",
     title: "Считалка",
     text: "Переменные, цикл и Console.WriteLine. Робот не нужен.",
@@ -213,6 +250,7 @@ const COMMANDS: CodeLanguageSpec["commands"] = [
       { code: 'robot.Distance("front")', text: "Расстояние: 0 — вплотную, 6 — далеко" },
       { code: 'robot.Obstacle("front")', text: "true, если препятствие близко" },
       { code: "robot.OnLine()", text: "true, если датчик «вниз» видит чёрную линию" },
+      { code: 'robot.Tilted("forward")', text: "true, если робот наклонён вперёд (или назад, влево…)" },
       { code: "robot.Tilt()", text: "Наклон робота: (X, Y)" },
     ],
   },
@@ -249,7 +287,8 @@ const ROBOT_METHODS: Completion[] = [
     "(датчик) → bool",
     "true, если датчик, смотрящий в пол, видит чёрную линию. Без датчика — первый, поставленный «Вниз»: robot.OnLine().",
   ),
-  method("Tilt()", "Tilt", "() → (X, Y)", "Наклон робота: var (x, y) = robot.Tilt();"),
+  method('Tilted("${1:any}")', "Tilted", "(сторона) → bool", "true, если робот наклонён больше чем на 15°: forward, backward, left, right или any — куда угодно."),
+  method("Tilt()", "Tilt", "() → (X, Y)", "Наклон робота в градусах (Y больше 0 — вперёд, X больше 0 — вправо): var (x, y) = robot.Tilt();"),
   method("Battery()", "Battery", "() → int", "Заряд батареи."),
   method('Light("${1:all}", "${2:green}");', "Light", "(огонёк, цвет)", 'Включить огонёк: robot.Light("L1", "red"); или все сразу: robot.Light("all", "green");'),
   method("LightsOff();", "LightsOff", "()", "Выключить все огоньки."),
@@ -313,6 +352,14 @@ function stringOptions(context: CompletionContext): CompletionResult | null {
     return {
       from: sensor.to - inside(sensor.text).length,
       options: places.map((p) => ({ label: p.id, detail: p.title.toLowerCase(), type: "constant" })),
+      validFor: /^\w*$/,
+    };
+  }
+  const tilt = context.matchBefore(/\bTilted\(\s*"\w*/);
+  if (tilt) {
+    return {
+      from: tilt.to - inside(tilt.text).length,
+      options: TILT_DIRECTIONS.map((d) => ({ label: d.id, detail: d.title, type: "constant" })),
       validFor: /^\w*$/,
     };
   }

@@ -22,7 +22,9 @@ public sealed record EmulatorSnapshot(
     IReadOnlyDictionary<string, double> SensorDown,
     double DownSensorForward,
     EmulatorScene Scene,
-    LineTrack? Line);
+    LineTrack? Line,
+    int TiltX = 0,
+    int TiltY = 0);
 
 /// <summary>
 /// Эмулятор прошивки TUDAO: принимает те же байты, что и настоящий робот, двигает машинку
@@ -38,6 +40,8 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
     private int[] _motors;
     private byte[] _lights;
     private Pose _pose;
+    private int _tiltX;
+    private int _tiltY;
     private double _battery = 100;
     private bool _bumped;
     private bool _authorized;
@@ -93,6 +97,7 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
         lock (_lock)
         {
             PoweredOn = false;
+            _tiltX = _tiltY = 0;
             _physicsTimer?.Dispose();
             _telemetryTimer?.Dispose();
             _physicsTimer = null;
@@ -107,8 +112,23 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
         lock (_lock)
         {
             _pose = World.StartPose;
+            _tiltX = _tiltY = 0;
             _bumped = false;
             _battery = 100;
+        }
+    }
+
+    /// <summary>
+    /// Наклонить машинку (гироскоп), градусы −90..90. Как у Makerzoid: Y больше 0 — вперёд, X больше 0 — вправо.
+    /// Комната плоская, поэтому наклон держится, пока его не вернут в 0 (интерфейс — пока держат кнопку).
+    /// </summary>
+    public (int X, int Y) SetTilt(int x, int y)
+    {
+        lock (_lock)
+        {
+            _tiltX = Math.Clamp(x, -90, 90);
+            _tiltY = Math.Clamp(y, -90, 90);
+            return (_tiltX, _tiltY);
         }
     }
 
@@ -187,7 +207,9 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
                 down,
                 settings.DownSensorForward,
                 World.Scene,
-                World.Line);
+                World.Line,
+                _tiltX,
+                _tiltY);
         }
     }
 
@@ -255,8 +277,8 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
             {
                 ["mode"] = 1,
                 ["battery"] = (int)Math.Round(_battery),
-                ["imuX"] = 0,
-                ["imuY"] = 0,
+                ["imuX"] = _tiltX,
+                ["imuY"] = _tiltY,
                 ["imuAcc"] = _motors.Any(m => m != 0) ? 12 : 10,
             };
 

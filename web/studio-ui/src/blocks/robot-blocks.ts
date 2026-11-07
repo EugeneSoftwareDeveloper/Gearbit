@@ -1,5 +1,5 @@
 import * as SB from "scratch-blocks";
-import { COLOR_NAMES, COLORS } from "../model";
+import { COLOR_NAMES, COLORS, TILT_DIRECTIONS, TILT_LEVEL } from "../model";
 
 /**
  * Блоки робота на русском. Значения в меню — английские id (их понимает хаб и интерпретатор),
@@ -49,6 +49,7 @@ export const TILT_AXES: Options = [
   ["X", "x"],
   ["Y", "y"],
 ];
+export const TILT_DIRS: Options = TILT_DIRECTIONS.map((d) => [d.title, d.id]);
 const COLOR_OPTIONS: Options = COLORS.map((c) => [COLOR_NAMES[c].toLowerCase(), c]);
 
 /** Уровень датчика, ниже которого считаем, что впереди препятствие (0 — вплотную, 6 — далеко). */
@@ -148,10 +149,16 @@ export function registerRobotBlocks(): void {
     tooltip: "Да, если датчик, смотрящий в пол, сейчас над чёрной линией. Куда смотрит датчик, выбирают в карточке «Датчики» на «Пульте».",
     extensions: ["colours_sensing", "output_boolean"],
   });
+  define("robot_tilted", {
+    message0: "наклонён %1 ?",
+    args0: [dropdown("DIR", TILT_DIRS)],
+    tooltip: `Да, если робот наклонён в эту сторону больше чем на ${TILT_LEVEL}°. Гироскоп есть только у роботов с новой прошивкой.`,
+    extensions: ["colours_sensing", "output_boolean"],
+  });
   define("robot_tilt", {
     message0: "наклон %1",
     args0: [dropdown("AXIS", TILT_AXES)],
-    tooltip: "Наклон робота по гироскопу.",
+    tooltip: "Наклон робота по гироскопу, градусы: Y больше 0 — вперёд, X больше 0 — вправо.",
     extensions: ["colours_sensing", "output_number"],
   });
   define("robot_battery", {
@@ -165,6 +172,12 @@ export function registerRobotBlocks(): void {
     message0: "когда расстояние %1 < %2",
     args0: [dropdown("SENSOR", SENSORS), value("VALUE")],
     tooltip: "Срабатывает, когда препятствие подъехало ближе. Работает, пока запущена программа.",
+    extensions: ["colours_event", "shape_hat"],
+  });
+  define("robot_when_tilted", {
+    message0: "когда наклонён %1",
+    args0: [dropdown("DIR", TILT_DIRS)],
+    tooltip: `Срабатывает, когда робота наклонили больше чем на ${TILT_LEVEL}°. Работает, пока запущена программа.`,
     extensions: ["colours_event", "shape_hat"],
   });
 
