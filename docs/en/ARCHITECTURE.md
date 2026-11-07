@@ -70,7 +70,7 @@ flowchart TB
 |---|---|---|---|
 | **Gearbit.App** | C#, WPF + WebView2 | A full-screen window, starting the hub, hosting the web UI | 1 |
 | **studio-ui** | TypeScript, Vite, no framework | Remote, telemetry, mode switcher, protocol log | 1 |
-| **studio-ui / code** | TypeScript, CodeMirror 6 | The Python and C# tabs: editor, output, «Команды» (Commands), running via `program.run` | 3, 4 |
+| **studio-ui / code** | TypeScript, CodeMirror 6 | The Python and C# tabs: editor, output, **Commands**, running via `program.run` | 3, 4 |
 | **studio-ui / blocks** | TypeScript, scratch-blocks (Blockly 12) | The Blocks tab: editor, robot blocks in Russian, the interpreter is a hub client | 2 |
 | **Gearbit.Hub** | C#, ASP.NET Core (Kestrel), JSON-RPC | The only owner of the robot: API, arbiter, safety, telemetry, running programs | 1 |
 | **Gearbit.Core** | C# (.NET 10, no I/O) | `IRobot`, capability components, builds, calibration, limits | 1 |

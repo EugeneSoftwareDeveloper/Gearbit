@@ -190,6 +190,21 @@
 - `GET /api/info` → `{hub: "Gearbit", version, websocket, robot, clients}`. По нему Gearbit.exe узнаёт, что порт занят своим хабом.
 - `GET /` → веб-интерфейс из `wwwroot`.
 
+Данные пользователя хаб хранит в папке `Hub:DataDirectory` (по умолчанию `%LOCALAPPDATA%\Gearbit`). Запросы, которые что-то записывают, принимаются только с `Content-Type: application/json` и, если есть `Origin`, только с разрешённого (те же правила, что для `/ws`). Иначе — `403` или `415`; слишком большое тело — `413`.
+
+**Настройки интерфейса** — `settings.json`:
+
+- `GET /api/settings` → объект настроек или `404`, если файла ещё нет.
+- `PUT /api/settings` — записать объект целиком (до 64 КБ), ответ `204`. Хаб не разбирает поля: что в них, решает интерфейс (`settings.ts`). Поле `lang` читает ещё и Gearbit.exe (язык заставки).
+
+**История программ** — `History/{kind}/{id}.json`, `kind`: `blocks`, `python`, `csharp`; `id` — время снимка в UTC, `yyyyMMdd-HHmmss-fff`. Другой `kind` или `id` — `404`.
+
+- `GET /api/history/{kind}` → `[{id, time, reason, name, size}]`, новые первыми.
+- `GET /api/history/{kind}/{id}` → `{id, time, reason, name, content}`.
+- `POST /api/history/{kind}` с `{reason, name?, content}` → `{entry, saved}`. `reason` — латинские буквы, до 16 (`new`, `example`, `open`, `restore`, `run`, `auto`, `leave`, `start`). `content` — до 2 МБ. Если `content` такой же, как у последнего снимка, файл не пишется: `200` и `saved: false`, иначе `201`.
+
+Хаб хранит до 200 снимков каждого вида. Снимки старше 30 дней удаляются, но последние 20 остаются всегда. Код — `src/Gearbit.Hub/UserData` (`SettingsStore`, `HistoryStore`, `HttpApi`), тесты — `UserDataTests`, `HistoryTests`.
+
 ## Настройки (`appsettings.json`, `--Hub:…`)
 
 | Ключ | По умолчанию | Смысл |
@@ -205,6 +220,7 @@
 | `Hub:PythonPath` | — | Путь к `python.exe`. Без него: `python\runtime\python.exe` рядом с программой, `py -3`, `python.exe` в `PATH` (заглушки Microsoft Store пропускаются). Нужен Python 3.9+. |
 | `Hub:PythonPackageDirectory` | `python` рядом с программой | Где лежит пакет `gearbit` (добавляется в `PYTHONPATH`). |
 | `Hub:CSharpHostPath` | `csharp\Gearbit.ScriptHost.exe` рядом с программой | Запускатель программ на C#. |
+| `Hub:DataDirectory` | `%LOCALAPPDATA%\Gearbit` | Настройки интерфейса и история программ (см. [HTTP](#http)). В тестах — временная папка. |
 | `Hub:ProgramsDirectory` | `%TEMP%\Gearbit\programs` | Куда записывается запускаемая программа (папка на каждый запуск, удаляется после). |
 
 ## Пример: Python без библиотек Gearbit

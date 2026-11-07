@@ -11,22 +11,24 @@ The web interface is `web/studio-ui`: TypeScript without a framework + Vite. The
 | `main.ts` | Builds the screen, subscribes to hub notifications, keyboard and gamepad, the "no connection to the hub" screen. |
 | `hub.ts` | `HubClient`: WebSocket + JSON-RPC, auto-reconnect, `call(method, params)`, `on(notification, listener)`. After every connection it sends `hub.hello` and emits the `hub.connected` event. |
 | `model.ts` | Hub response types (`RobotInfo`, `Telemetry`, `EmulatorState`…) and the shared `store`. `displayName`, sensor places (`SENSOR_PLACES`, `sensorPlace`, `sensorAngle`, `NO_SENSOR`). |
-| `settings.ts` | Theme, color, large text, speed, control view, sensor places per build (`sensorPlaces`: `"device/build" → {D1: "front" \| … \| "none"}`). Stored in `localStorage` (`gearbit.settings`). |
+| `settings.ts` | Language (`lang`, `null` — as in the system), theme, color, large text, speed, control view, the last tab (`mode`), the last build for each robot model (`lastProfile`), sensor places per build (`sensorPlaces`: `"device/build" → {D1: "front" \| … \| "none"}`). Stored in the hub's `settings.json` (`/api/settings`) with a copy in `localStorage` (`gearbit.settings`): on start `syncSettings` waits for the file up to 500 ms, otherwise it takes the copy. Writes go to `localStorage` at once and to the file with a delay. |
+| `i18n.ts` | The page language (`lang()`), `messages({ru, en})`, `text(title)` for titles from JSON, `setLang`. See [Languages](i18n.md). |
+| `history.ts` | Local program history (`createHistory(kind, current)`): when to take a snapshot, requests to `/api/history`. |
 | `trace.ts` | A shared protocol log subscription (`listenTrace`): the log, the measurement helper and the recording listen to one hub subscription. |
 | `icons.ts` | Built-in SVG icons (`currentColor`), including the logo. |
 | `input/drive.ts` | Mixes buttons, joystick and gamepad into `drive.arcade`. While there is input, the command repeats every 100 ms; after release — `drive.stop` right away. |
 | `input/keyboard-gamepad.ts` | Keys and the Gamepad API. |
 | `ui/topbar.ts` | The header: modes, the robot badge, buttons, STOP. |
 | `ui/remote-view.ts` | The remote: the control, stage, sensors, lights and motors cards. The Blocks tab takes the stage card (`stage`) for itself. A sensor's name is a place `<select>`; for the emulator places go to `emulator.setSensorAngles`. |
-| `ui/room-view.ts` | The emulator room canvas: the car, rays, trail, drawing obstacles, the «Комната» / «Линия» (Room / Line) scene switch, "down" sensors as squares, the «Наклонить» (Tilt) buttons (`emulator.setTilt`, only while held; reset on release, `blur`, `visibilitychange`). |
+| `ui/room-view.ts` | The emulator room canvas: the car, rays, trail, drawing obstacles, the **Room** / **Line** scene switch, "down" sensors as squares, the **Tilt** buttons (`emulator.setTilt`, only while held; reset on release, `blur`, `visibilitychange`). |
 | `ui/connect-dialog.ts` | Search and connection. |
-| `ui/settings-popover.ts`, `help-dialog.ts`, `trace-panel.ts`, `toasts.ts` | Settings, help (F1), the protocol log (with the «Замеры» button), toasts. |
+| `ui/settings-popover.ts`, `help-dialog.ts`, `trace-panel.ts`, `toasts.ts` | Settings, help (F1), the protocol log (with the **Measurements** button), toasts. |
 | `ui/files.ts` | `saveTextFile`, `saveJsonFile`, `openFile`, `openTextFile`: the File System Access API with a link-based fallback. The file type is `FileKind {description, suffix, mime?}`. |
-| `ui/mini-sensors.ts`, `ui/examples-dialog.ts` | The Sensors card and the Examples dialog shared by the program tabs. |
-| `measure/*` | The stage 0 measurement helper: `helper.ts` (the window, the «Кадры» and «Запись» tabs, `MeasureContext`), `power-test.ts`, `calibration.ts` (the «Датчики» (Sensors) tab) and `calibration-math.ts` (computing `levelToCm` and `lineLevel` without DOM: the "no obstacle" level means "doesn't see", the samples table can have holes), `recorder.ts` (the [docs/captures](../../captures/README.en.md) format), `frames.ts` (TUDAO frames). Frames go through the hub's `service.*`. |
+| `ui/mini-sensors.ts`, `ui/examples-dialog.ts`, `ui/history-dialog.ts` | The **Sensors** card and the **Examples** and **History** dialogs shared by the program tabs. The tab tells the **History** dialog how to show a snapshot (`preview`) and how to restore it (`restore`). |
+| `measure/*` | The stage 0 measurement helper: `helper.ts` (the window, the **Frames** and **Recording** tabs, `MeasureContext`), `power-test.ts`, `calibration.ts` (the **Sensors** tab) and `calibration-math.ts` (computing `levelToCm` and `lineLevel` without DOM: the "no obstacle" level means "doesn't see", the samples table can have holes), `recorder.ts` (the [docs/captures](../../captures/README.en.md) format), `frames.ts` (TUDAO frames). Frames go through the hub's `service.*`. |
 | `ui/ask-dialog.ts` | `askText`, `askConfirm`, `showAlert` — our own dialogs instead of `prompt`/`confirm`/`alert`. |
 | `blocks/*` | The block editor, lazy-loaded. See [Block editor](blocks.md). |
-| `code/*` | Program text tabs, lazy-loaded. `editor.ts` — CodeMirror 6 (theme from tokens, error line highlight, completions, Esc = STOP), `view.ts` — the shared screen (`mountCodeView(root, spec)`: toolbar, output, «Команды», running via `program.run`), `python.ts` and `csharp.ts` — language descriptions (`CodeLanguageSpec`): examples, commands, completions. C# is highlighted by the legacy `clike` mode (`StreamLanguage`): nodes there are named after the token style (`comment`, `string`). In a multi-line command the `§` mark (`CURSOR_MARK`) is where to leave the cursor after inserting; the card shows only the command's first line. |
+| `code/*` | Program text tabs, lazy-loaded. `editor.ts` — CodeMirror 6 (theme from tokens, error line highlight, completions, Esc = STOP), `view.ts` — the shared screen (`mountCodeView(root, spec)`: toolbar, output, **Commands**, running via `program.run`), `python.ts` and `csharp.ts` — language descriptions (`CodeLanguageSpec`): examples, commands, completions. C# is highlighted by the legacy `clike` mode (`StreamLanguage`): nodes there are named after the token style (`comment`, `string`). In a multi-line command the `§` mark (`CURSOR_MARK`) is where to leave the cursor after inserting; the card shows only the command's first line. |
 | `ui/dom.ts` | `h(tag, attrs, ...children)` — a small helper for creating elements, `icon(svg)`, `cssVar(name)`. |
 | `styles/tokens.css` | Design tokens and themes. |
 | `styles/app.css` | Layout and components. |
@@ -48,7 +50,7 @@ Components use **only variables**, no colors in code:
 | Accent | `--accent`, `--accent-2`, `--accent-soft`, `--accent-contrast` |
 | States | `--ok`, `--warn`, `--danger`, `--danger-strong` |
 | LEDs | `--led-off`, `--led-red` … `--led-white` |
-| The "Line" floor | `--paper` (the white sheet), `--paper-line` (the black line), `--paper-grid` (the grid on the sheet): the «Линия» scene in the emulator room, "down" sensor squares on the radar and the black/white bars in the Sensors card. In the dark theme the sheet is slightly dimmed so it doesn't dazzle. |
+| The "Line" floor | `--paper` (the white sheet), `--paper-line` (the black line), `--paper-grid` (the grid on the sheet): the **Line** scene in the emulator room, "down" sensor squares on the radar and the black/white bars in the Sensors card. In the dark theme the sheet is slightly dimmed so it doesn't dazzle. |
 | Blocks | `--block-<category>`, `-2`, `-3` (`motion`, `looks`, `event`, `control`, `sensing`, `operators`, `data`, `more`), `--block-field`, `--block-field-text`, `--block-glow` |
 | Code | `--code-keyword`, `-string`, `-number`, `-comment`, `-function`, `-builtin`, `-type`, `-operator` (highlighting, separate for each theme), `--code-selection`, `--code-active-line`, `--code-error-line` (from the accent and `--danger`) |
 | Shape | `--radius-sm`, `--radius`, `--radius-lg`, `--gap`, `--shadow`, `--shadow-lg`, `--header-h` |
@@ -66,7 +68,7 @@ Components use **only variables**, no colors in code:
 
 ## Program tabs
 
-«Блоки», «Python» and «C#» are built the same way and share layout classes: `section.view.program-view.<mode>-view`, with `.program-toolbar` and `.program-body` with the `.program-side` column inside. The remote's stage card (`.program-stage`) moves into the column of whichever tab is open.
+**Blocks**, **Python** and **C#** are built the same way and share layout classes: `section.view.program-view.<mode>-view`, with `.program-toolbar` and `.program-body` with the `.program-side` column inside. The remote's stage card (`.program-stage`) moves into the column of whichever tab is open.
 
 In `main.ts` such tabs are created by `lazyView(mode, title, loading, load)`: the module loads on first open, and then `setMode` calls the view's `activate()` and `deactivate()`. The view implements `ProgramView {stageSlot, activate, deactivate}`, and `deactivate` must stop the program (invariant 5).
 
@@ -74,7 +76,7 @@ A new text language is a `CodeLanguageSpec` description (as in `code/python.ts`)
 
 ## Interface rules
 
-- **Texts are in Russian, short, for a child aged 7–12.** Errors explain what to do: «Закройте приложение Apitor на телефоне» (Close the Apitor app on the phone).
+- **Texts are in Russian and English, short, for a child aged 7–12.** Errors explain what to do: "Close the Apitor mobile app." How to add a text — [Languages](i18n.md).
 - **STOP is always visible** and works from the keyboard (Space, Esc) and the gamepad.
 - **Movement only while held.** A new input method must reset: on release, on window focus loss (`blur`, `visibilitychange`), on `safety.event`.
 - **Sizes for mouse and finger**: buttons at least 40 px tall, the d-pad grows up to 300 px.

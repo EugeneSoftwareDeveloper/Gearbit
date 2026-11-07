@@ -18,7 +18,7 @@
 {
   "$schemaVersion": 1,
   "id": "superbot-tank",
-  "title": "Танк",
+  "title": { "ru": "Танк", "en": "Tank" },
   "device": "tudao-superbot",
   "status": "draft",
   "drive": { "type": "differential", "left": "M1", "right": "M2", "invertLeft": true, "invertRight": false },
@@ -30,6 +30,7 @@
 
 | Поле | Смысл |
 |---|---|
+| `title` | Название для интерфейса: объект по языкам `{"ru": …, "en": …}` или одна строка на все языки ([Языки](i18n.md#описания-роботов-devices-profiles)). Так же пишется `title` модели и компонентов. |
 | `device` | `id` модели из `devices/`. |
 | `drive` | Привод. Сейчас бывает только `differential`: левый и правый мотор и их инверсия. Если поля нет, `drive.*` вернёт `NotSupported`, но моторами можно управлять по отдельности. |
 | `aliases` | Понятные имена для портов. Их видят программы (`motor.setPower {id:"turret"}`) и радар (`front`, `right`, `left`, `front_left`, `front_right`, `back` задают направление луча). |

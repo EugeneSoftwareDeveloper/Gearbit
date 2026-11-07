@@ -10,7 +10,7 @@ The robot is small, but the motors are strong: the car can fall off a table, pin
 - **Dead man's switch.** If the remote freezes, the tab is closed or you switch to another window, Gearbit stops the robot by itself: within 0.6 seconds at most.
 - **STOP always works:** Space, Esc, the big red button or B / Start on the gamepad. It works even when a program or another remote controls the robot.
 - **The motors stop on connection.** The robot will not drive off with an old command.
-- **Power limit.** 60 % by default for the «Машинка» (Car) build. Change it in the settings (⚙).
+- **Power limit.** 60 % by default for the **Car** build. Change it in the settings (⚙).
 - **A Blocks, Python or C# program ended or was stopped — the motors stop.** The same happens when you switch to another tab, minimize the window or lose the connection to the robot. Python and C# programs run separately from the window, and STOP ends them at once, even if the program is stuck in an endless loop.
 - **Gearbit closed — the robot stopped and disconnected.**
 - **Connection lost** (the robot went too far, the battery died): a message appears, the dot on the badge turns red.

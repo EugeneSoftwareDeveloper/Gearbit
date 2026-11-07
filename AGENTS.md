@@ -4,9 +4,9 @@ Gearbit — программа для Windows: пульт и среда прог
 
 ## Язык
 
-- Общение, комментарии в коде, документация, тексты интерфейса и сообщения коммитов — **на русском**.
+- Общение, комментарии в коде, основная документация и сообщения коммитов — **на русском**.
 - Идентификаторы в коде, имена файлов, JSON-ключи — на английском.
-- Тексты интерфейса и ошибок хаба — короткие и понятные ребёнку 7–12 лет, с подсказкой, что сделать.
+- Тексты для пользователя (интерфейс, ошибки хаба и программ) — **на русском и английском**, короткие и понятные ребёнку 7–12 лет, с подсказкой, что сделать. Как добавить текст — [docs/dev/i18n.md](docs/dev/i18n.md).
 
 ## Git
 
@@ -25,12 +25,14 @@ src/Gearbit.Transport.WinRtBle BLE через WinRT
 src/Gearbit.Emulator          виртуальный контроллер + 2D-комната (через LoopbackTransport)
 src/Gearbit.Hub               хаб: JSON-RPC 2.0 по WebSocket /ws, арбитр, страж, раздача wwwroot
 src/Gearbit.Hub/Programs      запуск программ на Python/C# в отдельных процессах (program.*)
+src/Gearbit.Hub/UserData      настройки интерфейса и история программ (HTTP /api/settings, /api/history)
 src/Gearbit.Server            хаб без окна (консоль)
 src/Gearbit.App               Gearbit.exe: WPF + WebView2, хаб в процессе
 src/Gearbit.Client            клиент хаба для C#: синхронный Robot, RobotScript (robot, Wait)
 src/Gearbit.ScriptHost        запуск C#-скриптов (Roslyn), ошибки по-русски; копируется в bin/…/csharp
 tests/Gearbit.Tests           xUnit
 web/studio-ui                 интерфейс: TypeScript 7 + Vite 8, без фреймворка
+web/studio-ui/src/i18n.ts     язык интерфейса: messages({ru, en}), lang(), text()
 web/studio-ui/src/blocks      вкладка «Блоки»: scratch-blocks + свой интерпретатор (runtime.ts)
 web/studio-ui/src/code        вкладки «Python» и «C#»: CodeMirror 6, общий экран view.ts
 python/gearbit                пакет gearbit для Python (только стандартная библиотека)
@@ -87,17 +89,21 @@ dotnet run --project src/Gearbit.App               # окно
 - `TreatWarningsAsErrors`. Подавлять анализаторы точечно и с причиной, а не глобально.
 - В WPF-проекте нет неявного `using System.IO`: добавляйте явно. `await` внутри фильтра `catch (…) when` запрещён (CS7094).
 - Время — через `TimeProvider`, не `DateTime.Now` и не `Task.Delay` в логике стражей.
-- Новый робот — JSON в `devices/` и `profiles/`. Новый протокол или транспорт — отдельный проект и интерфейсы из `Gearbit.Core`, см. [docs/dev/adding-a-robot.md](docs/dev/adding-a-robot.md).
+- Новый робот — JSON в `devices/` и `profiles/`, названия (`title`) — объектом `{"ru": …, "en": …}`. Новый протокол или транспорт — отдельный проект и интерфейсы из `Gearbit.Core`, см. [docs/dev/adding-a-robot.md](docs/dev/adding-a-robot.md).
 - Новый метод хаба: регистрируйте в `HubMethods.Register` с описанием по-русски и добавляйте в [docs/dev/hub-api.md](docs/dev/hub-api.md).
+- Тексты хаба для клиента — через `IHubText` (`HubText.cs`, в оба класса): `throw new HubException(code, t => t.…)`, уведомления — `ClientRegistry.BroadcastText`. Журнал и описания методов — по-русски.
 
 ## Интерфейс
 
 - Цвета — только CSS-переменные из `styles/tokens.css`. Проверяйте в светлой и тёмной теме и при ширине окна 1024 px.
 - Иконки — встроенные SVG в `icons.ts`. Внешних ресурсов (CDN, шрифтов) нет.
+- Интерфейс на двух языках. Новый текст — сразу в `ru` и `en` через `messages()` из `i18n.ts`: без `en` проект не соберётся. Даты и сортировка — с `lang()`. Проверяйте вёрстку и на английском: подписи длиннее.
+- Настройки — поля `Settings` в `settings.ts` со значением по умолчанию. Они хранятся в `settings.json` хаба и копией в `localStorage`.
+- Вкладки программ сохраняют снимки в локальную историю (`history.ts`, `/api/history`). Новый способ заменить программу на экране сначала ждёт `history.snapshot(…)`.
 - Правила и токены: [docs/dev/ui-and-themes.md](docs/dev/ui-and-themes.md).
 - В интерфейсе режим называется «Блоки», не «Scratch» (товарный знак).
 - Блоки: новая команда роботу идёт только через `command()` в `blocks/runtime.ts` (`source:"program"`); любой новый способ уйти с вкладки или прервать программу обязан вызвать `runtime.stop()` или `halt()`. Как добавить блок и тонкости scratch-blocks — [docs/dev/blocks.md](docs/dev/blocks.md).
-- Python и C#: программа — отдельный процесс и клиент хаба (`program.run`), хаб убивает её при СТОП, уходе владельца и потере робота. Вкладка останавливает её в `deactivate()` и при `visibilitychange`. Ошибки для ребёнка формирует сам процесс (`python/gearbit/_errors.py`, `Gearbit.ScriptHost/CompileErrors.cs` и `RuntimeErrors.cs`). API обоих языков одинаковый и синхронный (`robot.forward(50)` / `robot.Forward(50);`): новую команду робота добавляйте сразу в оба клиента (`python/gearbit`, `Gearbit.Client/Robot.cs`), подсказки и карточку «Команды» (`code/python.ts`, `code/csharp.ts`) и в [python.md](docs/user/python.md), [csharp.md](docs/user/csharp.md).
+- Python и C#: программа — отдельный процесс и клиент хаба (`program.run`), хаб убивает её при СТОП, уходе владельца и потере робота. Вкладка останавливает её в `deactivate()` и при `visibilitychange`. Ошибки для ребёнка формирует сам процесс (`python/gearbit/_errors.py`, `Gearbit.ScriptHost/CompileErrors.cs` и `RuntimeErrors.cs`) на языке вкладки (`GEARBIT_LANG`). Тексты — в `python/gearbit/_texts.py`, `Gearbit.Client/ClientText.cs` и `Gearbit.ScriptHost/ScriptText.cs`, всегда на обоих языках. API обоих языков одинаковый и синхронный (`robot.forward(50)` / `robot.Forward(50);`): новую команду робота добавляйте сразу в оба клиента (`python/gearbit`, `Gearbit.Client/Robot.cs`), подсказки и карточку «Команды» (`code/python.ts`, `code/csharp.ts`) и в [python.md](docs/user/python.md), [csharp.md](docs/user/csharp.md).
 - CodeMirror: цвета только через `var(--code-*)` и другие токены, лигатуры выключены.
 
 ## Документация
@@ -106,7 +112,7 @@ dotnet run --project src/Gearbit.App               # окно
 
 - Документация на двух языках. Русская — основная, английская — копия в `docs/en/` с той же структурой и `README.en.md` рядом с `README.md` (в корне, `python/`, `docs/captures/`). **Меняете русский документ — поправьте английский в том же коммите.** Новый документ — сразу в обоих языках.
 - В начале каждого документа, сразу под заголовком, — строка-переключатель: `**Русский** · [English](…)` и `[Русский](…) · **English**`.
-- Интерфейс только на русском, поэтому в английских документах надписи интерфейса пишутся по-русски с переводом: «Подключить» (Connect).
+- Интерфейс на двух языках: в английских документах надписи интерфейса — как в английском интерфейсе, например **Connect**.
 - Не переводятся: `AGENTS.md`, `CLAUDE.md`, `LICENSE`. `THIRD-PARTY-NOTICES.md` — один файл на двух языках.
 
 ## Лицензия

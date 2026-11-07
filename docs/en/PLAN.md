@@ -19,7 +19,7 @@ Related documents:
 
 | Goal | How we get there |
 |---|---|
-| Comfortable to work with a child at a PC | A full-screen window, large elements, Russian language, keyboard and gamepad, a big STOP button |
+| Comfortable to work with a child at a PC | A full-screen window, large elements, Russian and English, keyboard and gamepad, a big STOP button |
 | Three levels of programming | A **Remote · Scratch · Python · C#** switcher, the same API in all languages |
 | Different robots | A robot is described by a **set of capabilities** (motors, sensors, lights…), not by a specific class. The protocol and transport plug in as adapters |
 | Safety | STOP from any screen, a watchdog, a speed limit, stopping on connection loss and when a program ends |
@@ -182,7 +182,7 @@ The implemented API differs in names and details; see [Hub API](dev/hub-api.md).
 
 | Language | Where it's edited | How it runs | STOP |
 |---|---|---|---|
-| Blocks (Scratch) | The Blocks tab: scratch-blocks (the editor) | Our own interpreter in the interface, a hub client with `source:"program"` | «Стоп» on the toolbar + the common STOP; leaving the tab — stop |
+| Blocks (Scratch) | The Blocks tab: scratch-blocks (the editor) | Our own interpreter in the interface, a hub client with `source:"program"` | **Stop** on the toolbar + the common STOP; leaving the tab — stop |
 | Python | Monaco in Gearbit **or** any external editor (VS Code, IDLE) | A separate process: an embedded portable Python + the `gearbit` package | Kill the process + motors off |
 | C# | CodeMirror in Gearbit **or** Visual Studio / Polyglot Notebooks | A separate `Gearbit.ScriptHost` process (Roslyn Scripting), a global `robot` variable | Kill the process + motors off |
 
@@ -334,8 +334,8 @@ Every stage ends with a working result you can show the child.
 - [ ] Run **ApitorCommander** (Python + bleak) and drive around.
 - [ ] A C# `tools/ble-sniffer` tool: scan, connect, authorize, log all notifications, send hex.
 - [ ] Find out: the device name, the telemetry frame length (11 or 19 bytes, that is, the firmware), the **speed range** (±10? ±100?), which ports the motors use (2 or 4 motors), the sensor response at 5/10/20 cm, whether the state frame has to be repeated periodically.
-- [x] The measurement helper in Gearbit itself (protocol log → «Замеры»): manual frames without the power limit (`service.*`), a power test, sensor calibration, session recording. Replaces `tools/ble-sniffer` and the phone for most checklist items.
-- [x] The motor direction of the «Машинка» (Car) is checked on a real robot: M1 is inverted.
+- [x] The measurement helper in Gearbit itself (protocol log → **Measurements**): manual frames without the power limit (`service.*`), a power test, sensor calibration, session recording. Replaces `tools/ble-sniffer` and the phone for most checklist items.
+- [x] The motor direction of the **Car** is checked on a real robot: M1 is inverted.
 - [ ] Record **golden frames** in `docs/captures/` and update PROTOCOL-SUPERBOT.md.
 - **Result:** a confirmed protocol and test data.
 
@@ -352,11 +352,11 @@ Every stage ends with a working result you can show the child.
 ### Stage 2. Scratch (≈1 week)
 Done differently than planned: instead of TurboWarp — the Blocks tab on scratch-blocks with our own interpreter ([why](dev/blocks.md#why-not-turbowarp)).
 - [x] Robot blocks in Russian: motors, driving, lights, "say", distance, obstacle, tilt, battery, timer; the "when distance < N" event.
-- [x] The "when tilted" event and the "tilted?" block (a 15° threshold, as in Makerzoid), `tilted()` / `Tilted()`, the «Наклонить» (Tilt) buttons in the emulator. Axis signs are not checked on the robot.
+- [x] The "when tilted" event and the "tilted?" block (a 15° threshold, as in Makerzoid), `tilted()` / `Tilted()`, the **Tilt** buttons in the emulator. Axis signs are not checked on the robot.
 - [x] The editor is built into Gearbit and loads the first time the tab opens.
 - [ ] Blocks are shown according to the connected robot's capabilities. For now the menus are static, and a sensor missing from the build gives a clear error at run time.
-- [x] Examples: «Первые шаги» (First steps), «Квадрат» (Square), «Светофор» (Traffic light), «Умный тормоз» (Smart brake), «Исследователь» (Explorer), «Осторожный водитель» (Careful driver), «Считаем препятствия» (Counting obstacles), «По линии» (Along the line), «По краю линии» (Along the line edge), «Наклони меня» (Tilt me).
-- [x] Line following: a sensor can be set "down" (at the floor), the "sensor … sees the black line?" block, `on_line` / `OnLine` in Python and C#, the threshold in «Замеры» ([docs/en/user/line-following.md](user/line-following.md)).
+- [x] Examples: First steps, Square, Traffic light, Smart brake, Explorer, Careful driver, Counting obstacles, Follow the line, Along the line edge, Tilt me.
+- [x] Line following: a sensor can be set "down" (at the floor), the "sensor … sees the black line?" block, `on_line` / `OnLine` in Python and C#, the threshold in **Measurements** ([docs/en/user/line-following.md](user/line-following.md)).
 - [x] Variables with a value monitor, saving to a `*.gearbit.json` file and autosave.
 - **Result:** programming with blocks on a big screen, the robot runs the program live.
 
@@ -365,7 +365,7 @@ Done differently than planned: instead of Monaco — CodeMirror 6 (smaller, no w
 - [x] The `gearbit` package: a synchronous and simple API for children (`robot.forward(50)`), inside — a WebSocket to the hub on the standard library, errors in Russian.
 - [x] `ProgramRunner` in the hub: a separate process, output to the tab, STOP = kill the process tree + motors to 0. Python from python.org, via `py` or from `python\runtime`.
 - [ ] An embedded portable Python in the Gearbit installation.
-- [x] The editor: highlighting, completions for robot commands, sensor places and colors, the error line, the «Команды» (Commands) card, examples.
+- [x] The editor: highlighting, completions for robot commands, sensor places and colors, the error line, the **Commands** card, examples.
 - [x] Working from VS Code (`pip install -e python/`).
 - **Result:** the same tasks as text in Python.
 
@@ -374,7 +374,7 @@ Done differently than planned: the API is synchronous, like in Python (`robot.Fo
 - [x] `Gearbit.Client`: `Robot` (synchronous, `IDisposable`), `RobotScript` (`robot`, `Wait`) for scripts and console programs, errors in Russian.
 - [ ] Publishing `Gearbit.Client` on nuget.org (for now — a project reference).
 - [x] `ScriptHost`: Roslyn Scripting (C# 14), ready `robot` and `Wait`, compile and runtime errors in Russian with the line and Roslyn's original text.
-- [x] The C# tab: highlighting, completions for robot commands, sensor places and colors, the error line, the «Команды» card, examples.
+- [x] The C# tab: highlighting, completions for robot commands, sensor places and colors, the error line, the **Commands** card, examples.
 - [ ] Examples for Polyglot Notebooks in VS Code ("cell → the robot drives").
 - **Result:** C# inside the program and in "real" tools.
 
@@ -392,6 +392,9 @@ Done differently than planned: the API is synchronous, like in Python (`robot.Fo
 - [ ] Voice commands (Web Speech API, Russian), webcam gestures.
 - [ ] An experiment: uploading a Lua script to the controller (`FF FE 09 02 …`) for autonomous work.
 - [ ] Task cards with checks ("got through the maze in 40 s"), records.
+- [x] **English**: the interface, hub messages, Python and C# program errors, the window splash screen. On first start — by the Windows language ([docs/en/dev/i18n.md](dev/i18n.md)).
+- [x] **Settings in a file** `%LOCALAPPDATA%\Gearbit\settings.json`: language, looks, the last tab and build. The Gearbit.exe window opens in the same place and at the same size.
+- [x] **Local program history**, like Local History in an IDE: **New program**, an example and opening a file don't wipe work without a trace ([docs/en/user/history.md](user/history.md)).
 
 ---
 
@@ -439,7 +442,7 @@ What LEGO SPIKE / EV3 Classroom, Microsoft MakeCode, Open Roberta Lab, VEXcode (
 | 18 | **Sound and speech through the PC** ("the robot talks") | mBlock, Scratch Text to Speech | A simple extension children love | 2 |
 | 19 | **Several robots at once** | Sphero Edu, Pybricks (multi-hub) | Races, sumo, a "train". The architecture already allows it | 6 |
 | 20 | **Parent mode**: speed limit, session timer, settings lock | Parental controls in kids' apps | Peace of mind for the grown-up | 1 (limits), 6 |
-| 21 | **Project version history** and rollback | MakeCode | "Put it back the way it was before I broke it" | 6 |
+| 21 | **Project version history** and rollback | MakeCode | "Put it back the way it was before I broke it" | 6 (done: [Program history](user/history.md)) |
 | 22 | **Achievements and badges** for tasks | Code.org, Sphero Edu | Motivation | 6 |
 | 23 | **Opening the remote from a tablet on the home network** (off by default) | Pybricks Code, web IDEs | A second remote for the child while the grown-up is at the PC | 6 |
 

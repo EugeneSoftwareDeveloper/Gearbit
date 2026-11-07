@@ -83,6 +83,7 @@
 | Где | Что |
 |---|---|
 | `localStorage["gearbit.blocks"]` | Текущая программа: `{format, version, workspace, monitors, pristine}`. Пишется с задержкой после каждого изменения. `pristine: true` — программа не менялась после загрузки или сохранения, и при открытии примера не нужно спрашивать подтверждение. |
+| `/api/history/blocks` | Прежние версии программы (`history.ts`, окно «История»): снимок — тот же `{format, version, workspace, monitors}` строкой JSON. Подробнее — [API хаба → HTTP](hub-api.md#http). |
 | Файл `*.gearbit.json` | `{format: "gearbit-blocks", version: 1, workspace, monitors}`. `workspace` — `Blockly.serialization.workspaces.save`. Сохранение и открытие — File System Access API, если его нет — скачивание и `<input type=file>`. |
 
 ## Проверка

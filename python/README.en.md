@@ -15,7 +15,7 @@ robot.stop()
 
 ## Where to run
 
-- **In Gearbit**, the Python tab: write, click «Запустить» (Run). No need to install the package.
+- **In Gearbit**, the **Python** tab: write, click **Run**. No need to install the package.
 - **In VS Code, IDLE or a console**: Gearbit must be running, the robot (or the emulator) connected.
 
 ```bash
@@ -25,6 +25,8 @@ python my_program.py
 
 The program connects to `ws://localhost:5280/ws`. Another address is set with the `GEARBIT_URL` environment variable.
 
+The package writes messages and errors in the system language: Russian for Russian, Ukrainian, Belarusian and Kazakh Windows, English otherwise. In Gearbit — in the language of the tab. To set the language explicitly: the environment variable `GEARBIT_LANG=ru` or `en`.
+
 ## Commands
 
 The full list with examples — [docs/en/user/python.md](../docs/en/user/python.md).
@@ -32,7 +34,7 @@ The full list with examples — [docs/en/user/python.md](../docs/en/user/python.
 ## Safety
 
 - The power limit for children is applied by Gearbit, not by the program.
-- STOP in Gearbit, connection loss and the watchdog stop the robot, and the program ends with the message «Программа остановлена» (Program stopped).
+- STOP in Gearbit, connection loss and the watchdog stop the robot, and the program ends with the message "The program was stopped."
 - When the program ends, it turns its motors off itself.
 
 ## Tests

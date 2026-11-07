@@ -4,7 +4,7 @@
 
 The robot drives by itself along a black line on a white floor: in a circle, a figure eight, along any track you draw. For this the sensor looks not forward but **down, at the floor**.
 
-> On our robot the sensor about 1 cm above the floor shows 0 over a white sheet and 3–4 over black tape. The threshold for sensor D1 is already in the «Машинка» (Car) settings — 2. If your sensor is higher, it's a different sensor or a different line, measure the threshold (the "Line threshold" section below) — it takes a minute.
+> On our robot the sensor about 1 cm above the floor shows 0 over a white sheet and 3–4 over black tape. The threshold for sensor D1 is already in the **Car** settings — 2. If your sensor is higher, it's a different sensor or a different line, measure the threshold (the "Line threshold" section below) — it takes a minute.
 
 ## What you need
 
@@ -15,16 +15,16 @@ The robot drives by itself along a black line on a white floor: in a circle, a f
 ## Setup in Gearbit
 
 1. Connect the robot (or the emulator).
-2. On the **«Пульт»** (Remote) tab, in the **«Датчики»** (Sensors) card, click the sensor's name and pick a place in the **«Смотрит в пол: линия»** (Looks at the floor: line) group:
-   - two sensors — **«Вниз слева»** (Down left) and **«Вниз справа»** (Down right);
-   - one sensor — **«Вниз»** (Down).
-3. Put the robot on the track. The card shows **«Чёрное»** (Black) over the tape and **«Белое»** (White) over the paper. If it doesn't change, lower the sensor or see "Line threshold".
+2. On the **Remote** tab, in the **Sensors** card, click the sensor's name and pick a place in the **Looks at the floor: line** group:
+   - two sensors — **Down left** and **Down right**;
+   - one sensor — **Down**.
+3. Put the robot on the track. The card shows **Black** over the tape and **White** over the paper. If it doesn't change, lower the sensor or see "Line threshold".
 
 ## The program
 
-Ready-made examples are in all three modes: the **«Примеры»** (Examples) button → **«По линии»** (Along the line, two sensors) and **«По краю линии»** (Along the line edge, one sensor).
+Ready-made examples are in all three modes: the **Examples** button → **Follow the line** (two sensors) and **Along the line edge** (one sensor).
 
-**Blocks.** The «Датчики» (Sensors) category has the **«датчик [вниз слева] видит чёрную линию?»** (sensor [down left] sees the black line?) block. It answers yes or no, so it fits into «если … иначе» (if … else) and «ждать до» (wait until). The idea of «По линии»:
+**Blocks.** The **Sensing** category has the **sensor [down left] sees the black line?** block. It answers yes or no, so it fits into "if … else" and "wait until". The idea of **Follow the line**:
 
 - the left sensor sees black — the line went left, drive: left wheel 0, right 40;
 - the right one sees black — the other way round: left 40, right 0;
@@ -53,15 +53,15 @@ The sensor name can be in Russian: `"вниз слева"`, `"вниз спра�
 
 ## Practice in the emulator
 
-Under the emulator room click **«Линия»** (Line): instead of the room a white sheet with a black stadium appears, and the car is placed on the track. Set the sensors to «Вниз слева» and «Вниз справа», open the «По линии» example and run it. The small squares in front of the car show what each sensor sees: black — the line, white — the paper. **«Комната»** (Room) brings back the usual room with obstacles.
+Under the emulator room click **Line**: instead of the room a white sheet with a black stadium appears, and the car is placed on the track. Set the sensors to **Down left** and **Down right**, open the **Follow the line** example and run it. The small squares in front of the car show what each sensor sees: black — the line, white — the paper. **Room** brings back the usual room with obstacles.
 
 ## Line threshold
 
-The threshold is the level from which Gearbit considers the floor under the sensor black. The default is 3 (the middle of the 0…6 scale); for sensor D1 of the «Машинка» (Car) it's 2 (measured). To find the exact threshold for your build:
+The threshold is the level from which Gearbit considers the floor under the sensor black. The default is 3 (the middle of the 0…6 scale); for sensor D1 of the **Car** it's 2 (measured). To find the exact threshold for your build:
 
-1. Protocol log (☰ in the header) → **«Замеры»** (Measurements) → the **«Датчики»** (Sensors) tab → the **«Порог линии»** (Line threshold) section.
-2. Pick the sensor, hold it 1 cm above the white paper — **«Замерить»** (Measure) next to «Белый лист» (White sheet).
-3. Move the paper so the tape is under the sensor — **«Замерить»** next to «Чёрная линия» (Black line).
+1. Protocol log (☰ in the header) → **Measurements** → the **Sensors** tab → the **Line threshold** section.
+2. Pick the sensor, hold it 1 cm above the white paper — **Measure** next to **White paper**.
+3. Move the paper so the tape is under the sensor — **Measure** next to **Black line**.
 4. The helper shows the threshold and a ready line `"lineLevel": N` for the build profile. How to save it is described in [Measurements](measurements.md).
 
 ## If it doesn't work
@@ -69,7 +69,7 @@ The threshold is the level from which Gearbit considers the floor under the sens
 | What you see | What to do |
 |---|---|
 | The robot flies off the track on a turn | Lower the speed (40 → 30) or make the turn smoother. |
-| The robot spins on the spot | The sensors are swapped: swap «Вниз слева» and «Вниз справа». |
+| The robot spins on the spot | The sensors are swapped: swap **Down left** and **Down right**. |
 | The same reading over white and over black | Lower the sensor, right to the floor. Check that the tape is matte. |
-| Always «Чёрное» (Black) | The floor is too dark or the sensor looks into empty space. You need a white sheet. |
-| «У этой сборки нет датчика «вниз»» (This build has no "down" sensor) | In the Sensors card, set the sensor's place to «Вниз» or pick another sensor in the block. |
+| Always **Black** | The floor is too dark or the sensor looks into empty space. You need a white sheet. |
+| "This build has no «down» sensor" | In the **Sensors** card, set the sensor's place to **Down** or pick another sensor in the block. |

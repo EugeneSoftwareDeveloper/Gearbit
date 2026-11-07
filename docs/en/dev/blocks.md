@@ -2,7 +2,7 @@
 
 [Русский](../../dev/blocks.md) · **English**
 
-The «Блоки» (Blocks) tab is Scratch-style programming right inside `web/studio-ui`. The word "Scratch" is not used in the interface (it's a trademark); in code and docs it's fine.
+The **Blocks** tab is Scratch-style programming right inside `web/studio-ui`. The word "Scratch" is not used in the interface (it's a trademark); in code and docs it's fine.
 
 ## Why not TurboWarp
 
@@ -21,13 +21,13 @@ What it gave: no GPL dependency (TurboWarp is GPL-3.0), no iframe and no separat
 | `view.ts` | The whole tab: the toolbar, `SB.inject`, the right column (stage, variables, sensors), examples, saving. Exports `mountBlocksView(root): BlocksView`. |
 | `runtime.ts` | The interpreter: threads, events, evaluating values, commands to the hub, stop rules. |
 | `robot-blocks.ts` | Robot block definitions (Blockly JSON) and menu constants. |
-| `toolbox.ts` | The palette: categories and their blocks, the dynamic «Переменные» (Variables) category. |
+| `toolbox.ts` | The palette: categories and their blocks, the dynamic **Variables** category. |
 | `theme.ts` | The Blockly theme from the `--block-*` tokens. |
 | `examples.ts` | Example programs (Scratch XML). |
 
 `main.ts` loads `blocks/view` with a dynamic `import()` the first time the tab opens: Blockly + scratch-blocks is a separate chunk of about 2 MB, and the remote doesn't get heavier because of it.
 
-**The stage is shared.** The «Робот» (Robot) card (the emulator room or the radar) is one for the whole interface: `createRemoteView` returns it as `stage`, and `setMode` moves the element into `BlocksView.stageSlot` and back. The canvas is not recreated.
+**The stage is shared.** The **Robot** card (the emulator room or the radar) is one for the whole interface: `createRemoteView` returns it as `stage`, and `setMode` moves the element into `BlocksView.stageSlot` and back. The canvas is not recreated.
 
 ## The interpreter
 
@@ -46,7 +46,7 @@ What it gave: no GPL dependency (TurboWarp is GPL-3.0), no iframe and no separat
 | What happened | What the interpreter does |
 |---|---|
 | STOP in the header, Space/Esc, `safety.event`, connection loss | `onStop` → `halt()`: threads stop at once. The hub has already stopped the motors. If a motion command was still on its way to the hub (or left < 300 ms ago), `halt()` repeats `robot.stop`. |
-| The «Стоп» (Stop) button on the blocks toolbar | `emergencyStop()` — the same as STOP in the header. |
+| The **Stop** button on the blocks toolbar | `emergencyStop()` — the same as STOP in the header. |
 | Leaving the tab, `visibilitychange: hidden`, loading another program | `stop()`: threads stop, its own motors are turned off with regular `drive.stop` / `motor.setPower 0`, control is released. |
 | The program reached its end | If motors are on — turn them off and show a hint. `control.release`. If there are "when …" events, the program doesn't end by itself. |
 
@@ -65,7 +65,7 @@ Block menus are static: Blockly drops a saved value that isn't in the menu, and 
 ## scratch-blocks subtleties
 
 - `ScratchMsgs.setLocale("ru")` — **before** creating blocks. Missing strings are added to `SB.Msg` in `setupScratchBlocks()`.
-- The palette is continuous (`ContinuousToolbox`), it builds all categories at once. A custom category handler (`registerToolboxCategoryCallback`) must be registered before the first render. That's why `inject` goes with a palette without «Переменные», then the registration, then `updateToolbox`.
+- The palette is continuous (`ContinuousToolbox`), it builds all categories at once. A custom category handler (`registerToolboxCategoryCallback`) must be registered before the first render. That's why `inject` goes with a palette without **Variables**, then the registration, then `updateToolbox`.
 - `ContinuousToolbox.refreshSelection()` is empty: after creating, deleting and renaming a variable the palette is redrawn by `toolbox.forceRerender()` (via `requestAnimationFrame`).
 - The checkbox next to a variable in the palette is the `checkbox` icon from the `monitor_block` extension. Its state comes from `CheckboxBubble.prototype.isChecked`, in our case — the `monitors` set. The "timer" has no checkbox: only variables have a monitor.
 - Blockly dialogs (`prompt`, `alert`, `confirm`) are replaced with our own (`ui/ask-dialog.ts`).
@@ -83,14 +83,15 @@ Block menus are static: Blockly drops a saved value that isn't in the menu, and 
 | Where | What |
 |---|---|
 | `localStorage["gearbit.blocks"]` | The current program: `{format, version, workspace, monitors, pristine}`. Written with a delay after every change. `pristine: true` — the program hasn't changed since it was loaded or saved, so opening an example needs no confirmation. |
+| `/api/history/blocks` | Earlier versions of the program (`history.ts`, the **History** dialog): a snapshot is the same `{format, version, workspace, monitors}` as a JSON string. More in [Hub API → HTTP](hub-api.md#http). |
 | A `*.gearbit.json` file | `{format: "gearbit-blocks", version: 1, workspace, monitors}`. `workspace` is `Blockly.serialization.workspaces.save`. Saving and opening use the File System Access API; without it, a download and `<input type=file>`. |
 
 ## Checking
 
 Emulator, Blocks tab:
 
-1. Every example starts and stops: with the «Стоп» button, STOP in the header, Space, switching to «Пульт» (Remote).
-2. After stopping, the robot stands still, the block glow is off, the «Программа работает» (Program running) badge changed to «Готово к запуску» (Ready to run).
-3. Without a robot, «Запустить» (Run) shows an error and highlights the block.
+1. Every example starts and stops: with the **Stop** button, STOP in the header, Space, switching to **Remote**.
+2. After stopping, the robot stands still, the block glow is off, the "The program is running" badge changed to "Ready to run".
+3. Without a robot, **Run** shows an error and highlights the block.
 4. Creating, renaming and deleting a variable; the checkbox and the monitor on the right.
 5. Light and dark theme, window width 1024 px.

@@ -18,7 +18,7 @@ A build answers the questions: which motors are wheels, where the sensors look, 
 {
   "$schemaVersion": 1,
   "id": "superbot-tank",
-  "title": "Танк",
+  "title": { "ru": "Танк", "en": "Tank" },
   "device": "tudao-superbot",
   "status": "draft",
   "drive": { "type": "differential", "left": "M1", "right": "M2", "invertLeft": true, "invertRight": false },
@@ -30,12 +30,13 @@ A build answers the questions: which motors are wheels, where the sensors look, 
 
 | Field | Meaning |
 |---|---|
+| `title` | The name for the interface: an object by language `{"ru": …, "en": …}` or one string for all languages ([Languages](i18n.md#descriptions-of-robots-devices-profiles)). The `title` of a model and of components is written the same way. |
 | `device` | The model `id` from `devices/`. |
 | `drive` | The drive. Only `differential` exists for now: the left and right motor and their inversion. Without this field `drive.*` returns `NotSupported`, but the motors can still be controlled one by one. |
 | `aliases` | Friendly names for ports. Programs see them (`motor.setPower {id:"turret"}`), and so does the radar (`front`, `right`, `left`, `front_left`, `front_right`, `back` set the ray direction). |
 | `limits.maxPowerPercent` | The power limit suggested on connection. |
 | `calibration.distance.<id>.levelToCm` | An array of 7 numbers: level 0–6 → centimeters. `null` — not calibrated. |
-| `calibration.distance.<id>.lineLevel` | The level from which a sensor looking at the floor sees the black line. `null` — the default `(maxLevel + 1) / 2`. Measured in «Замеры» (Measurements) → «Датчики» (Sensors) → «Порог линии» (Line threshold). |
+| `calibration.distance.<id>.lineLevel` | The level from which a sensor looking at the floor sees the black line. `null` — the default `(maxLevel + 1) / 2`. Measured in **Measurements** → **Sensors** → **Line threshold**. |
 | `status` | `draft` until the build is checked on a real robot. |
 
 Check: `dotnet test` (the `CatalogTests` test loads all the JSON), then connect to the emulator with this build.

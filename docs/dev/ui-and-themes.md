@@ -11,7 +11,9 @@
 | `main.ts` | Сборка экрана, подписки на уведомления хаба, клавиатура и геймпад, экран «нет связи с хабом». |
 | `hub.ts` | `HubClient`: WebSocket + JSON-RPC, автопереподключение, `call(method, params)`, `on(notification, listener)`. После каждого подключения шлёт `hub.hello` и выдаёт событие `hub.connected`. |
 | `model.ts` | Типы ответов хаба (`RobotInfo`, `Telemetry`, `EmulatorState`…) и общий `store`. `displayName`, места датчиков (`SENSOR_PLACES`, `sensorPlace`, `sensorAngle`, `NO_SENSOR`). |
-| `settings.ts` | Тема, цвет, крупный текст, скорость, вид управления, места датчиков по сборкам (`sensorPlaces`: `"устройство/сборка" → {D1: "front" \| … \| "none"}`). Хранятся в `localStorage` (`gearbit.settings`). |
+| `settings.ts` | Язык (`lang`, `null` — как в системе), тема, цвет, крупный текст, скорость, вид управления, последняя вкладка (`mode`), последняя сборка для каждой модели робота (`lastProfile`), места датчиков по сборкам (`sensorPlaces`: `"устройство/сборка" → {D1: "front" \| … \| "none"}`). Хранятся в `settings.json` хаба (`/api/settings`) и копией в `localStorage` (`gearbit.settings`): при старте `syncSettings` ждёт файл до 500 мс, иначе берёт копию. Запись — в `localStorage` сразу, в файл с задержкой. |
+| `i18n.ts` | Язык страницы (`lang()`), `messages({ru, en})`, `text(title)` для названий из JSON, `setLang`. См. [Языки](i18n.md). |
+| `history.ts` | Локальная история программ (`createHistory(kind, current)`): когда делать снимок, запросы к `/api/history`. |
 | `trace.ts` | Общая подписка на журнал протокола (`listenTrace`): журнал, помощник замеров и запись слушают одну подписку хаба. |
 | `icons.ts` | Встроенные SVG-иконки (`currentColor`), в том числе логотип. |
 | `input/drive.ts` | Смешивание кнопок, джойстика и геймпада в `drive.arcade`. Пока есть ввод, команда повторяется раз в 100 мс, после отпускания — сразу `drive.stop`. |
@@ -22,7 +24,7 @@
 | `ui/connect-dialog.ts` | Поиск и подключение. |
 | `ui/settings-popover.ts`, `help-dialog.ts`, `trace-panel.ts`, `toasts.ts` | Настройки, подсказка (F1), журнал протокола (с кнопкой «Замеры»), всплывающие сообщения. |
 | `ui/files.ts` | `saveTextFile`, `saveJsonFile`, `openFile`, `openTextFile`: File System Access API с запасным вариантом через ссылку. Тип файла — `FileKind {description, suffix, mime?}`. |
-| `ui/mini-sensors.ts`, `ui/examples-dialog.ts` | Общие для вкладок программ карточка «Датчики» и окно «Примеры». |
+| `ui/mini-sensors.ts`, `ui/examples-dialog.ts`, `ui/history-dialog.ts` | Общие для вкладок программ карточка «Датчики» и окна «Примеры» и «История». Вкладка передаёт окну «История», как показать снимок (`preview`) и как его вернуть (`restore`). |
 | `measure/*` | Помощник замеров этапа 0: `helper.ts` (окно, вкладки «Кадры» и «Запись», `MeasureContext`), `power-test.ts`, `calibration.ts` (вкладка «Датчики») и `calibration-math.ts` (расчёт `levelToCm` и `lineLevel` без DOM: уровень «без препятствия» — это «не видит», в таблице замеров бывают дыры), `recorder.ts` (формат [docs/captures](../captures/README.md)), `frames.ts` (кадры TUDAO). Кадры уходят через `service.*` хаба. |
 | `ui/ask-dialog.ts` | `askText`, `askConfirm`, `showAlert` — свои диалоги вместо `prompt`/`confirm`/`alert`. |
 | `blocks/*` | Редактор блоков, загружается лениво. См. [Редактор блоков](blocks.md). |
@@ -74,7 +76,7 @@
 
 ## Правила интерфейса
 
-- **Тексты — по-русски, коротко, для ребёнка 7–12 лет.** Ошибки объясняют, что сделать: «Закройте приложение Apitor на телефоне».
+- **Тексты — на русском и английском, коротко, для ребёнка 7–12 лет.** Ошибки объясняют, что сделать: «Закройте приложение Apitor на телефоне». Как добавить текст — [Языки](i18n.md).
 - **СТОП всегда виден** и работает с клавиатуры (пробел, Esc) и геймпада.
 - **Движение только пока держат.** Новый способ ввода обязан сбрасываться: при отпускании, при потере фокуса окна (`blur`, `visibilitychange`), при `safety.event`.
 - **Размеры для мыши и пальца**: кнопки не ниже 40 px, d-pad тянется до 300 px.

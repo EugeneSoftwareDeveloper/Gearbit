@@ -16,7 +16,7 @@ The hub listens on `ws://localhost:5280/ws`. Messages are JSON-RPC 2.0, one JSON
 ← {"jsonrpc":"2.0","id":1,"result":{"hub":"Gearbit","version":"0.1.0","clientId":"c3","transports":["emulator","ble"],"robot":null,"control":{"clientId":null,"clientName":null,"kind":null,"mine":false}}}
 ```
 
-`name` is shown to other clients in the «Сейчас управляет…» (Now in control…) bar.
+`name` is shown to other clients in the "The robot is now controlled by…" bar.
 
 `lang` is the message language for this client: `ru` or `en` (`en-US` works too). The error `message`, `safety.event`, the scan `warnings` and `problem` in `program.languages` come in it. Without `lang`, or with an unknown language, they are in Russian, as in earlier versions. Each client gets the same event in its own language. Descriptions in `hub.methods` and the hub log are always in Russian.
 
@@ -90,7 +90,7 @@ The process gets environment variables:
 | Variable | Value |
 |---|---|
 | `GEARBIT_URL` | `ws://localhost:<port>/ws` |
-| `GEARBIT_NAME` | `Python: <name>` or `C#: <name>` — the name in the «Сейчас управляет…» bar |
+| `GEARBIT_NAME` | `Python: <name>` or `C#: <name>` — the name in the "The robot is now controlled by…" bar |
 | `GEARBIT_RUN_ID` | `runId` for `hub.hello` |
 | `GEARBIT_LANG` | the language of the tab that started the program (`ru`, `en`): the program writes its errors in it and passes it in `hub.hello {lang}` |
 | `GEARBIT_SENSOR_PLACES` | JSON `sensors` from `program.run` |
@@ -116,7 +116,7 @@ The implementation is `src/Gearbit.Hub/Programs`: `ProgramRunner` (start, output
 
 ### Protocol measurements (stage 0)
 
-A mode for the [measurement helper](../STAGE0-CHECKLIST.md): frames go to the robot as they are, byte for byte. It is used by the measurement helper window (protocol log → «Замеры»).
+A mode for the [measurement helper](../STAGE0-CHECKLIST.md): frames go to the robot as they are, byte for byte. It is used by the measurement helper window (protocol log → **Measurements**).
 
 | Method | Parameters | Behavior |
 |---|---|---|
@@ -142,7 +142,7 @@ While measurements run, `motor.setPower`, `drive.*` and `light.setColor` are rej
 | `emulator.setObstacles` | `{obstacles: [{x, y, width, height}]}` | Obstacles in centimeters. |
 | `emulator.setSensorAngles` | `{angles: {D1: 0}, down: {D2: 2.5}}` | Where the virtual sensors look. `angles` — sideways: degrees from "forward", clockwise. `down` — at the floor: a sideways offset from the robot's axis in centimeters (below 0 — to the left, above 0 — to the right; no farther than `robotRadius − 1`), the point is `downSensorForward` cm ahead of the center. A sensor lives in one of the two dictionaries: put into `down`, it is removed from `angles`, and vice versa. Unknown ids are skipped. Returns `{angles, down}`. The interface calls it when the user moves sensors in the Sensors card. |
 | `emulator.setScene` | `{scene: "room" \| "line"}` | The scene: `room` — a room with obstacles, `line` — a white sheet with a black stadium (center 120×80, 90 cm straights, radius 45, 3 cm line) without obstacles. The car goes to the scene's start. Returns `{scene}`; an unknown scene — `InvalidParams`. |
-| `emulator.setTilt` | `{x, y}` | Tilt the car (gyroscope), degrees −90..90: `y` above 0 — forward, `x` above 0 — right (as in Makerzoid). Without parameters — level. The tilt holds until it is set back to 0; `emulator.reset` and turning off also zero it. Returns `{x, y}`. The interface calls it while the «Наклонить» (Tilt) buttons are held. |
+| `emulator.setTilt` | `{x, y}` | Tilt the car (gyroscope), degrees −90..90: `y` above 0 — forward, `x` above 0 — right (as in Makerzoid). Without parameters — level. The tilt holds until it is set back to 0; `emulator.reset` and turning off also zero it. Returns `{x, y}`. The interface calls it while the **Tilt** buttons are held. |
 
 ## Notifications (hub → client)
 
@@ -190,6 +190,21 @@ The hub texts live in `src/Gearbit.Hub/HubText.cs`: the `IHubText` interface and
 - `GET /api/info` → `{hub: "Gearbit", version, websocket, robot, clients}`. Gearbit.exe uses it to learn that the port is taken by its own hub.
 - `GET /` → the web interface from `wwwroot`.
 
+The hub keeps user data in the `Hub:DataDirectory` folder (`%LOCALAPPDATA%\Gearbit` by default). Requests that write something are accepted only with `Content-Type: application/json` and, if there is an `Origin`, only from an allowed one (the same rules as for `/ws`). Otherwise — `403` or `415`; a body that is too large — `413`.
+
+**Interface settings** — `settings.json`:
+
+- `GET /api/settings` → the settings object, or `404` if there is no file yet.
+- `PUT /api/settings` — write the whole object (up to 64 KB), the answer is `204`. The hub doesn't parse the fields: the interface (`settings.ts`) decides what's in them. Gearbit.exe also reads the `lang` field (the splash screen language).
+
+**Program history** — `History/{kind}/{id}.json`, `kind`: `blocks`, `python`, `csharp`; `id` is the snapshot time in UTC, `yyyyMMdd-HHmmss-fff`. Any other `kind` or `id` — `404`.
+
+- `GET /api/history/{kind}` → `[{id, time, reason, name, size}]`, newest first.
+- `GET /api/history/{kind}/{id}` → `{id, time, reason, name, content}`.
+- `POST /api/history/{kind}` with `{reason, name?, content}` → `{entry, saved}`. `reason` is Latin letters, up to 16 (`new`, `example`, `open`, `restore`, `run`, `auto`, `leave`, `start`). `content` is up to 2 MB. If `content` is the same as in the last snapshot, no file is written: `200` and `saved: false`, otherwise `201`.
+
+The hub keeps up to 200 snapshots of each kind. Snapshots older than 30 days are deleted, but the last 20 always stay. The code is `src/Gearbit.Hub/UserData` (`SettingsStore`, `HistoryStore`, `HttpApi`), the tests are `UserDataTests`, `HistoryTests`.
+
 ## Settings (`appsettings.json`, `--Hub:…`)
 
 | Key | Default | Meaning |
@@ -205,6 +220,7 @@ The hub texts live in `src/Gearbit.Hub/HubText.cs`: the `IHubText` interface and
 | `Hub:PythonPath` | — | The path to `python.exe`. Without it: `python\runtime\python.exe` next to the program, `py -3`, `python.exe` in `PATH` (Microsoft Store stubs are skipped). Python 3.9+ is required. |
 | `Hub:PythonPackageDirectory` | `python` next to the program | Where the `gearbit` package is (added to `PYTHONPATH`). |
 | `Hub:CSharpHostPath` | `csharp\Gearbit.ScriptHost.exe` next to the program | The C# program runner. |
+| `Hub:DataDirectory` | `%LOCALAPPDATA%\Gearbit` | Interface settings and program history (see [HTTP](#http)). A temporary folder in tests. |
 | `Hub:ProgramsDirectory` | `%TEMP%\Gearbit\programs` | Where the program being run is written (a folder per run, deleted afterwards). |
 
 ## Example: Python without Gearbit libraries

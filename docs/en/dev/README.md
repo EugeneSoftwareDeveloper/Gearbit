@@ -38,7 +38,7 @@ The main rule: **the hub is the only owner of the robot connection.** The remote
 | `Gearbit.App` | Gearbit.exe: a WPF + WebView2 window, the hub runs in-process. |
 | `tests/Gearbit.Tests` | xUnit: protocol, catalog, robot, emulator, the whole hub over WebSocket. |
 | `web/studio-ui` | The web interface: TypeScript without a framework + Vite. The block editor is scratch-blocks with our own interpreter (`src/blocks`). The Python and C# tabs use CodeMirror 6 (`src/code`). |
-| `python/` | The `gearbit` package for Python: a synchronous hub client on the standard library, clear errors in Russian, its own tests (`unittest`). See [python/README.en.md](../../../python/README.en.md). |
+| `python/` | The `gearbit` package for Python: a synchronous hub client on the standard library, clear errors in Russian and English, its own tests (`unittest`). See [python/README.en.md](../../../python/README.en.md). |
 
 ## Sections
 
@@ -46,6 +46,7 @@ The main rule: **the hub is the only owner of the robot connection.** The remote
 - [Hub API (JSON-RPC)](hub-api.md)
 - [Adding a robot or a build](adding-a-robot.md)
 - [Interface and themes](ui-and-themes.md)
+- [Languages: Russian and English](i18n.md)
 - [Block editor](blocks.md)
 - Python and C# programs: [Hub API → Programs](hub-api.md#programs-python-c), [the gearbit package](../../../python/README.en.md), [C# for users](../user/csharp.md), [how it works](../ARCHITECTURE.md#5-how-a-python-or-c-program-works)
 - [Architecture in detail](../ARCHITECTURE.md), [stage plan](../PLAN.md)
@@ -56,7 +57,7 @@ The main rule: **the hub is the only owner of the robot connection.** The remote
 
 Russian is the main language: `docs/`, `README.md`, `python/README.md`. The English copy mirrors the same structure in `docs/en/`, and folder READMEs have a `README.en.md` next to them. Every file starts with a language switcher right after the heading. When you change a document, change its copy in the other language in the same commit. `AGENTS.md`, `CLAUDE.md`, `LICENSE` and `THIRD-PARTY-NOTICES.md` are not translated.
 
-The interface is in Russian only, so English docs quote on-screen labels in Russian with a translation: **«Подключить»** (Connect).
+The interface is in two languages, so English docs write labels the way the English interface shows them: **Connect**.
 
 ## Principles
 
@@ -64,5 +65,5 @@ The interface is in Russian only, so English docs quote on-screen labels in Russ
 - **Devices are described by data.** New robots and builds are added as JSON files in `devices/` and `profiles/`, without code changes, as long as the protocol is known.
 - **Unverified values are marked.** Values from public sources carry `"verified": false`. The interface shows the `draft` status.
 - **Everything is local.** The hub listens only on `localhost` and checks `Origin`. No telemetry.
-- **User-facing texts are in Russian**, in simple words: a child reads them.
+- **User-facing texts are in Russian and English**, in simple words: a child reads them. How to add a text — [Languages](i18n.md).
 - **License:** GPL-3.0-only ([LICENSE](../../../LICENSE)). A new library that ships with Gearbit must have a GPL-3.0-compatible license and goes into [THIRD-PARTY-NOTICES.md](../../../THIRD-PARTY-NOTICES.md).

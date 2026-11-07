@@ -10,19 +10,20 @@ The first supported robot is the **Apitor / Makerzoid SuperBot** (TUDAO controll
 
 > ⚠️ This is an unofficial project, not affiliated with Apitor or Makerzoid. The protocol was reverse-engineered. Everything runs locally: no cloud, no accounts, no data collection.
 
-> 🌐 The Gearbit interface is in Russian for now. The English docs quote buttons and blocks as they appear on screen, with a translation: **«Подключить»** (Connect).
+> 🌐 The Gearbit interface is in English and Russian. On first start it follows the Windows language; you can switch it in the settings (⚙).
 
 ## What it can do
 
 - **Gearbit.exe**: a WPF + WebView2 window with the hub inside, dark title bar in the night theme.
 - **Remote control**: keyboard (WASD/arrows), on-screen buttons and joystick, gamepad; sensors, lights and each motor separately.
-- **Blocks**: Scratch-style block programming in Russian (scratch-blocks), sensor and tilt events, variables, examples, saving to a file.
-- **Python and C#**: an editor with highlighting and hints, the same simple API in both (`robot.forward(50)` / `robot.Forward(50);`), errors explained in Russian, examples.
-- **Line following**: sensors look at the floor and the robot follows black electrical tape; a «Линия» (Line) track in the emulator.
+- **Blocks**: Scratch-style block programming (scratch-blocks), sensor and tilt events, variables, examples, saving to a file.
+- **Python and C#**: an editor with highlighting and hints, the same simple API in both (`robot.forward(50)` / `robot.Forward(50);`), clear errors in English or Russian, examples.
+- **Line following**: sensors look at the floor and the robot follows black electrical tape; a **Line** track in the emulator.
 - **Emulator**: a virtual car in a room with obstacles that speaks the real byte protocol; you can tilt it.
 - **Measurements**: hand-made frames to the robot, a power test, sensor calibration and a recording of all traffic — to pin down the protocol on a real robot.
 - **Safety**: STOP from anywhere, a 600 ms dead man's switch, a power limit per build, one controller at a time.
-- **Looks**: light, dark and auto theme, 5 accent colors, large text.
+- **Language and looks**: the interface in English and Russian (on first start — by the Windows language), light, dark and auto theme, 5 accent colors, large text. Settings, the tab and the window are remembered.
+- **Program history**: like Local History in an IDE — earlier versions of blocks, Python and C# programs are kept in `%LOCALAPPDATA%\Gearbit\History`.
 - **Hub**: JSON-RPC 2.0 over WebSocket on localhost. The remote, blocks, Python and C# all work through it.
 
 ## Status
@@ -49,7 +50,7 @@ dotnet test
 dotnet run --project src/Gearbit.App
 ```
 
-In the window, click **«Подключить»** (Connect) and pick **«Nordic_TUDAO (эмулятор)»** (emulator): it works without hardware. Drive with W A S D, stop with Space.
+In the window, click **Connect** and pick **Nordic_TUDAO (emulator)**: it works without hardware. Drive with W A S D, stop with Space.
 
 The hub without a window (for a browser and external clients): `dotnet run --project src/Gearbit.Server` → http://localhost:5280. More in [docs/en/dev/building.md](docs/en/dev/building.md).
 

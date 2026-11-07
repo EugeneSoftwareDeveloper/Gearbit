@@ -6,7 +6,7 @@ On the **C#** tab the robot program is written in C#. Gearbit itself is written 
 
 ## What you need
 
-Nothing to install: everything for C# is already in Gearbit. To the right of «Запустить» (Run) you see the language version, for example «C# 14».
+Nothing to install: everything for C# is already in Gearbit. To the right of **Run** you see the language version, for example "C# 14".
 
 The program here is a **script**: commands are written right away, without `class` and `Main`. `robot` and `Wait` are ready, and `System`, `System.Linq`, `System.Collections.Generic` and other common namespaces are imported.
 
@@ -14,30 +14,30 @@ The program here is a **script**: commands are written right away, without `clas
 
 | Where | What |
 |---|---|
-| Top | **«Запустить»** (Run), **«Стоп»** (Stop), the program state, **«Примеры»** (Examples), **«Новая»** (New), **«Открыть»** (Open), **«Сохранить»** (Save). |
-| Center | The program text. Above it — the file name and the «изменена» (modified) mark if the program isn't saved to a file yet. |
-| Bottom | **«Вывод»** (Output): `Console.WriteLine()` writes here, errors and the «Программа закончилась» (Program finished) message show up here too. |
-| Right | The robot (emulator room or radar) with the `robot.Say` bubble, the **«Команды»** (Commands) card and **«Датчики»** (Sensors). |
+| Top | **Run**, **Stop**, the program state, **Examples**, **New program**, **Open**, **Save**, **History**. |
+| Center | The program text. Above it — the file name and the **changed** mark if the program isn't saved to a file yet. |
+| Bottom | **Output**: `Console.WriteLine()` writes here, errors and the "The program has ended" message show up here too. |
+| Right | The robot (emulator room or radar) with the `robot.Say` bubble, the **Commands** card and **Sensors**. |
 
 Clicking a command in the Commands card inserts it into the program at the cursor. If it's a loop or `if`, the cursor lands inside the curly braces. While you type `robot.`, Gearbit suggests commands. **Enter** or **Tab** inserts a command, and **Tab** then jumps to the next number in the parentheses. **Ctrl+Space** shows suggestions anywhere.
 
 ## The first program
 
-1. Connect the robot or the emulator (the «Нет робота» — No robot — badge at the top).
-2. Open **«Примеры»** (Examples) → **«Первая поездка»** (First ride).
-3. Click **«Запустить»** (Run) or press **F5**.
+1. Connect the robot or the emulator (the **No robot** badge at the top).
+2. Open **Examples** → **First ride**.
+3. Click **Run** or press **F5**.
 
 ```csharp
-robot.Say("Поехали!");
-robot.Forward(50);        // вперёд с мощностью 50
-Wait(1);                  // ехать 1 секунду
+robot.Say("Let's go!");
+robot.Forward(50);        // forward with power 50
+Wait(1);                  // drive for 1 second
 robot.TurnRight(40);
 Wait(0.5);
-robot.Backward(50, 1);    // назад 1 секунду и остановиться
-robot.Say("Приехали!");
+robot.Backward(50, 1);    // backward for 1 second and stop
+robot.Say("We're there!");
 ```
 
-The examples in Gearbit are in Russian: «Поехали!» — "Let's go!", «Приехали!» — "We're here!"; the comments say "forward with power 50", "drive for 1 second", "backward for 1 second and stop".
+The examples are in the language of the interface: in English the comments and captions are English, in Russian — Russian.
 
 Three C# rules that are forgotten most often:
 
@@ -70,7 +70,7 @@ Power is from 0 to 100. If you give seconds, the robot drives that long and stop
 | `robot.Distance("front")` | Distance (`int`): 0 — touching, 6 — far or nothing there. |
 | `robot.Obstacle("front")` | `true` if an obstacle is close (distance below 2). |
 | `robot.DistanceCm("front")` | Centimeters (`double?`) if the sensor is calibrated ([measurements](measurements.md)), otherwise `null`. |
-| `robot.OnLine("down_left")` | `true` if a sensor looking at the floor sees the black line. Without a name — the first «Вниз» (Down) sensor. More in [Line following](line-following.md). |
+| `robot.OnLine("down_left")` | `true` if a sensor looking at the floor sees the black line. Without a name — the first **Down** sensor. More in [Line following](line-following.md). |
 | `robot.Tilted("forward")` | `true` if the robot is tilted that way by more than 15°. Directions: `"forward"`, `"backward"`, `"left"`, `"right"`, `"any"`; Russian works too: `"вперёд"`, `"назад"`, `"влево"`, `"вправо"`. Without a direction — `"any"`. |
 | `robot.Tilt()` | The robot's tilt in degrees: `var (x, y) = robot.Tilt();`. `y` above 0 — the nose is down (forward), `x` above 0 — tilted right. |
 | `robot.Battery()` | Battery level. |
@@ -84,14 +84,14 @@ A sensor is named by its place: `"front"`, `"right"`, `"left"`, `"back"` and the
 |---|---|
 | `robot.Light("all", "green");` | All lights green. One light: `robot.Light("L1", "red");`. |
 | `robot.LightsOff();` | Turn the lights off. |
-| `robot.Say("Привет!");` | A bubble above the robot on the screen. `robot.Say("");` removes it. |
-| `Console.WriteLine("Привет!");` | Print a line to «Вывод» (Output). |
+| `robot.Say("Hello!");` | A bubble above the robot on the screen. `robot.Say("");` removes it. |
+| `Console.WriteLine("Hello!");` | Print a line to **Output**. |
 
 Colors: `red`, `orange`, `yellow`, `green`, `cyan`, `blue`, `purple`, `white`, `off`. Russian works too: `"красный"`, `"зелёный"` and so on.
 
 ## How to stop
 
-- **«Стоп»** (Stop) on the toolbar, **Shift+F5**, the big **STOP** button in the header or **Esc** stop the program and the robot. **Space** does too, but only when the cursor is not in the program text: there it types a space.
+- **Stop** on the toolbar, **Shift+F5**, the big **STOP** button in the header or **Esc** stop the program and the robot. **Space** does too, but only when the cursor is not in the program text: there it types a space.
 - The program also stops by itself when:
   - you switch to another tab or minimize the window;
   - the connection to the robot is lost;
@@ -102,15 +102,15 @@ Before running, Gearbit compiles the whole program, so the first run takes a sec
 
 ## Errors
 
-C# checks the whole program **before** running it. If there is an error, the robot doesn't move, and Gearbit highlights the line in red, puts the cursor on it and writes what's wrong to «Вывод» (Output), in Russian. For example:
+C# checks the whole program **before** running it. If there is an error, the robot doesn't move, and Gearbit highlights the line in red, puts the cursor on it and writes what's wrong to **Output**. The messages are in the language of the interface: English or Russian. For example:
 
-- «В конце команды нужна точка с запятой «;»» — the command needs a semicolon at the end;
-- «У робота нет команды «Forwrd». Может быть, robot.Forward?» — the robot has no command "Forwrd", maybe robot.Forward?;
-- «Пишите Wait с большой буквы: Wait(1);» — write Wait with a capital letter.
+- "A command needs a semicolon «;» at the end.";
+- "The robot has no command «Forwrd». Maybe robot.Forward?";
+- "Write Wait with a capital letter: Wait(1);".
 
 Below, in parentheses, is the same message from C# itself with the error code (for example, `CS1002`). The code makes it easy to search for an answer online.
 
-Errors while running (division by zero, a wrong color) also show the line. Hover over the underlined spot to see the same message. The **«Показать строку»** (Show line) button in Output takes you back to the error.
+Errors while running (division by zero, a wrong color) also show the line. Hover over the underlined spot to see the same message. The **Show line** button in **Output** takes you back to the error.
 
 `Console.ReadLine()` doesn't work here: the program has no keyboard to read from. Put numbers right into the program.
 
@@ -130,21 +130,22 @@ Errors while running (division by zero, a wrong color) also show the line. Hover
 
 | Example | What it teaches |
 |---|---|
-| «Первая поездка» (First ride) | A sequence of commands |
-| «Квадрат» (Square) | The `for` loop and strings with `$"…{variable}"` |
-| «Исследователь» (Explorer) | `while (true)`, `if … else if … else`, two sensors |
-| «Осторожный водитель» (Careful driver) | `var` variables and computing speed from a sensor |
-| «По линии» (Along the line) | `OnLine` with two sensors and `&&` / `!` |
-| «По краю линии» (Along the line edge) | One sensor and a zigzag along the edge |
-| «Светофор» (Traffic light) | An array of pairs and `foreach` |
-| «Наклони меня» (Tilt me) | `Tilted` and `if … else if`: lights show where the robot is tilted |
-| «Считалка» (Counting rhyme) | Variables and `Console.WriteLine` without a robot |
+| First ride | A sequence of commands |
+| Square | The `for` loop and strings with `$"…{variable}"` |
+| Explorer | `while (true)`, `if … else if … else`, two sensors |
+| Careful driver | `var` variables and computing speed from a sensor |
+| Follow the line | `OnLine` with two sensors and `&&` / `!` |
+| Along the line edge | One sensor and a zigzag along the edge |
+| Traffic light | An array of pairs and `foreach` |
+| Tilt me | `Tilted` and `if … else if`: lights show where the robot is tilted |
+| Counting | Variables and `Console.WriteLine` without a robot |
 
 ## Saving
 
 - The program **is remembered automatically**: close Gearbit, open it again — the text is there.
-- **«Сохранить»** (Save) writes a regular `*.cs` file. You can open it in any editor.
-- **«Открыть»** (Open) loads a `*.cs` or `*.csx` file. **«Новая»** (New) starts from a clean sheet.
+- **Save** writes a regular `*.cs` file. You can open it in any editor.
+- **Open** loads a `*.cs` or `*.csx` file. **New program** starts from a clean sheet.
+- **History** (the clock) keeps earlier versions: before **New program**, an example and **Open**, on run and every 5 minutes of work. Accidentally deleted text can be brought back: [Program history](history.md).
 
 ## C# outside Gearbit (for grown-ups)
 

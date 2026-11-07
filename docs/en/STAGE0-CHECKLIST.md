@@ -9,13 +9,13 @@ Goal: replace the placeholders in [devices/tudao-superbot.json](../../devices/tu
 ## Tool (any of the three)
 
 **A. Gearbit itself: the measurement helper** — the easiest, nothing to install.
-1. Turn the robot on → in Gearbit «Подключить» (Connect) → `Nordic_TUDAO`.
-2. In the top bar click the protocol log button (☰) → in the log, the **«Замеры»** (Measurements) button.
-3. The **«Запись»** (Recording) tab → «Начать запись» (Start recording). All frames, your notes and the wizards' results go into the recording.
-4. The **«Кадры»** (Frames) tab: ready buttons for items 3–11 (hover to see the item number), a state frame builder for items 13–14 and a field for any hex. At the bottom you see what went to the robot (→) and what came back (←), and how many seconds passed since the last frame (for item 8).
-5. The **«Мощность»** (Power) tab — item 12: the motor gets values one by one, you mark how the wheel spins.
-6. The **«Датчики»** (Sensors) tab — items 15–16: put an obstacle at 1, 2, 3… cm (the sensor sees only close) and click «Замерить» (Measure); the helper computes the "level → cm" table for the profile. Below it — **«Порог линии»** (Line threshold, item 19): the sensor looks at the floor, a measurement over a white sheet and over a black line.
-7. The «Запись» tab → «Остановить и сохранить…» (Stop and save…) → put the file into `docs/captures` (see [docs/captures](../captures/README.en.md)) or send it.
+1. Turn the robot on → in Gearbit **Connect** → `Nordic_TUDAO`.
+2. In the top bar click the protocol log button (☰) → in the log, the **Measurements** button.
+3. The **Recording** tab → **Start recording**. All frames, your notes and the wizards' results go into the recording.
+4. The **Frames** tab: ready buttons for items 3–11 (hover to see the item number), a state frame builder for items 13–14 and a field for any hex. At the bottom you see what went to the robot (→) and what came back (←), and how many seconds passed since the last frame (for item 8).
+5. The **Power** tab — item 12: the motor gets values one by one, you mark how the wheel spins.
+6. The **Sensors** tab — items 15–16: put an obstacle at 1, 2, 3… cm (the sensor sees only close) and click **Measure**; the helper computes the "level → cm" table for the profile. Below it — **Line threshold** (item 19): the sensor looks at the floor, a measurement over a white sheet and over a black line.
+7. The **Recording** tab → **Stop and save…** → put the file into `docs/captures` (see [docs/captures](../captures/README.en.md)) or send it.
 
 While measurements run, the remote and programs are off, and frames go out as they are, **without the power limit** — that's why the stand is a must. STOP and Space always work; if no frames are sent for 15 s, the hub stops the motors by itself. Closing the helper window ends the measurements, motors to 0.
 
@@ -75,6 +75,6 @@ You can simply send the table or the log in the chat, and the JSON and docs get 
 | Which motor is left, inversion | `profiles/superbot-car.json` → `drive` (already checked: forward/backward and turns were reversed, now M1 is inverted) |
 | Where the sensors look | `profiles/superbot-car.json` → `aliases` (in Gearbit itself a sensor can be moved in the Sensors card — that's an interface setting) |
 | Centimeters per level | `profiles/superbot-car.json` → `calibration.distance.<id>.levelToCm` (the measurement helper, the Sensors tab, ready JSON) |
-| Line threshold | `profiles/superbot-car.json` → `calibration.distance.<id>.lineLevel` (same place, the «Порог линии» section) |
+| Line threshold | `profiles/superbot-car.json` → `calibration.distance.<id>.lineLevel` (same place, the **Line threshold** section) |
 
 After checking, change the `verified` field to `true`.
