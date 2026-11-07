@@ -1,3 +1,4 @@
+using System.Net;
 using Gearbit.Core.Descriptors;
 using Gearbit.Core.Protocol;
 using Gearbit.Core.Transport;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 
 namespace Gearbit.Hub;
 
@@ -155,18 +157,45 @@ public static class GearbitHub
         }
         else
         {
-            app.MapGet("/", () => Results.Content(
-                """
-                <!doctype html><meta charset="utf-8"><title>Gearbit</title>
-                <body style="font-family:system-ui;max-width:40rem;margin:3rem auto;line-height:1.5">
-                <h1>Gearbit: хаб работает</h1>
-                <p>Веб-интерфейс ещё не собран. Выполните в папке <code>web/studio-ui</code>:</p>
-                <pre>npm install
-                npm run build</pre>
-                <p>и перезапустите сервер. Для разработки: <code>npm run dev</code> → http://localhost:5173</p>
-                </body>
-                """,
+            app.MapGet("/", (HttpContext context, SettingsStore settings) => Results.Content(
+                NoWebUiPage(NoWebUiText(settings.Read()?["lang"]?.GetValue<string>(), context.Request.GetTypedHeaders().AcceptLanguage)),
                 "text/html; charset=utf-8"));
         }
+    }
+
+    /// <summary>Язык заглушки: выбранный в настройках, иначе по <c>Accept-Language</c> окна или браузера.</summary>
+    internal static IHubText NoWebUiText(string? settingsLang, IList<StringWithQualityHeaderValue> acceptLanguage) =>
+        HubText.Find(settingsLang)
+        ?? HubText.ForSystem(acceptLanguage.OrderByDescending(l => l.Quality ?? 1).Select(l => l.Value.Value));
+
+    /// <summary>
+    /// Страница вместо интерфейса, если его не собрали (свежий клон: wwwroot в .gitignore).
+    /// Цвета — системные (Canvas, CanvasText): текст читается и в светлом, и в тёмном окне.
+    /// </summary>
+    internal static string NoWebUiPage(IHubText t)
+    {
+        static string E(string s) => WebUtility.HtmlEncode(s);
+        return $$"""
+            <!doctype html>
+            <html lang="{{t.Language}}">
+            <meta charset="utf-8">
+            <meta name="color-scheme" content="light dark">
+            <title>Gearbit</title>
+            <style>
+              :root { color-scheme: light dark; }
+              body { margin: 0; background: Canvas; color: CanvasText; font: 16px/1.5 system-ui, sans-serif; }
+              main { max-width: 42rem; margin: 3rem auto; padding: 0 1rem; }
+              pre, code { font-family: ui-monospace, Consolas, monospace; }
+              pre { padding: .75rem 1rem; border-radius: 8px; background: color-mix(in srgb, CanvasText 8%, Canvas); }
+            </style>
+            <main>
+              <h1>{{E(t.NoWebUiTitle)}}</h1>
+              <p>{{E(t.NoWebUiText)}}</p>
+              <pre>cd web/studio-ui
+            npm install
+            npm run build</pre>
+              <p>{{E(t.NoWebUiRestart)}}</p>
+            </main>
+            """;
     }
 }

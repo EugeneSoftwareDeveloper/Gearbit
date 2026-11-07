@@ -26,7 +26,42 @@
     <!-- Пакет gearbit для программ на Python: подключается через PYTHONPATH, pip не нужен. -->
     <Content Include="..\..\python\gearbit\*.py" Link="python\gearbit\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- Собранный веб-интерфейс (npm run build в web/studio-ui кладёт его сюда). -->
-    <Content Include="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" GearbitStudioUi="true" />
   </ItemGroup>
+
+  <!--
+    Веб-интерфейс собирается вместе с хабом, если его нет (свежий клон: wwwroot в .gitignore)
+    или исходники в web/studio-ui новее сборки. Нужен Node.js 20+ с npm; без него сборка идёт
+    дальше с предупреждением, а хаб показывает страницу «интерфейса нет».
+    Отключить: dotnet build -p:GearbitBuildUi=false.
+  -->
+  <PropertyGroup>
+    <GearbitStudioUiDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'web', 'studio-ui'))</GearbitStudioUiDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <GearbitStudioUiInput Include="$(GearbitStudioUiDir)src\**\*;$(GearbitStudioUiDir)public\**\*;$(GearbitStudioUiDir)*.json;$(GearbitStudioUiDir)*.ts;$(GearbitStudioUiDir)*.html" />
+  </ItemGroup>
+
+  <Target Name="GearbitBuildStudioUi"
+          BeforeTargets="BeforeBuild"
+          Condition="'$(GearbitBuildUi)' != 'false' And '$(DesignTimeBuild)' != 'true' And Exists('$(GearbitStudioUiDir)package.json')"
+          Inputs="@(GearbitStudioUiInput)"
+          Outputs="$(MSBuildProjectDirectory)\wwwroot\index.html">
+    <Exec Command="npm --version" IgnoreExitCode="true" EchoOff="true" StandardOutputImportance="low" StandardErrorImportance="low">
+      <Output TaskParameter="ExitCode" PropertyName="_GearbitNpmExitCode" />
+    </Exec>
+    <Warning Condition="'$(_GearbitNpmExitCode)' != '0'"
+             Code="GEARBIT001"
+             Text="Веб-интерфейс не собран или устарел: не найден npm. Установите Node.js 20+ (nodejs.org) и соберите ещё раз, иначе Gearbit покажет страницу «интерфейса нет»." />
+    <Message Condition="'$(_GearbitNpmExitCode)' == '0'" Importance="high" Text="Gearbit: сборка веб-интерфейса (web/studio-ui)…" />
+    <Exec Condition="'$(_GearbitNpmExitCode)' == '0' And !Exists('$(GearbitStudioUiDir)node_modules')" Command="npm ci" WorkingDirectory="$(GearbitStudioUiDir)" />
+    <Exec Condition="'$(_GearbitNpmExitCode)' == '0'" Command="npm run build" WorkingDirectory="$(GearbitStudioUiDir)" />
+    <!-- Vite заменил файлы (у ресурсов новые имена): обновляем список Content, найденный до сборки. -->
+    <ItemGroup Condition="'$(_GearbitNpmExitCode)' == '0'">
+      <Content Remove="@(Content)" Condition="'%(Content.GearbitStudioUi)' == 'true'" />
+      <Content Include="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" GearbitStudioUi="true" />
+    </ItemGroup>
+  </Target>
 
 </Project>

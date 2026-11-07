@@ -42,11 +42,12 @@
 ```bash
 git clone https://github.com/EugeneSoftwareDeveloper/Gearbit.git
 cd Gearbit
-cd web/studio-ui && npm install && npm run build && cd ../..
 dotnet build
 dotnet test
 dotnet run --project src/Gearbit.App
 ```
+
+`dotnet build` сам собирает веб-интерфейс (`web/studio-ui`, через npm), если его ещё нет или исходники изменились.
 
 В окне нажмите **«Подключить»** и выберите **«Nordic_TUDAO (эмулятор)»**: он работает без железа. Езда — клавишами W A S D, стоп — пробел.
 

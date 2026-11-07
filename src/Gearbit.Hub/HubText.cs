@@ -106,6 +106,14 @@ public interface IHubText
 
     string PythonPackageMissing(string folder);
 
+    /// <summary>Заголовок страницы-заглушки, когда веб-интерфейс не собран (видит разработчик или родитель).</summary>
+    string NoWebUiTitle { get; }
+
+    /// <summary>Что случилось и что сделать; дальше на странице — команды npm.</summary>
+    string NoWebUiText { get; }
+
+    string NoWebUiRestart { get; }
+
     string CSharpHostMissing(string fileName);
 }
 
@@ -128,6 +136,26 @@ public static class HubText
 
         var code = language.Split('-', '_')[0];
         return All.FirstOrDefault(t => string.Equals(t.Language, code, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Тексты по языку системы или браузера (<c>Accept-Language</c>): русский для ru, uk, be, kk, иначе английский.
+    /// Так же выбирает язык интерфейс (<c>detectLang</c> в i18n.ts).
+    /// </summary>
+    public static IHubText ForSystem(IEnumerable<string?> languages)
+    {
+        foreach (var language in languages)
+        {
+            if (string.IsNullOrWhiteSpace(language) || language.Trim() == "*")
+            {
+                continue;
+            }
+
+            var code = language.Trim().Split('-', '_')[0].ToUpperInvariant();
+            return code is "RU" or "UK" or "BE" or "KK" ? Russian : English;
+        }
+
+        return English;
     }
 
     internal static string Paren(string? detail) => string.IsNullOrWhiteSpace(detail) ? "" : $" ({detail})";
@@ -242,6 +270,14 @@ internal sealed class RuHubText : IHubText
     public string ProgramErrorFallback => "Ошибка";
 
     public string OutputDropped => "… программа печатает слишком быстро: часть строк пропущена.";
+
+    public string NoWebUiTitle => "Gearbit: хаб работает, но интерфейса нет";
+
+    public string NoWebUiText =>
+        "Веб-интерфейс ещё не собран. Его собирает dotnet build, если установлен Node.js 20+ (nodejs.org). "
+        + "Или соберите его сами в папке web/studio-ui:";
+
+    public string NoWebUiRestart => "Потом перезапустите Gearbit.";
 
     public string PythonNotFound =>
         "Python не найден. Установите Python 3 с сайта python.org (при установке отметьте «Add python.exe to PATH») и перезапустите Gearbit.";
@@ -358,6 +394,14 @@ internal sealed class EnHubText : IHubText
     public string ProgramErrorFallback => "Error";
 
     public string OutputDropped => "… the program prints too fast: some lines were skipped.";
+
+    public string NoWebUiTitle => "Gearbit: the hub is running, but there is no interface";
+
+    public string NoWebUiText =>
+        "The web interface is not built yet. dotnet build builds it if Node.js 20+ is installed (nodejs.org). "
+        + "Or build it yourself in the web/studio-ui folder:";
+
+    public string NoWebUiRestart => "Then restart Gearbit.";
 
     public string PythonNotFound =>
         "Python not found. Install Python 3 from python.org (tick «Add python.exe to PATH» during installation) and restart Gearbit.";

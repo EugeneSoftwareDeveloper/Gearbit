@@ -15,15 +15,23 @@
 ## Первая сборка
 
 ```bash
-cd web/studio-ui
-npm install
-npm run build        # tsc --noEmit + vite build → src/Gearbit.Hub/wwwroot
-cd ../..
 dotnet build
 dotnet test
 ```
 
-Веб-интерфейс собирается в `src/Gearbit.Hub/wwwroot` (папка в `.gitignore`). Редактор блоков (Blockly + scratch-blocks) — отдельный чанк около 2 МБ, он грузится при первом открытии вкладки «Блоки». Картинки редактора плагин `scratchMedia` из `vite.config.ts` копирует из `node_modules/scratch-blocks/media` в `wwwroot/scratch-media`. При `dotnet build` она копируется в `bin` сервера и приложения как Content. **Сначала npm, потом dotnet.** Иначе в `bin` окажется старый или пустой интерфейс.
+`dotnet build` собирает и веб-интерфейс: цель `GearbitBuildStudioUi` в `src/Gearbit.Hub/Gearbit.Hub.csproj` запускает в `web/studio-ui` `npm ci` (если нет `node_modules`) и `npm run build` (`tsc --noEmit` + `vite build`). Она работает, только если `wwwroot/index.html` нет или исходники интерфейса (`src`, `public`, `*.json`, `*.ts`, `index.html`) новее него, поэтому обычная пересборка .NET интерфейс не трогает.
+
+- Нет npm — сборка идёт дальше с предупреждением `GEARBIT001`, а хаб вместо интерфейса показывает страницу «интерфейса нет» с командами ниже.
+- Отключить: `dotnet build -p:GearbitBuildUi=false`.
+- Собрать интерфейс отдельно:
+
+```bash
+cd web/studio-ui
+npm install
+npm run build        # tsc --noEmit + vite build → src/Gearbit.Hub/wwwroot
+```
+
+Веб-интерфейс собирается в `src/Gearbit.Hub/wwwroot` (папка в `.gitignore`). Редактор блоков (Blockly + scratch-blocks) — отдельный чанк около 2 МБ, он грузится при первом открытии вкладки «Блоки». Картинки редактора плагин `scratchMedia` из `vite.config.ts` копирует из `node_modules/scratch-blocks/media` в `wwwroot/scratch-media`. При `dotnet build` она копируется в `bin` сервера и приложения как Content.
 
 ## Запуск
 
@@ -73,7 +81,6 @@ python tools/make_icon.py
 ## Публикация (черновик)
 
 ```bash
-cd web/studio-ui && npm run build && cd ../..
 dotnet publish src/Gearbit.App -c Release -r win-x64 --self-contained false
 ```
 

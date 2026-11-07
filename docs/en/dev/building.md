@@ -15,15 +15,23 @@ NuGet packages come only from nuget.org (`nuget.config` clears the machine's sou
 ## The first build
 
 ```bash
-cd web/studio-ui
-npm install
-npm run build        # tsc --noEmit + vite build → src/Gearbit.Hub/wwwroot
-cd ../..
 dotnet build
 dotnet test
 ```
 
-The web interface is built into `src/Gearbit.Hub/wwwroot` (the folder is in `.gitignore`). The block editor (Blockly + scratch-blocks) is a separate chunk of about 2 MB, loaded the first time the Blocks tab opens. The `scratchMedia` plugin from `vite.config.ts` copies the editor's images from `node_modules/scratch-blocks/media` into `wwwroot/scratch-media`. On `dotnet build` the folder is copied into the `bin` of the server and the app as Content. **npm first, then dotnet.** Otherwise `bin` ends up with an old or empty interface.
+`dotnet build` builds the web interface too: the `GearbitBuildStudioUi` target in `src/Gearbit.Hub/Gearbit.Hub.csproj` runs `npm ci` (if there is no `node_modules`) and `npm run build` (`tsc --noEmit` + `vite build`) in `web/studio-ui`. It runs only if there is no `wwwroot/index.html` or the interface sources (`src`, `public`, `*.json`, `*.ts`, `index.html`) are newer than it, so a regular .NET rebuild leaves the interface alone.
+
+- No npm — the build goes on with the `GEARBIT001` warning, and the hub shows a "there is no interface" page with the commands below instead of the interface.
+- To turn it off: `dotnet build -p:GearbitBuildUi=false`.
+- To build the interface separately:
+
+```bash
+cd web/studio-ui
+npm install
+npm run build        # tsc --noEmit + vite build → src/Gearbit.Hub/wwwroot
+```
+
+The web interface is built into `src/Gearbit.Hub/wwwroot` (the folder is in `.gitignore`). The block editor (Blockly + scratch-blocks) is a separate chunk of about 2 MB, loaded the first time the Blocks tab opens. The `scratchMedia` plugin from `vite.config.ts` copies the editor's images from `node_modules/scratch-blocks/media` into `wwwroot/scratch-media`. On `dotnet build` the folder is copied into the `bin` of the server and the app as Content.
 
 ## Running
 
@@ -73,7 +81,6 @@ python tools/make_icon.py
 ## Publishing (draft)
 
 ```bash
-cd web/studio-ui && npm run build && cd ../..
 dotnet publish src/Gearbit.App -c Release -r win-x64 --self-contained false
 ```
 

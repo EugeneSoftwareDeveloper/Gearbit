@@ -46,8 +46,8 @@ tools/make_icon.py            генерация иконки и логотип�
 ## Команды
 
 ```bash
-cd web/studio-ui && npm install && npm run build   # интерфейс → src/Gearbit.Hub/wwwroot (gitignored)
-dotnet build                                        # предупреждения = ошибки
+dotnet build                                        # предупреждения = ошибки; собирает и интерфейс, если нужно
+cd web/studio-ui && npm install && npm run build   # интерфейс отдельно → src/Gearbit.Hub/wwwroot (gitignored)
 dotnet test
 cd python && python -m unittest discover -s tests  # пакет gearbit
 cd web/studio-ui && npm run typecheck
@@ -55,7 +55,7 @@ dotnet run --project src/Gearbit.Server            # http://localhost:5280, эм
 dotnet run --project src/Gearbit.App               # окно
 ```
 
-- Порядок: **сначала `npm run build`, потом `dotnet build`**: `wwwroot` копируется в `bin` как Content.
+- `dotnet build` сам запускает `npm ci` (если нет `node_modules`) и `npm run build`, когда `src/Gearbit.Hub/wwwroot` нет или исходники в `web/studio-ui` новее (цель `GearbitBuildStudioUi` в `Gearbit.Hub.csproj`). Без npm — предупреждение `GEARBIT001`, а хаб показывает страницу «интерфейса нет». Отключить: `-p:GearbitBuildUi=false`. `wwwroot` копируется в `bin` как Content.
 - Сервер раздаёт копию из `bin`. Если интерфейс пересобран при запущенном сервере, скопируйте `src/Gearbit.Hub/wwwroot` в `src/Gearbit.Server/bin/Debug/<tfm>/wwwroot` или перезапустите сервер.
 - `.claude/launch.json` содержит конфигурацию `gearbit-server` для превью на порту 5290: так она не конфликтует с запущенным Gearbit.exe на 5280.
 - Проверка интерфейса без робота: эмулятор `Nordic_TUDAO (эмулятор)` в диалоге подключения.

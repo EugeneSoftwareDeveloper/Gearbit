@@ -44,11 +44,12 @@ You need: Windows 10/11, .NET SDK 10, Node.js 20+, Bluetooth 4.0+ (for a real ro
 ```bash
 git clone https://github.com/EugeneSoftwareDeveloper/Gearbit.git
 cd Gearbit
-cd web/studio-ui && npm install && npm run build && cd ../..
 dotnet build
 dotnet test
 dotnet run --project src/Gearbit.App
 ```
+
+`dotnet build` builds the web interface by itself (`web/studio-ui`, via npm) if it isn't there yet or its sources have changed.
 
 In the window, click **Connect** and pick **Nordic_TUDAO (emulator)**: it works without hardware. Drive with W A S D, stop with Space.
 
