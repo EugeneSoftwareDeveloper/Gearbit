@@ -4,7 +4,7 @@
 
 The robot drives by itself along a black line on a white floor: in a circle, a figure eight, along any track you draw. For this the sensor looks not forward but **down, at the floor**.
 
-> How the sensor sees the line, Gearbit knows so far from other people's programs for this robot, not from its own measurements: about 0 over white, about 6 over black. If your robot behaves differently, measure the threshold (the "Line threshold" section below) — it takes a minute.
+> On our robot the sensor about 1 cm above the floor shows 0 over a white sheet and 3–4 over black tape. The threshold for sensor D1 is already in the «Машинка» (Car) settings — 2. If your sensor is higher, it's a different sensor or a different line, measure the threshold (the "Line threshold" section below) — it takes a minute.
 
 ## What you need
 
@@ -57,7 +57,7 @@ Under the emulator room click **«Линия»** (Line): instead of the room a w
 
 ## Line threshold
 
-The threshold is the level from which Gearbit considers the floor under the sensor black. The default is 3 (the middle of the 0…6 scale). To find the exact threshold for your build:
+The threshold is the level from which Gearbit considers the floor under the sensor black. The default is 3 (the middle of the 0…6 scale); for sensor D1 of the «Машинка» (Car) it's 2 (measured). To find the exact threshold for your build:
 
 1. Protocol log (☰ in the header) → **«Замеры»** (Measurements) → the **«Датчики»** (Sensors) tab → the **«Порог линии»** (Line threshold) section.
 2. Pick the sensor, hold it 1 cm above the white paper — **«Замерить»** (Measure) next to «Белый лист» (White sheet).

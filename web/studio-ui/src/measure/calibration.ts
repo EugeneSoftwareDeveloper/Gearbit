@@ -3,6 +3,7 @@ import { icons } from "../icons";
 import { displayName, store, type Telemetry } from "../model";
 import { h, icon } from "../ui/dom";
 import { toast } from "../ui/toasts";
+import { blindFrom, farLevel, levelToCm, lineLevel, mode, type Sample, type Samples, unseenNearLevels } from "./calibration-math";
 import { copyText } from "./clipboard";
 import { addMark } from "./recorder";
 
@@ -13,69 +14,11 @@ import { addMark } from "./recorder";
  * для profiles/superbot-car.json (calibration.distance).
  */
 
-const DISTANCES: (number | null)[] = [5, 10, 15, 20, 30, 40, 60, null];
+/** Датчик SuperBot видит недалеко (замер 07.11.2026: 5 см — уже почти «ничего»), поэтому ближних точек больше. */
+const DISTANCES: (number | null)[] = [1, 2, 3, 4, 5, 7, 10, 15, 20, 30, null];
 const SAMPLE_MS = 1500;
-const LEVELS = 7;
-
-interface Sample {
-  cm: number | null;
-  mode: number | null;
-  min: number | null;
-  max: number | null;
-  count: number;
-}
-
-/** Самое частое значение (при равенстве — меньшее). */
-function mode(values: number[]): number | null {
-  if (!values.length) return null;
-  const counts = new Map<number, number>();
-  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
-  return [...counts].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]![0];
-}
-
-/**
- * Уровень → сантиметры. Для замеренных уровней — среднее расстояние, между ними — по прямой,
- * за краями — ближайшее известное. null — замеров меньше двух уровней.
- */
-export function levelToCm(samples: readonly Sample[]): number[] | null {
-  const byLevel = new Map<number, number[]>();
-  for (const s of samples) {
-    if (s.cm === null || s.mode === null) continue;
-    byLevel.set(s.mode, [...(byLevel.get(s.mode) ?? []), s.cm]);
-  }
-  const known = [...byLevel].map(([level, cms]) => [level, cms.reduce((a, b) => a + b, 0) / cms.length] as const).sort((a, b) => a[0] - b[0]);
-  if (known.length < 2) return null;
-  return Array.from({ length: LEVELS }, (_, level) => {
-    const exact = known.find(([l]) => l === level);
-    if (exact) return Math.round(exact[1]);
-    const below = [...known].reverse().find(([l]) => l < level);
-    const above = known.find(([l]) => l > level);
-    if (!below) return Math.round(above![1]);
-    if (!above) return Math.round(below[1]);
-    const k = (level - below[0]) / (above[0] - below[0]);
-    return Math.round(below[1] + k * (above[1] - below[1]));
-  });
-}
 
 type Floor = "white" | "black";
-
-/**
- * Порог линии по замерам над белым и над чёрным: с какого уровня датчик видит чёрное.
- * Берём середину между самым тёмным «белым» и самым светлым «чёрным». problem — что пошло не так.
- */
-export function lineLevel(white: Sample | undefined, black: Sample | undefined): { level: number | null; problem: string | null } {
-  if (white?.max == null || black?.min == null || white.mode === null || black.mode === null) return { level: null, problem: null };
-  if (black.mode < white.mode) {
-    return {
-      level: null,
-      problem: "Над чёрным уровень меньше, чем над белым, а Gearbit считает наоборот. Сохраните запись замеров и допишите находку в docs/PROTOCOL-SUPERBOT.md.",
-    };
-  }
-  if (black.min <= white.max) {
-    return { level: null, problem: "Белое и чёрное дают одинаковые уровни. Опустите датчик ближе к полу (примерно на 1 см) и замерьте снова." };
-  }
-  return { level: Math.max(white.max + 1, Math.ceil((white.max + black.min) / 2)), problem: null };
-}
 
 const FLOORS: { id: Floor; title: string }[] = [
   { id: "white", title: "Белый лист" },
@@ -88,10 +31,11 @@ export function createCalibrationTab(): { element: HTMLElement; stop(): void } {
   const rows = h("tbody");
   const lineRows = h("tbody");
   const lineNote = h("p", { class: "muted hidden" });
+  const rangeNote = h("p", { class: "muted hidden" });
   const snippet = h("pre", { class: "hex-preview snippet" });
   const copyBtn = h("button", { class: "btn small", disabled: true }, "Скопировать");
 
-  let samples: Sample[] = [];
+  let samples: (Sample | undefined)[] = [];
   let floor: Partial<Record<Floor, Sample>> = {};
   let cancel: (() => void) | null = null;
 
@@ -118,6 +62,22 @@ export function createCalibrationTab(): { element: HTMLElement; stop(): void } {
     });
 
   const shown = (s: Sample | undefined) => (!s ? "—" : s.mode === null ? "нет данных" : `${s.mode}${s.min !== s.max ? ` (${s.min}–${s.max})` : ""}`);
+  /** Уровень на расстоянии; «не видит» — такой же, как без препятствия. */
+  const shownAt = (s: Sample | undefined, far: number | null) => (s && s.cm !== null && far !== null && s.mode === far ? `${shown(s)} — не видит` : shown(s));
+
+  /** Что видно по замерам расстояний: где датчик слепнет и каких уровней не было. */
+  const rangeText = (all: Samples) => {
+    const parts: string[] = [];
+    const blind = blindFrom(all);
+    if (blind !== null) parts.push(`С ${blind} см и дальше датчик не замечает препятствие: уровень такой же, как без препятствия.`);
+    const near = unseenNearLevels(all);
+    if (levelToCm(all) && near.levels.length) {
+      const which = near.levels.length === 1 ? "Уровня 0 не было" : `Уровней 0–${near.levels.length - 1} не было`;
+      const hint = near.nearestCm !== null && near.nearestCm > 1 ? " Поставьте препятствие ближе." : "";
+      parts.push(`${which} ни в одном замере — в таблице для них взято ближайшее расстояние.${hint}`);
+    }
+    return parts.join(" ");
+  };
   const button = (s: Sample | undefined, onclick: () => void) =>
     h("button", { class: "btn small", disabled: cancel !== null, onclick }, s?.count ? "Ещё раз" : "Замерить");
 
@@ -132,9 +92,18 @@ export function createCalibrationTab(): { element: HTMLElement; stop(): void } {
   const render = () => {
     rows.replaceChildren(
       ...DISTANCES.map((cm, i) =>
-        h("tr", {}, h("td", {}, cm === null ? "Нет препятствия" : `${cm} см`), h("td", { class: "mono" }, shown(samples[i])), h("td", {}, button(samples[i], () => void measure(i)))),
+        h(
+          "tr",
+          {},
+          h("td", {}, cm === null ? "Нет препятствия" : `${cm} см`),
+          h("td", { class: "mono" }, shownAt(samples[i], farLevel(samples))),
+          h("td", {}, button(samples[i], () => void measure(i))),
+        ),
       ),
     );
+    const range = rangeText(samples);
+    rangeNote.classList.toggle("hidden", !range);
+    rangeNote.textContent = range;
     lineRows.replaceChildren(
       ...FLOORS.map((f) => h("tr", {}, h("td", {}, f.title), h("td", { class: "mono" }, shown(floor[f.id])), h("td", {}, button(floor[f.id], () => void measureFloor(f.id))))),
     );
@@ -215,7 +184,7 @@ export function createCalibrationTab(): { element: HTMLElement; stop(): void } {
     h(
       "p",
       { class: "muted" },
-      "Узнаем, сколько сантиметров означает каждый уровень датчика. Робот стоит на месте, моторы не включаются. Поставьте коробку или книгу прямо перед датчиком на нужное расстояние (меряйте линейкой от датчика) и нажмите «Замерить» — полторы секунды не двигайте ничего.",
+      "Узнаем, сколько сантиметров означает каждый уровень датчика. Робот стоит на месте, моторы не включаются. Поставьте коробку или книгу прямо перед датчиком на нужное расстояние (меряйте линейкой от датчика) и нажмите «Замерить» — полторы секунды не двигайте ничего. Датчик видит недалеко, поэтому начните с 1–5 см. Светлая коробка заметнее тёмной.",
     ),
     h("div", { class: "measure-form" }, h("label", {}, h("span", {}, "Датчик"), sensor), h("div", { class: "live" }, h("span", { class: "muted" }, "Сейчас:"), live)),
     h(
@@ -224,6 +193,7 @@ export function createCalibrationTab(): { element: HTMLElement; stop(): void } {
       h("thead", {}, h("tr", {}, h("th", {}, "Препятствие"), h("th", {}, "Уровень"), h("th", {}, ""))),
       rows,
     ),
+    rangeNote,
     h("h3", {}, "Порог линии"),
     h(
       "p",

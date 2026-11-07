@@ -14,7 +14,7 @@ Goal: replace the placeholders in [devices/tudao-superbot.json](../../devices/tu
 3. The **«Запись»** (Recording) tab → «Начать запись» (Start recording). All frames, your notes and the wizards' results go into the recording.
 4. The **«Кадры»** (Frames) tab: ready buttons for items 3–11 (hover to see the item number), a state frame builder for items 13–14 and a field for any hex. At the bottom you see what went to the robot (→) and what came back (←), and how many seconds passed since the last frame (for item 8).
 5. The **«Мощность»** (Power) tab — item 12: the motor gets values one by one, you mark how the wheel spins.
-6. The **«Датчики»** (Sensors) tab — items 15–16: put an obstacle at 5, 10, 15… cm and click «Замерить» (Measure); the helper computes the "level → cm" table for the profile. Below it — **«Порог линии»** (Line threshold, item 19): the sensor looks at the floor, a measurement over a white sheet and over a black line.
+6. The **«Датчики»** (Sensors) tab — items 15–16: put an obstacle at 1, 2, 3… cm (the sensor sees only close) and click «Замерить» (Measure); the helper computes the "level → cm" table for the profile. Below it — **«Порог линии»** (Line threshold, item 19): the sensor looks at the floor, a measurement over a white sheet and over a black line.
 7. The «Запись» tab → «Остановить и сохранить…» (Stop and save…) → put the file into `docs/captures` (see [docs/captures](../captures/README.en.md)) or send it.
 
 While measurements run, the remote and programs are off, and frames go out as they are, **without the power limit** — that's why the stand is a must. STOP and Space always work; if no frames are sent for 15 s, the hub stops the motors by itself. Closing the helper window ends the measurements, motors to 0.
@@ -51,11 +51,11 @@ Frames to copy are given without spaces. The state frame template:
 | 12 | Speed range | M1 = `05`, `0A`, `14` (20), `32` (50), `64` (100) — put in place of `0A` in item 6 | Does the speed grow past 10? Anything odd at 50/100 |
 | 13 | Lights: all 4 in one color | `FFFE09010200000001010101FDFC`, then `02`, `03`, `04`, `05`, `06`, `07`, `0A` instead of `01` | Which color each code gives. How many LEDs really exist |
 | 14 | Lights one by one | `FFFE09010200000001000000FDFC` (L1 only) and so on | Which LED is where |
-| 15 | Sensor 1 | a hand at ~5, 10, 20, 40 cm and "nothing" | Which byte changes and the values |
+| 15 | Sensor 1 | a hand at ~2, 5, 10 cm and "nothing" | Which byte changes and the values |
 | 16 | Sensor 2 | the same | The same |
 | 17 | Tilt | tilt forward, backward, left, right | Bytes 8–10 (if the frame is 19 bytes). The sign of Y when tilted forward and of X when tilted right (both expected above 0) |
 | 18 | Battery | — | The value of byte 5 (or another stable one) |
-| 19 | Line threshold | the sensor eye down, ~1 cm above a white sheet, then over black tape | The level over white and over black (expect about 0 and about 6) |
+| 19 | Line threshold | the sensor eye down, ~1 cm above a white sheet, then over black tape | The level over white and over black (on our robot 0 and 3–4) |
 
 > ⚠️ All state frames are exactly 14 bytes (28 hex characters), the authorization is 20 bytes (40 characters). For example, item 6 = `FF FE 09 01 02 0A 00 00 00 00 00 00 FD FC`. Check that no zeros got lost when copying.
 

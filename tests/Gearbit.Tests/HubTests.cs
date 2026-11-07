@@ -214,8 +214,9 @@ public sealed class HubTests : IAsyncLifetime
     {
         await using var rpc = await RpcClient.ConnectAsync(_port);
         var robot = await rpc.CallAsync("robot.connect", new JsonObject { ["id"] = "emulator:superbot" });
-        // Порог не откалиброван: середина шкалы 0..6.
-        Assert.Equal(3, (int)robot["components"]!.AsArray().First(c => (string?)c!["id"] == "D1")!["lineLevel"]!);
+        // У D1 порог замерен на настоящем роботе (профиль «Машинки»), у D2 — середина шкалы 0..6.
+        Assert.Equal(2, (int)robot["components"]!.AsArray().First(c => (string?)c!["id"] == "D1")!["lineLevel"]!);
+        Assert.Equal(3, (int)robot["components"]!.AsArray().First(c => (string?)c!["id"] == "D2")!["lineLevel"]!);
         Assert.Null(robot["components"]!.AsArray().First(c => (string?)c!["id"] == "M1")!["lineLevel"]);
 
         Assert.Equal("line", (string?)await rpc.CallAsync("emulator.setScene", new JsonObject { ["scene"] = "line" }));

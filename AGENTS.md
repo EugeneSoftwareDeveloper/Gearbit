@@ -74,8 +74,8 @@ dotnet run --project src/Gearbit.App               # окно
 ## Данные протокола и этап 0
 
 - Значения из открытых источников помечены в `devices/*.json` и `profiles/*.json` как `"verified": false` / `"status": "draft"`. **Не ставьте `verified: true` без замера на настоящем роботе**: замеры делает пользователь по [docs/STAGE0-CHECKLIST.md](docs/STAGE0-CHECKLIST.md).
-- Диапазон мощности устройства (`protocol.power.deviceMin/Max`) пока безопасная заглушка ±10. API всегда в процентах −100..100.
-- Езда по линии — те же датчики `D1`/`D2`, поставленные «вниз» (места `down`, `down_left`, `down_right`): чёрное, если уровень ≥ `lineLevel` (по умолчанию 3, как в BlocosLab). Не проверено на роботе. Новое место датчика «вниз» добавляйте в `DOWN_PLACES` (`model.ts`), `python/gearbit/_robot.py` и `Gearbit.Client/Robot.cs` одновременно.
+- Диапазон мощности устройства (`protocol.power.deviceMin/Max`) — ±10, замерено на M1 и M2: выше 10 мотор быстрее не крутится, на 1 колесо стоит. API всегда в процентах −100..100.
+- Езда по линии — те же датчики `D1`/`D2`, поставленные «вниз» (места `down`, `down_left`, `down_right`): чёрное, если уровень ≥ `lineLevel` (по умолчанию 3, как в BlocosLab). Замер D1: белое 0, чёрное 3–4, в профиле «Машинки» порог 2. Новое место датчика «вниз» добавляйте в `DOWN_PLACES` (`model.ts`), `python/gearbit/_robot.py` и `Gearbit.Client/Robot.cs` одновременно.
 - Наклон: робот наклонён, если угол ≥ 15° (`TILT_LEVEL`, как в BlocosLab); `y` больше 0 — вперёд, `x` больше 0 — вправо. Не проверено на роботе. Стороны (`forward`, `backward`, `left`, `right`, `any`) меняйте одновременно в `TILT_DIRECTIONS` (`model.ts`), `python/gearbit/_robot.py` и `Gearbit.Client/Robot.cs`.
 - Протокол описан в [docs/PROTOCOL-SUPERBOT.md](docs/PROTOCOL-SUPERBOT.md). Новые находки записывайте туда со ссылкой на источник.
 - Замеры удобно делать в самом Gearbit: журнал протокола → «Замеры». Записи сессий (`*.capture.json`) лежат в [docs/captures](docs/captures/README.md).

@@ -18,6 +18,8 @@ public class CatalogTests
         Assert.Equal("D1", car.Aliases["front"]);
         Assert.Equal(60, car.Limits.MaxPowerPercent);
         Assert.Null(car.Calibration.Distance["D1"].LevelToCm);
+        Assert.Equal(2, car.Calibration.Distance["D1"].LineLevel);
+        Assert.Null(car.Calibration.Distance["D2"].LineLevel);
     }
 
     [Theory]
