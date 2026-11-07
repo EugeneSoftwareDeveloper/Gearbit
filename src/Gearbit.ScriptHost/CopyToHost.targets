@@ -6,10 +6,15 @@
     Обычная ссылка на проект копирует только dll, без Gearbit.ScriptHost.exe и runtimeconfig.json.
   -->
   <PropertyGroup>
-    <GearbitScriptHostOutput>$(MSBuildThisFileDirectory)bin\$(Configuration)\net10.0\</GearbitScriptHostOutput>
+    <GearbitScriptHostProject>$(MSBuildThisFileDirectory)Gearbit.ScriptHost.csproj</GearbitScriptHostProject>
   </PropertyGroup>
 
   <Target Name="CopyGearbitScriptHost" AfterTargets="Build">
+    <PropertyGroup>
+      <!-- С dotnet publish -r win-x64 RID доходит и до ScriptHost (он Exe), и его вывод лежит в подпапке RID. -->
+      <GearbitScriptHostOutput>$(MSBuildThisFileDirectory)bin\$(Configuration)\net10.0\</GearbitScriptHostOutput>
+      <GearbitScriptHostOutput Condition="'$(RuntimeIdentifier)' != ''">$(GearbitScriptHostOutput)$(RuntimeIdentifier)\</GearbitScriptHostOutput>
+    </PropertyGroup>
     <ItemGroup>
       <_GearbitScriptHostFile Include="$(GearbitScriptHostOutput)**\*" Exclude="$(GearbitScriptHostOutput)**\*.xml" />
     </ItemGroup>
@@ -20,12 +25,13 @@
           SkipUnchangedFiles="true" />
   </Target>
 
+  <!--
+    При публикации ScriptHost публикуется сам, в csharp\ папки публикации, с теми же RID и SelfContained:
+    в автономной сборке у него своя копия среды .NET, иначе он не запустится на компьютере без .NET.
+  -->
   <Target Name="PublishGearbitScriptHost" AfterTargets="Publish">
-    <ItemGroup>
-      <_GearbitScriptHostPublishFile Include="$(GearbitScriptHostOutput)**\*" Exclude="$(GearbitScriptHostOutput)**\*.xml;$(GearbitScriptHostOutput)**\*.pdb" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_GearbitScriptHostPublishFile)"
-          DestinationFiles="@(_GearbitScriptHostPublishFile->'$(PublishDir)csharp\%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="true" />
+    <MSBuild Projects="$(GearbitScriptHostProject)"
+             Targets="Publish"
+             Properties="PublishDir=$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(PublishDir)', 'csharp'));PublishDocumentationFile=false;PublishReferencesDocumentationFiles=false" />
   </Target>
 </Project>

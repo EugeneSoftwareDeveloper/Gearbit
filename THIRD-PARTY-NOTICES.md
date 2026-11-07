@@ -27,7 +27,9 @@ The Scratch name and logo are trademarks of the Scratch Foundation. That is why 
 | [Microsoft.CodeAnalysis.CSharp.Scripting](https://github.com/dotnet/roslyn) (Roslyn, runs C# programs) | MIT | .NET Foundation and Contributors |
 | [Microsoft.Web.WebView2](https://www.nuget.org/packages/Microsoft.Web.WebView2) (the Gearbit window) | BSD-3-Clause, text below | Microsoft Corporation |
 
-The .NET runtime and ASP.NET Core are licensed under MIT by the .NET Foundation and Contributors. The Microsoft Edge WebView2 Runtime is a part of Windows and is not shipped with Gearbit.
+The .NET runtime, Windows Desktop (WPF) and ASP.NET Core are licensed under MIT by the .NET Foundation and Contributors. The release build (`Gearbit-…-win-x64.zip`) ships them next to Gearbit.exe and in the `csharp` folder. The third-party components inside them are listed in their own notices: [runtime](https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT), [wpf](https://github.com/dotnet/wpf/blob/main/THIRD-PARTY-NOTICES.TXT), [aspnetcore](https://github.com/dotnet/aspnetcore/blob/main/THIRD-PARTY-NOTICES.txt).
+
+The Microsoft Edge WebView2 Runtime is a part of Windows and is not shipped with Gearbit.
 
 ## MIT License
 

@@ -68,7 +68,7 @@ The package files `python/gearbit/*.py` are copied into `bin/…/python/gearbit`
 
 C#: `CSharpScriptTests` check the Russian compile error texts without running, `ClientTests` check `Gearbit.Client` against a hub with the emulator, `CSharpProgramTests` check the whole path `program.run` → ScriptHost → robot. The .NET SDK is not needed to run C# programs: Roslyn sits next to ScriptHost.
 
-ScriptHost is a separate application with its own dependencies (Roslyn), so `Gearbit.Server`, `Gearbit.App` and the tests reference it with `ReferenceOutputAssembly="false"` and import `src/Gearbit.ScriptHost/CopyToHost.targets`. After a build it copies the ScriptHost output into `bin/…/csharp/`, and after `dotnet publish` into the `csharp/` folder of the publish output (without `.pdb`). If ScriptHost isn't built, the build stops with a clear error.
+ScriptHost is a separate application with its own dependencies (Roslyn), so `Gearbit.Server`, `Gearbit.App` and the tests reference it with `ReferenceOutputAssembly="false"` and import `src/Gearbit.ScriptHost/CopyToHost.targets`. After a build it copies the ScriptHost output into `bin/…/csharp/` (when building with `-r win-x64`, from the RID subfolder), and `dotnet publish` publishes ScriptHost into the `csharp/` folder of the publish output, see Publishing. If ScriptHost isn't built, the build stops with a clear error.
 
 ## Icon
 
@@ -78,16 +78,57 @@ ScriptHost is a separate application with its own dependencies (Roslyn), so `Gea
 python tools/make_icon.py
 ```
 
-## Publishing (draft)
+## Publishing
+
+A self-contained build is the same one that goes into a release:
 
 ```bash
-dotnet publish src/Gearbit.App -c Release -r win-x64 --self-contained false
+dotnet publish src/Gearbit.App -c Release -r win-x64 --self-contained true -o publish/Gearbit
 ```
 
-You need the .NET Desktop Runtime 10 and the WebView2 Runtime. An installer will come later. Put `LICENSE` and `THIRD-PARTY-NOTICES.md` next to Gearbit.exe.
+The .NET runtime sits in the folder next to Gearbit.exe, so nothing needs installing. The folder takes about 290 MB, about 120 MB as a zip. ScriptHost is published by itself into `csharp/` with the same RID and `SelfContained` (the `PublishGearbitScriptHost` target in `CopyToHost.targets`). It has its own copy of the .NET runtime, otherwise C# programs won't run on a computer without .NET.
+
+A smaller build, about 42 MB, comes without the .NET runtime. The computer must have the .NET Desktop Runtime 10 and the ASP.NET Core Runtime 10:
+
+```bash
+dotnet publish src/Gearbit.App -c Release -r win-x64 --self-contained false -o publish/Gearbit
+```
+
+- The WebView2 Runtime is needed in both cases. Windows 11 already has it; on Windows 10 the Gearbit window offers to install it.
+- Put `LICENSE` and `THIRD-PARTY-NOTICES.md` next to Gearbit.exe. A release adds them by itself.
+- There is no installer yet: Gearbit runs from the unzipped folder.
+
+## GitHub Actions
+
+The workflows live in `.github/workflows` and run on `windows-latest`.
+
+| Workflow | When it runs | What it does |
+|---|---|---|
+| `ci.yml`, «Проверка» (Check) | a push to `master`, a pull request, by hand | `dotnet build -c Release` together with the interface, `dotnet test`, the `gearbit` package tests on Python 3.9 and 3.13 |
+| `release.yml`, «Релиз» (Release) | a `v*` tag, by hand | the same checks, a self-contained publish, a zip and a `.sha256`, a release on GitHub |
+
+- If only `docs/` and `*.md` changed, the check doesn't run.
+- If tests fail, the trx results are in the `test-results` artifact of the run.
+- Running the release by hand (Actions → «Релиз» → Run workflow) builds `Gearbit-<version>-dev.<number>-win-x64.zip` into the run artifacts and creates no release. This way you can try the build before tagging.
+
+### How to release a version
+
+1. Raise `<Version>` in `Directory.Build.props`, for example to `0.2.0`, and commit.
+2. Put a tag on that commit and push it:
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+3. The release workflow checks that the tag matches `<Version>`. If it doesn't, it stops with an error.
+4. Then it builds and tests Gearbit, publishes it and creates the release "Gearbit 0.2.0" with `Gearbit-0.2.0-win-x64.zip` and `.zip.sha256`. The release description says how to install (in two languages) and lists the commits since the previous tag.
+5. A version with a hyphen, for example the tag `v0.2.0-beta.1`, comes out as a pre-release.
+
+A tag publishes the release to everyone right away. If the build fails, delete the tag (`git push origin :v0.2.0`), fix the problem and tag again.
 
 ## Small known things
 
 - In the WPF project implicit `using`s don't include `System.IO`: add `using System.IO;` explicitly.
-- Line endings are set in `.gitattributes`: `*.cs`, `*.csproj`, `*.xaml`, `*.props` — CRLF, everything else — LF.
+- Line endings are set in `.gitattributes`: `*.cs`, `*.csproj`, `*.xaml`, `*.props`, `*.slnx` — CRLF, everything else, including `*.yml`, — LF.
 - TypeScript 7 (the native compiler) and Vite 8. The interface has no framework packages.

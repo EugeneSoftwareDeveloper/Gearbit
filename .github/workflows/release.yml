@@ -1,0 +1,140 @@
+# Сборка релиза: тег vX.Y.Z → автономный Gearbit для Windows x64 (.NET внутри) в GitHub Releases.
+# Запуск вручную (Run workflow) собирает тот же архив без релиза: он лежит в артефактах запуска.
+name: Релиз
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+
+jobs:
+  release:
+    name: Сборка релиза
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Прошлые теги нужны для списка изменений.
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/studio-ui/package-lock.json
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Версия
+        id: version
+        run: |
+          $props = (Select-Xml -Path Directory.Build.props -XPath '/Project/PropertyGroup/Version').Node.InnerText
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $version = $env:GITHUB_REF_NAME -replace '^v', ''
+            if ($version -ne $props) {
+              Write-Output "::error::Тег $env:GITHUB_REF_NAME не совпадает с версией $props в Directory.Build.props. Поднимите <Version>, закоммитьте и поставьте тег на этот коммит."
+              exit 1
+            }
+          } else {
+            $version = "$props-dev.$env:GITHUB_RUN_NUMBER"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "name=Gearbit-$version-win-x64" >> $env:GITHUB_OUTPUT
+
+      - name: Зависимости интерфейса
+        working-directory: web/studio-ui
+        run: npm ci
+
+      - name: Сборка
+        run: dotnet build -c Release
+
+      - name: Тесты .NET
+        run: dotnet test -c Release --no-build
+
+      - name: Тесты пакета gearbit
+        working-directory: python
+        run: python -m unittest discover -s tests
+
+      # Автономная сборка: .NET лежит рядом с Gearbit.exe и в csharp\ (для ScriptHost), ставить ничего не нужно.
+      - name: Публикация
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          NAME: ${{ steps.version.outputs.name }}
+        run: |
+          dotnet publish src/Gearbit.App -c Release -r win-x64 --self-contained true -p:Version=$env:VERSION -o "publish/$env:NAME"
+          foreach ($file in 'Gearbit.exe', 'wwwroot/index.html', 'csharp/Gearbit.ScriptHost.exe', 'devices', 'profiles', 'python/gearbit/__init__.py') {
+            if (-not (Test-Path "publish/$env:NAME/$file")) { Write-Output "::error::В публикации нет $file"; exit 1 }
+          }
+          Copy-Item LICENSE, THIRD-PARTY-NOTICES.md "publish/$env:NAME/"
+          Compress-Archive -Path "publish/$env:NAME" -DestinationPath "publish/$env:NAME.zip" -CompressionLevel Optimal
+          $hash = (Get-FileHash "publish/$env:NAME.zip" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $env:NAME.zip" | Set-Content "publish/$env:NAME.zip.sha256" -Encoding ascii -NoNewline
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.version.outputs.name }}
+          path: |
+            publish/${{ steps.version.outputs.name }}.zip
+            publish/${{ steps.version.outputs.name }}.zip.sha256
+
+      - name: Релиз на GitHub
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          NAME: ${{ steps.version.outputs.name }}
+        run: |
+          # git отдаёт заголовки коммитов в UTF-8: без этого русский текст превращается в кракозябры.
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          $previous = git describe --tags --abbrev=0 "$env:GITHUB_REF_NAME^" 2>$null
+          $range = if ($previous) { "$previous..$env:GITHUB_REF_NAME" } else { $env:GITHUB_REF_NAME }
+          $changes = (git log $range --no-merges --pretty=format:'- %s') -join "`n"
+
+          $notes = @"
+          ## Как установить · How to install
+
+          1. Скачайте **$env:NAME.zip** ниже и распакуйте в любую папку. · Download **$env:NAME.zip** below and unzip it to any folder.
+          2. Запустите **Gearbit.exe**. Ставить .NET не нужно: он внутри. · Run **Gearbit.exe**. No need to install .NET: it's inside.
+          3. Windows может предупредить «Система Windows защитила ваш компьютер»: программа не подписана. Нажмите **Подробнее** → **Выполнить в любом случае**. · Windows may say "Windows protected your PC": the app isn't signed. Click **More info** → **Run anyway**.
+
+          Нужны Windows 10 (версия 2004 или новее) или Windows 11, x64, и Bluetooth 4.0 для настоящего робота. Без робота работает эмулятор. · Requires Windows 10 (version 2004 or later) or Windows 11, x64, and Bluetooth 4.0 for a real robot. Without a robot, the emulator works.
+
+          Руководство · Guide: [docs/user](https://github.com/$env:GITHUB_REPOSITORY/blob/$env:GITHUB_REF_NAME/docs/user/README.md) · [docs/en/user](https://github.com/$env:GITHUB_REPOSITORY/blob/$env:GITHUB_REF_NAME/docs/en/user/README.md)
+
+          ## Изменения · Changes
+
+          $changes
+          "@
+          $notes | Set-Content publish/notes.md -Encoding utf8
+
+          $extra = @()
+          if ($env:VERSION -like '*-*') { $extra += '--prerelease' }
+          gh release create $env:GITHUB_REF_NAME "publish/$env:NAME.zip" "publish/$env:NAME.zip.sha256" --title "Gearbit $env:VERSION" --notes-file publish/notes.md --verify-tag @extra

@@ -8,9 +8,15 @@
 - A robot built from the kit, with a charged battery. If the robot isn't at hand yet, the emulator is enough.
 - Optionally, an Xbox or PlayStation gamepad: over USB or Bluetooth.
 
-## 1. Launch Gearbit
+## 1. Download and launch Gearbit
 
-Open **Gearbit.exe**. A window with the remote control appears. On the first launch Windows may ask for permission to use Bluetooth: allow it.
+1. Open the [Releases](https://github.com/EugeneSoftwareDeveloper/Gearbit/releases/latest) page and download **Gearbit-…-win-x64.zip** under **Assets**.
+2. Unzip the whole archive into any folder, for example Documents. Gearbit won't start from inside the zip.
+3. Open **Gearbit.exe** in the unzipped folder. No need to install .NET: it's already inside.
+
+> Windows may show "Windows protected your PC": Gearbit has no digital signature. Click **More info**, then **Run anyway**. You only need to do this on the first launch.
+
+A window with the remote control appears. On the first launch Windows may ask for permission to use Bluetooth: allow it.
 
 > If the window says "Microsoft Edge WebView2 is needed", click **Install WebView2**: it is a free Microsoft component, installed once. Windows 11 already has it. Until it is installed, you can click **Open in browser** and the remote opens in a regular browser.
 

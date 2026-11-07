@@ -4,6 +4,8 @@
 
 **Русский** · [English](README.en.md)
 
+[![Проверка](https://github.com/EugeneSoftwareDeveloper/Gearbit/actions/workflows/ci.yml/badge.svg)](https://github.com/EugeneSoftwareDeveloper/Gearbit/actions/workflows/ci.yml)
+
 Программа для Windows, чтобы **управлять роботом-конструктором с ПК и программировать его** блоками (в стиле Scratch), на Python и C#. Рассчитана на занятия с ребёнком за большим монитором, с клавиатурой, мышью и геймпадом.
 
 Первый поддерживаемый робот — **Apitor / Makerzoid SuperBot** (контроллер TUDAO, Bluetooth LE). Архитектура рассчитана на другие похожие роботы: их можно добавлять как адаптеры.
@@ -23,6 +25,10 @@
 - **Язык и оформление**: интерфейс на русском и английском (при первом запуске — по языку Windows), светлая, тёмная и авто-тема, 5 цветов, крупный текст. Настройки, вкладка и окно запоминаются.
 - **История программ**: как Local History в IDE — прежние версии блоков, Python и C# хранятся в `%LOCALAPPDATA%\Gearbit\History`.
 - **Хаб**: JSON-RPC 2.0 по WebSocket на localhost. Через него работают пульт, блоки, Python и C#.
+
+## Скачать
+
+Готовая сборка для Windows 10/11 x64 — на странице [Releases](https://github.com/EugeneSoftwareDeveloper/Gearbit/releases/latest): скачайте `Gearbit-…-win-x64.zip`, распакуйте и запустите `Gearbit.exe`. Ставить .NET не нужно. Подробнее — в [первых шагах](docs/user/getting-started.md).
 
 ## Статус
 

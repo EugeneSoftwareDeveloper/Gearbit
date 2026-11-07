@@ -4,6 +4,8 @@
 
 [Русский](README.md) · **English**
 
+[![Check](https://github.com/EugeneSoftwareDeveloper/Gearbit/actions/workflows/ci.yml/badge.svg)](https://github.com/EugeneSoftwareDeveloper/Gearbit/actions/workflows/ci.yml)
+
 A Windows app to **drive a construction-kit robot from a PC and program it** with blocks (Scratch-style), Python and C#. It is made for a parent and a child working together at a big monitor with a keyboard, mouse and gamepad.
 
 The first supported robot is the **Apitor / Makerzoid SuperBot** (TUDAO controller, Bluetooth LE). The architecture is ready for other similar robots: they can be added as adapters.
@@ -25,6 +27,10 @@ The first supported robot is the **Apitor / Makerzoid SuperBot** (TUDAO controll
 - **Language and looks**: the interface in English and Russian (on first start — by the Windows language), light, dark and auto theme, 5 accent colors, large text. Settings, the tab and the window are remembered.
 - **Program history**: like Local History in an IDE — earlier versions of blocks, Python and C# programs are kept in `%LOCALAPPDATA%\Gearbit\History`.
 - **Hub**: JSON-RPC 2.0 over WebSocket on localhost. The remote, blocks, Python and C# all work through it.
+
+## Download
+
+A ready build for Windows 10/11 x64 is on the [Releases](https://github.com/EugeneSoftwareDeveloper/Gearbit/releases/latest) page: download `Gearbit-…-win-x64.zip`, unzip it and run `Gearbit.exe`. No need to install .NET. More in [Getting started](docs/en/user/getting-started.md).
 
 ## Status
 

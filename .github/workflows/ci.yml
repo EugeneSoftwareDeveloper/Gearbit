@@ -1,0 +1,91 @@
+# Проверка каждого коммита и pull request: сборка (вместе с интерфейсом), тесты .NET и пакета gearbit.
+name: Проверка
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ["docs/**", "**/*.md"]
+  pull_request:
+    paths-ignore: ["docs/**", "**/*.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+
+jobs:
+  build:
+    name: Сборка и тесты
+    # Gearbit.App (WPF) и Bluetooth (WinRT) собираются только под Windows.
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/studio-ui/package-lock.json
+
+      # PythonProgramTests запускают настоящий Python; без него они пропускаются.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Зависимости интерфейса
+        working-directory: web/studio-ui
+        run: npm ci
+
+      # dotnet build сам собирает интерфейс (tsc --noEmit + vite build), см. GearbitBuildStudioUi.
+      - name: Сборка
+        run: dotnet build -c Release
+
+      - name: Тесты .NET
+        run: dotnet test -c Release --no-build --logger trx --results-directory TestResults
+
+      - name: Результаты тестов
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults
+          if-no-files-found: ignore
+
+  python:
+    name: Пакет gearbit (Python ${{ matrix.python }})
+    runs-on: windows-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # Самый старый поддерживаемый Python и свежий.
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Тесты
+        working-directory: python
+        run: python -m unittest discover -s tests

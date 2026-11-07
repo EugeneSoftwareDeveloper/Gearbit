@@ -11,10 +11,11 @@ Gearbit — программа для Windows: пульт и среда прог
 ## Git
 
 - **Коммиты локальные. `git push`, создание удалённого репозитория и PR — только по явной просьбе.** Целевой репозиторий: github.com/EugeneSoftwareDeveloper/Gearbit.
+- **Теги `v*` — тоже только по явной просьбе:** тег сразу публикует релиз на GitHub. Тег должен совпадать с `<Version>` в `Directory.Build.props`, иначе «Релиз» остановится. Как выпустить версию — [docs/dev/building.md](docs/dev/building.md).
 - Сообщение коммита — по-русски: заголовок до ~72 символов и при необходимости тело.
 - **Никогда не добавлять в сообщения коммитов `Co-Authored-By: Claude …` или любые другие подписи и упоминания ИИ.** Сообщение заканчивается содержательным текстом.
 - Не удалять файлы и каталоги массово (`rm -rf`) без подтверждения. Для переименования используйте `git mv`.
-- Окончания строк заданы в `.gitattributes`: `.cs/.csproj/.xaml/.props/.slnx` — CRLF, остальное — LF.
+- Окончания строк заданы в `.gitattributes`: `.cs/.csproj/.xaml/.props/.slnx` — CRLF, остальное (и `.yml`) — LF.
 
 ## Где что
 
@@ -41,6 +42,7 @@ devices/, profiles/           описания роботов и сборок (J
 docs/user, docs/dev           документация для пользователя и разработчика
 docs/en                       английская копия документации (та же структура), README.en.md — рядом с README.md
 tools/make_icon.py            генерация иконки и логотипа (Pillow)
+.github/workflows             «Проверка» (ci.yml: сборка и тесты на push и PR) и «Релиз» (release.yml: тег vX.Y.Z → zip в GitHub Releases)
 ```
 
 ## Команды
@@ -53,6 +55,7 @@ cd python && python -m unittest discover -s tests  # пакет gearbit
 cd web/studio-ui && npm run typecheck
 dotnet run --project src/Gearbit.Server            # http://localhost:5280, эмулятор включён
 dotnet run --project src/Gearbit.App               # окно
+dotnet publish src/Gearbit.App -c Release -r win-x64 --self-contained true -o publish/Gearbit  # как в релизе
 ```
 
 - `dotnet build` сам запускает `npm ci` (если нет `node_modules`) и `npm run build`, когда `src/Gearbit.Hub/wwwroot` нет или исходники в `web/studio-ui` новее (цель `GearbitBuildStudioUi` в `Gearbit.Hub.csproj`). Без npm — предупреждение `GEARBIT001`, а хаб показывает страницу «интерфейса нет». Отключить: `-p:GearbitBuildUi=false`. `wwwroot` копируется в `bin` как Content.
