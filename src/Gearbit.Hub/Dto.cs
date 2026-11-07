@@ -7,17 +7,17 @@ namespace Gearbit.Hub;
 
 /// <summary>Формы данных, которые хаб отдаёт клиентам. Имена полей — camelCase (см. docs/dev/hub-api.md).</summary>
 /// <param name="LineLevel">Только у датчиков расстояния: с какого уровня датчик, смотрящий вниз, видит чёрную линию.</param>
-public sealed record ComponentDto(string Id, ComponentKind Kind, string Title, bool Available, IReadOnlyList<string> Aliases, int? LineLevel = null);
+public sealed record ComponentDto(string Id, ComponentKind Kind, LocalizedText Title, bool Available, IReadOnlyList<string> Aliases, int? LineLevel = null);
 
 public sealed record RobotDto(
     string Id,
     string Name,
     RobotConnectionState State,
     string DeviceId,
-    string DeviceTitle,
+    LocalizedText DeviceTitle,
     string DeviceStatus,
     string? ProfileId,
-    string? ProfileTitle,
+    LocalizedText? ProfileTitle,
     string? Uid,
     string? Firmware,
     int MaxPowerPercent,
@@ -90,9 +90,9 @@ public sealed record TelemetryDto(
     }
 }
 
-public sealed record DeviceSummaryDto(string Id, string Title, string Status, string Protocol, IReadOnlyList<string> Components);
+public sealed record DeviceSummaryDto(string Id, LocalizedText Title, string Status, string Protocol, IReadOnlyList<string> Components);
 
-public sealed record ProfileSummaryDto(string Id, string Title, string Device, string Status, int MaxPowerPercent, IReadOnlyDictionary<string, string> Aliases);
+public sealed record ProfileSummaryDto(string Id, LocalizedText Title, string Device, string Status, int MaxPowerPercent, IReadOnlyDictionary<string, string> Aliases);
 
 public sealed record CatalogDto(IReadOnlyList<DeviceSummaryDto> Devices, IReadOnlyList<ProfileSummaryDto> Profiles)
 {
@@ -105,7 +105,7 @@ public sealed record CatalogDto(IReadOnlyList<DeviceSummaryDto> Devices, IReadOn
     }
 }
 
-public sealed record ScanDeviceDto(string Id, string Name, int? Rssi, string Transport, string? DeviceId, string? DeviceTitle, bool Known);
+public sealed record ScanDeviceDto(string Id, string Name, int? Rssi, string Transport, string? DeviceId, LocalizedText? DeviceTitle, bool Known);
 
 public sealed record TraceDto(string Dir, string Hex, string? Note, long T);
 

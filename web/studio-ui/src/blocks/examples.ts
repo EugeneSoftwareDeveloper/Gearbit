@@ -1,7 +1,79 @@
 /**
  * Примеры программ. Хранятся в формате XML Blockly: так короче и нагляднее, чем JSON.
+ * Названия, описания, надписи и имена переменных — на языке интерфейса.
  * Блоки и значения меню — из robot-blocks.ts и стандартных блоков Scratch.
  */
+
+import { messages } from "../i18n";
+
+const M = messages({
+  ru: {
+    firstTitle: "Первые шаги",
+    firstText: "Проехать вперёд, повернуть и вернуться.",
+    done: "Готово!",
+    squareTitle: "Квадрат",
+    squareText: "Цикл «повторить»: четыре стороны — четыре поворота.",
+    lightsTitle: "Светофор",
+    lightsText: "Огоньки по кругу: красный, жёлтый, зелёный.",
+    brakeTitle: "Умный тормоз",
+    brakeText: "Едет, пока не увидит стену, и останавливается.",
+    wall: "Стена!",
+    explorerTitle: "Исследователь",
+    explorerText: "Объезжает препятствия по двум датчикам: «если … иначе» внутри «повторять всегда».",
+    carefulTitle: "Осторожный водитель",
+    carefulText: "Событие «когда расстояние <»: робот сам реагирует на стену, пока едет.",
+    lineTitle: "По линии",
+    lineText: "Два датчика смотрят в пол («Вниз слева» и «Вниз справа»), линия между ними. В эмуляторе выберите «Линия».",
+    onLine: "Еду по линии!",
+    edgeTitle: "По краю линии",
+    edgeText: "Хватит одного датчика «Вниз»: на чёрном — вправо, на белом — влево.",
+    edge: "Держусь края!",
+    counterTitle: "Считаем препятствия",
+    counterText: "Переменная «счёт» растёт после каждой встречи со стеной.",
+    obstacles: "Препятствий: ",
+    tiltTitle: "Наклони меня",
+    tiltText: "События «когда наклонён»: огоньки показывают, куда наклонили робота. В эмуляторе — кнопки «Наклонить».",
+    tiltMe: "Наклони меня!",
+    forward: "Вперёд!",
+    backward: "Назад!",
+    left: "Влево!",
+    right: "Вправо!",
+    count: "счёт",
+  },
+  en: {
+    firstTitle: "First steps",
+    firstText: "Drive forward, turn and come back.",
+    done: "Done!",
+    squareTitle: "Square",
+    squareText: "The «repeat» loop: four sides, four turns.",
+    lightsTitle: "Traffic light",
+    lightsText: "Lights in a circle: red, yellow, green.",
+    brakeTitle: "Smart brake",
+    brakeText: "Drives until it sees a wall, then stops.",
+    wall: "Wall!",
+    explorerTitle: "Explorer",
+    explorerText: "Drives around obstacles using two sensors: «if … else» inside «forever».",
+    carefulTitle: "Careful driver",
+    carefulText: "The «when distance <» event: the robot reacts to a wall by itself while driving.",
+    lineTitle: "Follow the line",
+    lineText: "Two sensors look at the floor («Down left» and «Down right») with the line between them. In the emulator choose «Line».",
+    onLine: "Following the line!",
+    edgeTitle: "Along the line edge",
+    edgeText: "One «Down» sensor is enough: on black turn right, on white turn left.",
+    edge: "Keeping to the edge!",
+    counterTitle: "Counting obstacles",
+    counterText: "The «count» variable grows after every meeting with a wall.",
+    obstacles: "Obstacles: ",
+    tiltTitle: "Tilt me",
+    tiltText: "The «when tilted» events: the lights show where the robot is tilted. In the emulator use the «Tilt» buttons.",
+    tiltMe: "Tilt me!",
+    forward: "Forward!",
+    backward: "Backward!",
+    left: "Left!",
+    right: "Right!",
+    count: "count",
+  },
+});
 
 export interface Example {
   id: string;
@@ -49,28 +121,28 @@ const xml = (body: string, variables = "") => `<xml xmlns="https://developers.go
 export const EXAMPLES: Example[] = [
   {
     id: "first-steps",
-    title: "Первые шаги",
-    text: "Проехать вперёд, повернуть и вернуться.",
+    title: M.firstTitle,
+    text: M.firstText,
     xml: xml(
-      at(40, 40, flag(), light("green"), moveFor("forward", 1, 50), moveFor("right", 0.6, 40), moveFor("backward", 1, 50), say("Готово!"), item("robot_lights_off")),
+      at(40, 40, flag(), light("green"), moveFor("forward", 1, 50), moveFor("right", 0.6, 40), moveFor("backward", 1, 50), say(M.done), item("robot_lights_off")),
     ),
   },
   {
     id: "square",
-    title: "Квадрат",
-    text: "Цикл «повторить»: четыре стороны — четыре поворота.",
+    title: M.squareTitle,
+    text: M.squareText,
     xml: xml(at(40, 40, flag(), item("control_repeat", num("TIMES", 4, "math_whole_number"), sub("SUBSTACK", moveFor("forward", 1, 50), moveFor("right", 0.6, 40))))),
   },
   {
     id: "traffic-light",
-    title: "Светофор",
-    text: "Огоньки по кругу: красный, жёлтый, зелёный.",
+    title: M.lightsTitle,
+    text: M.lightsText,
     xml: xml(at(40, 40, flag(), item("control_forever", sub("SUBSTACK", light("red"), wait(1), light("yellow"), wait(0.5), light("green"), wait(1))))),
   },
   {
     id: "smart-brake",
-    title: "Умный тормоз",
-    text: "Едет, пока не увидит стену, и останавливается.",
+    title: M.brakeTitle,
+    text: M.brakeText,
     xml: xml(
       at(
         40,
@@ -81,14 +153,14 @@ export const EXAMPLES: Example[] = [
         item("control_wait_until", input("CONDITION", obstacle("front"))),
         item("robot_stop"),
         light("red"),
-        say("Стена!"),
+        say(M.wall),
       ),
     ),
   },
   {
     id: "explorer",
-    title: "Исследователь",
-    text: "Объезжает препятствия по двум датчикам: «если … иначе» внутри «повторять всегда».",
+    title: M.explorerTitle,
+    text: M.explorerText,
     xml: xml(
       at(
         40,
@@ -111,8 +183,8 @@ export const EXAMPLES: Example[] = [
   },
   {
     id: "careful-driver",
-    title: "Осторожный водитель",
-    text: "Событие «когда расстояние <»: робот сам реагирует на стену, пока едет.",
+    title: M.carefulTitle,
+    text: M.carefulText,
     xml: xml(
       at(40, 40, flag(), light("green"), move("forward", 40)) +
         at(
@@ -130,14 +202,14 @@ export const EXAMPLES: Example[] = [
   },
   {
     id: "line",
-    title: "По линии",
-    text: "Два датчика смотрят в пол («Вниз слева» и «Вниз справа»), линия между ними. В эмуляторе выберите «Линия».",
+    title: M.lineTitle,
+    text: M.lineText,
     xml: xml(
       at(
         40,
         40,
         flag(),
-        say("Еду по линии!"),
+        say(M.onLine),
         item(
           "control_forever",
           sub(
@@ -155,54 +227,54 @@ export const EXAMPLES: Example[] = [
   },
   {
     id: "line-edge",
-    title: "По краю линии",
-    text: "Хватит одного датчика «Вниз»: на чёрном — вправо, на белом — влево.",
+    title: M.edgeTitle,
+    text: M.edgeText,
     xml: xml(
       at(
         40,
         40,
         flag(),
-        say("Держусь края!"),
+        say(M.edge),
         item("control_forever", sub("SUBSTACK", item("control_if_else", input("CONDITION", onLine("down")), sub("SUBSTACK", tank(40, 10)), sub("SUBSTACK2", tank(10, 40))))),
       ),
     ),
   },
   {
     id: "counter",
-    title: "Считаем препятствия",
-    text: "Переменная «счёт» растёт после каждой встречи со стеной.",
+    title: M.counterTitle,
+    text: M.counterText,
     monitors: ["var-count"],
     xml: xml(
       at(
         40,
         40,
         flag(),
-        item("data_setvariableto", variable("var-count", "счёт"), text("VALUE", "0")),
+        item("data_setvariableto", variable("var-count", M.count), text("VALUE", "0")),
         item(
           "control_forever",
           sub(
             "SUBSTACK",
             move("forward", 40),
             item("control_wait_until", input("CONDITION", obstacle("front"))),
-            item("data_changevariableby", variable("var-count", "счёт"), num("VALUE", 1)),
-            item("robot_say", textWith("TEXT", item("operator_join", text("STRING1", "Препятствий: "), textWith("STRING2", item("data_variable", variable("var-count", "счёт")))))),
+            item("data_changevariableby", variable("var-count", M.count), num("VALUE", 1)),
+            item("robot_say", textWith("TEXT", item("operator_join", text("STRING1", M.obstacles), textWith("STRING2", item("data_variable", variable("var-count", M.count)))))),
             moveFor("right", 0.7, 40),
           ),
         ),
       ),
-      '<variables><variable type="" id="var-count" islocal="false" iscloud="false">счёт</variable></variables>',
+      `<variables><variable type="" id="var-count" islocal="false" iscloud="false">${M.count}</variable></variables>`,
     ),
   },
   {
     id: "tilt-me",
-    title: "Наклони меня",
-    text: "События «когда наклонён»: огоньки показывают, куда наклонили робота. В эмуляторе — кнопки «Наклонить».",
+    title: M.tiltTitle,
+    text: M.tiltText,
     xml: xml(
-      at(40, 40, flag(), light("white"), say("Наклони меня!")) +
-        at(40, 240, tilted("forward"), light("green"), say("Вперёд!")) +
-        at(380, 240, tilted("backward"), light("red"), say("Назад!")) +
-        at(40, 450, tilted("left"), light("blue"), say("Влево!")) +
-        at(380, 450, tilted("right"), light("yellow"), say("Вправо!")),
+      at(40, 40, flag(), light("white"), say(M.tiltMe)) +
+        at(40, 240, tilted("forward"), light("green"), say(M.forward)) +
+        at(380, 240, tilted("backward"), light("red"), say(M.backward)) +
+        at(40, 450, tilted("left"), light("blue"), say(M.left)) +
+        at(380, 450, tilted("right"), light("yellow"), say(M.right)),
     ),
   },
 ];

@@ -9,7 +9,7 @@ internal abstract class RobotComponentBase(ComponentDescriptor descriptor, Compo
 {
     public string Id { get; } = descriptor.Id;
 
-    public string Title { get; } = descriptor.Title ?? descriptor.Id;
+    public LocalizedText Title { get; } = descriptor.Title ?? descriptor.Id;
 
     public ComponentKind Kind { get; } = kind;
 

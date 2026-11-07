@@ -1,7 +1,7 @@
 {
   "$schemaVersion": 1,
   "id": "superbot-car",
-  "title": "Машинка",
+  "title": { "ru": "Машинка", "en": "Car" },
   "device": "tudao-superbot",
   "status": "draft",
 

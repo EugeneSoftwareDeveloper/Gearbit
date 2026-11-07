@@ -86,18 +86,16 @@ export function unseenNearLevels(samples: Samples): { levels: number[]; nearestC
 
 /**
  * Порог линии по замерам над белым и над чёрным: с какого уровня датчик видит чёрное.
- * Берём середину между самым тёмным «белым» и самым светлым «чёрным». problem — что пошло не так.
+ * Берём середину между самым тёмным «белым» и самым светлым «чёрным». problem — что пошло не так:
+ * inverted — над чёрным уровень меньше, чем над белым; same — белое и чёрное не различаются.
  */
-export function lineLevel(white: Sample | undefined, black: Sample | undefined): { level: number | null; problem: string | null } {
+export function lineLevel(white: Sample | undefined, black: Sample | undefined): { level: number | null; problem: "inverted" | "same" | null } {
   if (white?.max == null || black?.min == null || white.mode === null || black.mode === null) return { level: null, problem: null };
   if (black.mode < white.mode) {
-    return {
-      level: null,
-      problem: "Над чёрным уровень меньше, чем над белым, а Gearbit считает наоборот. Сохраните запись замеров и допишите находку в docs/PROTOCOL-SUPERBOT.md.",
-    };
+    return { level: null, problem: "inverted" };
   }
   if (black.min <= white.max) {
-    return { level: null, problem: "Белое и чёрное дают одинаковые уровни. Опустите датчик ближе к полу (примерно на 1 см) и замерьте снова." };
+    return { level: null, problem: "same" };
   }
   return { level: Math.max(white.max + 1, Math.ceil((white.max + black.min) / 2)), problem: null };
 }

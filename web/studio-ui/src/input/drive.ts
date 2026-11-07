@@ -1,7 +1,10 @@
 import { hub, RpcError } from "../hub";
+import { messages } from "../i18n";
 import { store } from "../model";
 import { settings } from "../settings";
 import { toast } from "../ui/toasts";
+
+const M = messages({ ru: { notConnected: "Робот не подключён" }, en: { notConnected: "The robot is not connected" } });
 
 /**
  * Объединяет источники управления (клавиатура, кнопки на экране, джойстик, геймпад)
@@ -150,7 +153,7 @@ async function call(method: string, params: Record<string, unknown>): Promise<vo
     if (e instanceof RpcError && e.code === -32002) {
       toast(e.message, "error");
     } else if (e instanceof RpcError && e.code === -32001) {
-      toast("Робот не подключён", "error");
+      toast(M.notConnected, "error");
     }
   }
 }

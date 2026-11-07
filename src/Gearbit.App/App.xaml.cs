@@ -34,7 +34,7 @@ public partial class App : Application
         catch (Exception ex)
 #pragma warning restore CA1031
         {
-            window.ShowError("Не удалось запустить Gearbit", ex.Message);
+            window.ShowError(AppText.Current.StartFailed, ex.Message);
         }
     }
 
@@ -63,7 +63,7 @@ public partial class App : Application
                 return url;
             }
 
-            throw new InvalidOperationException($"Порт {port} занят другой программой. Укажите другой: Gearbit.exe --Hub:Port=5300");
+            throw new InvalidOperationException(AppText.Current.PortBusy(port));
         }
     }
 

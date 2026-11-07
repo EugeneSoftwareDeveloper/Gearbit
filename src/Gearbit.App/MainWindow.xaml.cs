@@ -20,7 +20,13 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        var text = AppText.Current;
+        SplashTitle.Text = text.Starting;
+        InstallButton.Content = text.InstallWebView;
+        BrowserButton.Content = text.OpenInBrowser;
+        WindowPlacement.Restore(this);
         SourceInitialized += (_, _) => ApplyTheme(SystemPrefersDark());
+        Closing += (_, _) => WindowPlacement.Save(this);
     }
 
     public async Task OpenAsync(string url)
@@ -34,11 +40,7 @@ public partial class MainWindow : Window
         }
         catch (WebView2RuntimeNotFoundException)
         {
-            ShowError(
-                "Нужен компонент Microsoft Edge WebView2",
-                "В Windows 11 он уже есть, в Windows 10 его ставят один раз (бесплатно, от Microsoft). " +
-                "Пока можно открыть Gearbit в обычном браузере — хаб уже работает.",
-                offerInstall: true);
+            ShowError(AppText.Current.WebViewTitle, AppText.Current.WebViewText, offerInstall: true);
             return;
         }
 

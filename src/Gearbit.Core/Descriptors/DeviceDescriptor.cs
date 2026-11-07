@@ -12,7 +12,7 @@ public sealed class DeviceDescriptor
 {
     public required string Id { get; init; }
 
-    public string Title { get; init; } = "";
+    public LocalizedText Title { get; init; } = LocalizedText.Empty;
 
     /// <summary>draft — значения не проверены на устройстве; stable — проверены.</summary>
     public string Status { get; init; } = "draft";
@@ -79,7 +79,7 @@ public sealed class ComponentDescriptor
     /// <summary>motor, distance, imu, light, battery.</summary>
     public required string Type { get; init; }
 
-    public string? Title { get; init; }
+    public LocalizedText? Title { get; init; }
 
     /// <summary>Компонент появляется только при этой прошивке (определяется по телеметрии).</summary>
     public string? RequiresFirmware { get; init; }

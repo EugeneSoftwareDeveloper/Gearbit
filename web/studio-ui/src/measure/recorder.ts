@@ -1,4 +1,5 @@
 import { hub } from "../hub";
+import { messages } from "../i18n";
 import { store } from "../model";
 import { listenTrace, type TraceLine } from "../trace";
 import { saveJsonFile } from "../ui/files";
@@ -10,7 +11,7 @@ import { saveJsonFile } from "../ui/files";
  */
 
 export const CAPTURE_FORMAT = "gearbit-capture";
-export const CAPTURE_FILE = { description: "Запись замеров Gearbit", suffix: ".capture.json" };
+export const CAPTURE_FILE = { description: messages({ ru: "Запись замеров Gearbit", en: "Gearbit measurement recording" }), suffix: ".capture.json" };
 
 /** Больше кадров не храним: при 10 кадрах телеметрии в секунду это несколько часов. */
 const MAX_FRAMES = 200_000;

@@ -1,3 +1,5 @@
+using Gearbit.Core.Descriptors;
+
 namespace Gearbit.Core.Components;
 
 /// <summary>Вид компонента робота. Определяет, какой интерфейс-возможность он реализует.</summary>
@@ -33,7 +35,7 @@ public interface IRobotComponent
     /// <summary>Физический идентификатор (порт): M1, D1, L1…</summary>
     string Id { get; }
 
-    string Title { get; }
+    LocalizedText Title { get; }
 
     ComponentKind Kind { get; }
 

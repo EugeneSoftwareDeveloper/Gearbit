@@ -4,6 +4,7 @@ using Gearbit.Core.Transport;
 using Gearbit.Emulator;
 using Gearbit.Hub.Programs;
 using Gearbit.Hub.Rpc;
+using Gearbit.Hub.UserData;
 using Gearbit.Protocols.Tudao;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -37,6 +38,12 @@ public static class GearbitHub
         // Только localhost: хаб не виден в локальной сети.
         builder.WebHost.UseUrls($"http://localhost:{options.Port}");
 
+        // Запросы только к localhost по имени: чужой сайт не доберётся до хаба, подменив адрес в DNS (DNS rebinding).
+        if (string.IsNullOrEmpty(builder.Configuration["AllowedHosts"]))
+        {
+            builder.Configuration["AllowedHosts"] = "localhost;127.0.0.1;[::1]";
+        }
+
         AddHub(builder.Services, options, builder.Configuration.GetValue("Hub:Emulator", true));
         addTransports?.Invoke(builder.Services);
 
@@ -66,6 +73,7 @@ public static class GearbitHub
             services.AddSingleton<ITransportFactory>(sp => sp.GetRequiredService<EmulatorHost>());
         }
 
+        services.AddSingleton<SettingsStore>();
         services.AddSingleton<RobotManager>();
         services.AddSingleton<ControlArbiter>();
         services.AddSingleton<ServiceMode>();
@@ -125,6 +133,8 @@ public static class GearbitHub
                 registry.Remove(client);
             }
         });
+
+        HttpApi.Map(app, allowedOrigins);
 
         app.MapGet("/api/info", (RobotManager robots) => Results.Json(new
         {

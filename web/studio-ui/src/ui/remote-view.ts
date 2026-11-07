@@ -1,4 +1,5 @@
 import { hub } from "../hub";
+import { messages, text } from "../i18n";
 import { icons } from "../icons";
 import { emergencyStop, isPressed, onInputChange, onStop, press, release, setJoystick, type Direction } from "../input/drive";
 import { onGamepad } from "../input/keyboard-gamepad";
@@ -24,6 +25,134 @@ import { h, icon, paintRange } from "./dom";
 import { levelColor, RoomView } from "./room-view";
 import { toast } from "./toasts";
 
+const M = messages({
+  ru: {
+    remote: "Пульт",
+    measureDone: "Замеры закончены, пульт снова работает",
+    finishMeasure: "Закончить замеры",
+    controlTaken: "Управление у пульта",
+    takeControl: "Забрать управление",
+    measuring: "Идут замеры протокола: пульт и программы выключены. Кнопка СТОП работает всегда.",
+    foreign: (program: boolean, name: string) =>
+      `Сейчас роботом управляет ${program ? "программа" : "другой пульт"} «${name}». Кнопка СТОП работает всегда.`,
+    control: "Управление",
+    controlHint: "WASD / стрелки",
+    driveMode: "Способ управления",
+    buttons: "Кнопки",
+    joystick: "Джойстик",
+    speed: "Скорость",
+    limit: (build: string, percent: number) => `Предел сборки «${build}»: ${percent}% мощности моторов`,
+    keyboard: "Клавиатура",
+    noGamepad: "Геймпад не найден",
+    gamepadConnected: (name: string) => `Геймпад подключён: ${name}`,
+    dpad: { up: "Вперёд", down: "Назад", left: "Влево", right: "Вправо", spinLeft: "Разворот влево", spinRight: "Разворот вправо", stop: "Стоп" },
+    joystickLabel: "Джойстик: тяните кружок",
+    robot: "Робот",
+    notConnected: "Робот не подключён",
+    notConnectedHint: "Включите робота и нажмите «Подключить». Нет робота под рукой — выберите эмулятор.",
+    connect: "Подключить",
+    emulatorRoom: "Комната эмулятора",
+    radar: "Радар",
+    roomSize: "240 × 160 см, клетка 10 см",
+    sensorsLook: "Куда смотрят датчики",
+    radarEmpty: "Датчиков расстояния на роботе нет — радару смотреть нечем. Моторы и свет работают как обычно.",
+    black: "чёрное",
+    white: "белое",
+    Black: "Чёрное",
+    White: "Белое",
+    blackFrom: (level: number) => `чёрное — от ${level}`,
+    sensors: "Датчики",
+    sensorsScale: "0 — близко, 6 — далеко",
+    placeTitle: "Где стоит датчик на роботе",
+    placeOf: (id: string) => `Где стоит датчик ${id}`,
+    where: "Где стоит?",
+    looksAround: "Смотрит вокруг",
+    looksDown: "Смотрит в пол: линия",
+    notOnRobot: "Нет на роботе",
+    battery: "Батарея",
+    tilt: "Наклон X / Y",
+    noDistance: "У этой модели нет датчиков расстояния.",
+    connectForSensors: "Подключите робота, чтобы увидеть показания.",
+    noDistanceOnRobot: "Датчиков расстояния на роботе нет.",
+    near: "близко",
+    far: "далеко",
+    absent: (ids: string) => `Нет на роботе: ${ids}`,
+    restore: "Вернуть",
+    cm: "см",
+    light: "Свет",
+    noLights: "У этой модели нет светодиодов.",
+    connectForLights: "Подключите робота, чтобы менять цвет огоньков.",
+    all: "Все",
+    motors: "Моторы",
+    motorsHint: "двойной щелчок — 0",
+    noMotors: "У этой модели нет моторов.",
+    connectForMotors: "Подключите робота, чтобы крутить каждый мотор отдельно.",
+    motor: (id: string) => `Мотор ${id}`,
+  },
+  en: {
+    remote: "Remote",
+    measureDone: "Measurements finished, the remote works again",
+    finishMeasure: "Finish measurements",
+    controlTaken: "The remote is in control",
+    takeControl: "Take control",
+    measuring: "Protocol measurements are running: the remote and programs are off. The STOP button always works.",
+    foreign: (program, name) => `The robot is now controlled by ${program ? "the program" : "another remote"} «${name}». The STOP button always works.`,
+    control: "Driving",
+    controlHint: "WASD / arrows",
+    driveMode: "How to drive",
+    buttons: "Buttons",
+    joystick: "Joystick",
+    speed: "Speed",
+    limit: (build, percent) => `Limit of the «${build}» build: ${percent}% of motor power`,
+    keyboard: "Keyboard",
+    noGamepad: "No gamepad found",
+    gamepadConnected: (name) => `Gamepad connected: ${name}`,
+    dpad: { up: "Forward", down: "Backward", left: "Left", right: "Right", spinLeft: "Spin left", spinRight: "Spin right", stop: "Stop" },
+    joystickLabel: "Joystick: drag the knob",
+    robot: "Robot",
+    notConnected: "No robot connected",
+    notConnectedHint: "Turn the robot on and press «Connect». No robot at hand — choose the emulator.",
+    connect: "Connect",
+    emulatorRoom: "Emulator room",
+    radar: "Radar",
+    roomSize: "240 × 160 cm, 10 cm grid",
+    sensorsLook: "Where the sensors look",
+    radarEmpty: "The robot has no distance sensors — the radar has nothing to show. Motors and lights work as usual.",
+    black: "black",
+    white: "white",
+    Black: "Black",
+    White: "White",
+    blackFrom: (level) => `black — from ${level}`,
+    sensors: "Sensors",
+    sensorsScale: "0 — near, 6 — far",
+    placeTitle: "Where the sensor is on the robot",
+    placeOf: (id) => `Where sensor ${id} is`,
+    where: "Where is it?",
+    looksAround: "Looks around",
+    looksDown: "Looks at the floor: line",
+    notOnRobot: "Not on the robot",
+    battery: "Battery",
+    tilt: "Tilt X / Y",
+    noDistance: "This model has no distance sensors.",
+    connectForSensors: "Connect a robot to see the readings.",
+    noDistanceOnRobot: "The robot has no distance sensors.",
+    near: "near",
+    far: "far",
+    absent: (ids) => `Not on the robot: ${ids}`,
+    restore: "Bring back",
+    cm: "cm",
+    light: "Light",
+    noLights: "This model has no lights.",
+    connectForLights: "Connect a robot to change the light colors.",
+    all: "All",
+    motors: "Motors",
+    motorsHint: "double-click — 0",
+    noMotors: "This model has no motors.",
+    connectForMotors: "Connect a robot to turn each motor separately.",
+    motor: (id) => `Motor ${id}`,
+  },
+});
+
 /**
  * Режим «Пульт»: управление, комната/радар, датчики, свет, моторы.
  * Карточка комнаты (stage) одна на всё приложение: вкладка «Блоки» на время забирает её к себе.
@@ -38,7 +167,7 @@ export function createRemoteView(openConnect: () => void): { element: HTMLElemen
 
   const element = h(
     "section",
-    { class: "view active", id: "view-remote", "aria-label": "Пульт" },
+    { class: "view active", id: "view-remote", "aria-label": M.remote },
     banner,
     h("div", { class: "remote-grid" }, h("div", { class: "col" }, drive), h("div", { class: "col" }, stage), h("div", { class: "col col-side" }, sensors, lights, motors)),
   );
@@ -67,13 +196,13 @@ function createControlBanner(): HTMLElement {
       onclick: async () => {
         try {
           await hub.call("service.end");
-          toast("Замеры закончены, пульт снова работает", "ok");
+          toast(M.measureDone, "ok");
         } catch (e) {
           toast(String((e as Error).message), "error");
         }
       },
     },
-    "Закончить замеры",
+    M.finishMeasure,
   );
   const take = h(
     "button",
@@ -82,14 +211,14 @@ function createControlBanner(): HTMLElement {
       onclick: async () => {
         try {
           await hub.call("control.take");
-          toast("Управление у пульта", "ok");
+          toast(M.controlTaken, "ok");
         } catch (e) {
           toast(String((e as Error).message), "error");
         }
       },
     },
     icon(icons.hand),
-    "Забрать управление",
+    M.takeControl,
   );
   const banner = h("div", { class: "banner warn hidden" }, icon(icons.info), text, endService, take);
   store.subscribe((s) => {
@@ -99,19 +228,19 @@ function createControlBanner(): HTMLElement {
     banner.classList.toggle("hidden", !foreign && !service);
     endService.classList.toggle("hidden", !service);
     take.classList.toggle("hidden", service);
-    if (service) text.textContent = "Идут замеры протокола: пульт и программы выключены. Кнопка СТОП работает всегда.";
-    else if (foreign) text.textContent = `Сейчас роботом управляет ${c?.kind === "program" ? "программа" : "другой пульт"} «${c?.clientName}». Кнопка СТОП работает всегда.`;
+    if (service) text.textContent = M.measuring;
+    else if (foreign) text.textContent = M.foreign(c?.kind === "program", c?.clientName ?? "");
   });
   return banner;
 }
 
 /* ---------- Управление ---------- */
 function createDriveCard(): HTMLElement {
-  const { root, body } = card("Управление", icons.gamepad, "WASD / стрелки");
+  const { root, body } = card(M.control, icons.gamepad, M.controlHint);
 
-  const mode = h("div", { class: "segmented", role: "group", "aria-label": "Способ управления" });
-  const buttonsBtn = h("button", { "aria-pressed": "true" }, "Кнопки");
-  const stickBtn = h("button", { "aria-pressed": "false" }, "Джойстик");
+  const mode = h("div", { class: "segmented", role: "group", "aria-label": M.driveMode });
+  const buttonsBtn = h("button", { "aria-pressed": "true" }, M.buttons);
+  const stickBtn = h("button", { "aria-pressed": "false" }, M.joystick);
   mode.append(buttonsBtn, stickBtn);
 
   const dpad = createDpad();
@@ -137,7 +266,7 @@ function createDriveCard(): HTMLElement {
 
   // Скорость: доля от предела сборки (детский режим ограничивает сам хаб).
   const speedOut = h("output");
-  const speed = h("input", { type: "range", min: 10, max: 100, step: 5, value: settings().speed, "aria-label": "Скорость" });
+  const speed = h("input", { type: "range", min: 10, max: 100, step: 5, value: settings().speed, "aria-label": M.speed });
   const showSpeed = () => {
     speedOut.textContent = `${speed.value}%`;
     paintRange(speed);
@@ -151,21 +280,21 @@ function createDriveCard(): HTMLElement {
   const limitNote = h("div", { class: "muted", style: "font-size:.8rem" });
   store.subscribe((s) => {
     const r = s.robot;
-    limitNote.textContent = r ? `Предел сборки «${r.profileTitle ?? "—"}»: ${r.maxPowerPercent}% мощности моторов` : "";
+    limitNote.textContent = r ? M.limit(r.profileTitle ? text(r.profileTitle) : "—", r.maxPowerPercent) : "";
   });
 
-  const keyboardChip = h("span", { class: "chip on" }, icon(icons.keyboard), "Клавиатура");
-  const padChip = h("span", { class: "chip" }, icon(icons.gamepad), "Геймпад не найден");
+  const keyboardChip = h("span", { class: "chip on" }, icon(icons.keyboard), M.keyboard);
+  const padChip = h("span", { class: "chip" }, icon(icons.gamepad), M.noGamepad);
   onGamepad((name) => {
     padChip.classList.toggle("on", !!name);
-    padChip.lastChild!.textContent = name ? name : "Геймпад не найден";
-    if (name) toast(`Геймпад подключён: ${name}`, "ok");
+    padChip.lastChild!.textContent = name ? name : M.noGamepad;
+    if (name) toast(M.gamepadConnected(name), "ok");
   });
 
   body.append(
     mode,
     pads,
-    h("div", { class: "field" }, h("div", { class: "field-row" }, h("span", {}, "Скорость"), speedOut), speed, limitNote),
+    h("div", { class: "field" }, h("div", { class: "field-row" }, h("span", {}, M.speed), speedOut), speed, limitNote),
     h("div", { class: "input-chips" }, keyboardChip, padChip),
   );
   return root;
@@ -183,15 +312,7 @@ function createDpad(): HTMLElement {
     ["down", icons.down, "S"],
     ["" as Direction, "", ""],
   ];
-  const labels: Record<string, string> = {
-    up: "Вперёд",
-    down: "Назад",
-    left: "Влево",
-    right: "Вправо",
-    spinLeft: "Разворот влево",
-    spinRight: "Разворот вправо",
-    stop: "Стоп",
-  };
+  const labels: Record<string, string> = M.dpad;
   const grid = h("div", { class: "dpad" });
   const elements = new Map<Direction, HTMLButtonElement>();
   for (const [dir, glyph, key] of buttons) {
@@ -223,7 +344,7 @@ function createDpad(): HTMLElement {
 
 function createJoystick(): HTMLElement {
   const knob = h("div", { class: "knob" });
-  const pad = h("div", { class: "joystick", role: "application", "aria-label": "Джойстик: тяните кружок" }, knob);
+  const pad = h("div", { class: "joystick", role: "application", "aria-label": M.joystickLabel }, knob);
   let active = false;
 
   const move = (e: PointerEvent) => {
@@ -305,7 +426,7 @@ function syncEmulatorSensors(): () => void {
 
 /* ---------- Комната эмулятора или радар ---------- */
 function createStageCard(openConnect: () => void): HTMLElement {
-  const title = h("h2", {}, "Робот");
+  const title = h("h2", {}, M.robot);
   const hint = h("span", { class: "hint" });
   const head = h("header", { class: "card-head" }, icon(icons.radar), title, hint);
   const room = new RoomView();
@@ -314,9 +435,9 @@ function createStageCard(openConnect: () => void): HTMLElement {
     "div",
     { class: "stage-empty" },
     icon(icons.robot),
-    h("div", { style: "font-weight:700;font-size:1.1rem;color:var(--text)" }, "Робот не подключён"),
-    h("div", {}, "Включите робота и нажмите «Подключить». Нет робота под рукой — выберите эмулятор."),
-    h("button", { class: "btn primary", onclick: openConnect }, icon(icons.bluetooth), "Подключить"),
+    h("div", { style: "font-weight:700;font-size:1.1rem;color:var(--text)" }, M.notConnected),
+    h("div", {}, M.notConnectedHint),
+    h("button", { class: "btn primary", onclick: openConnect }, icon(icons.bluetooth), M.connect),
   );
   const root = h("article", { class: "card stage" }, head, empty, room.element, radar.element);
 
@@ -330,8 +451,8 @@ function createStageCard(openConnect: () => void): HTMLElement {
     empty.classList.toggle("hidden", connected);
     room.element.classList.toggle("hidden", !emulator);
     radar.element.classList.toggle("hidden", !connected || emulator);
-    title.textContent = emulator ? "Комната эмулятора" : connected ? "Радар" : "Робот";
-    hint.textContent = emulator ? "240 × 160 см, клетка 10 см" : connected && sensors ? "Куда смотрят датчики" : "";
+    title.textContent = emulator ? M.emulatorRoom : connected ? M.radar : M.robot;
+    hint.textContent = emulator ? M.roomSize : connected && sensors ? M.sensorsLook : "";
     syncSensors();
     if (emulator !== subscribed && s.hub === "open") {
       subscribed = emulator;
@@ -367,7 +488,7 @@ function createRadar(): { element: HTMLElement; update: (s: AppState) => void } 
       <rect x="26" y="-20" width="8" height="40" rx="3" fill="var(--text-muted)"/>
     </g>`;
   const beams = svg.querySelector(".beams")!;
-  const note = h("p", { class: "muted radar-note hidden" }, "Датчиков расстояния на роботе нет — радару смотреть нечем. Моторы и свет работают как обычно.");
+  const note = h("p", { class: "muted radar-note hidden" }, M.radarEmpty);
   const element = h("div", { style: "padding:8px 18px 18px" });
   element.append(svg, note);
 
@@ -395,7 +516,7 @@ function createRadar(): { element: HTMLElement; update: (s: AppState) => void } 
         label.setAttribute("fill", "var(--text)");
         label.setAttribute("font-size", "13");
         label.setAttribute("font-weight", "700");
-        label.textContent = known ? (black ? "чёрное" : "белое") : "—";
+        label.textContent = known ? (black ? M.black : M.white) : "—";
         g.append(label);
         beams.append(g);
         return;
@@ -433,7 +554,7 @@ function createRadar(): { element: HTMLElement; update: (s: AppState) => void } 
 
 /* ---------- Датчики ---------- */
 function createSensorsCard(): HTMLElement {
-  const { root, body } = card("Датчики", icons.sensor, "0 — близко, 6 — далеко");
+  const { root, body } = card(M.sensors, icons.sensor, M.sensorsScale);
   const list = h("div");
   const absentRow = h("div", { class: "sensors-absent hidden" });
   const stats = h("div", { class: "stats" });
@@ -450,11 +571,11 @@ function createSensorsCard(): HTMLElement {
     const current = sensorPlace(c, robot);
     const select = h(
       "select",
-      { class: "sensor-place", title: "Где стоит датчик на роботе", "aria-label": `Где стоит датчик ${c.id}` },
-      current === null ? h("option", { value: "", disabled: true }, "Где стоит?") : null,
-      h("optgroup", { label: "Смотрит вокруг" }, ...SENSOR_PLACES.map((p) => h("option", { value: p.id }, p.title))),
-      h("optgroup", { label: "Смотрит в пол: линия" }, ...DOWN_PLACES.map((p) => h("option", { value: p.id }, p.title))),
-      h("option", { value: NO_SENSOR }, "Нет на роботе"),
+      { class: "sensor-place", title: M.placeTitle, "aria-label": M.placeOf(c.id) },
+      current === null ? h("option", { value: "", disabled: true }, M.where) : null,
+      h("optgroup", { label: M.looksAround }, ...SENSOR_PLACES.map((p) => h("option", { value: p.id }, p.title))),
+      h("optgroup", { label: M.looksDown }, ...DOWN_PLACES.map((p) => h("option", { value: p.id }, p.title))),
+      h("option", { value: NO_SENSOR }, M.notOnRobot),
     );
     select.value = current ?? "";
     select.addEventListener("change", () => {
@@ -467,9 +588,9 @@ function createSensorsCard(): HTMLElement {
   let signature: string | null = null;
   const rows = new Map<string, { value: HTMLElement; bars: HTMLElement[]; line: ComponentInfo | null }>();
   const battery = h("div", { class: "value" }, "—");
-  const batteryStat = h("div", { class: "stat" }, h("div", { class: "label" }, "Батарея"), battery);
+  const batteryStat = h("div", { class: "stat" }, h("div", { class: "label" }, M.battery), battery);
   const tilt = h("div", { class: "value" }, "—");
-  const tiltStat = h("div", { class: "stat" }, h("div", { class: "label" }, "Наклон X / Y"), tilt);
+  const tiltStat = h("div", { class: "stat" }, h("div", { class: "label" }, M.tilt), tilt);
   stats.append(batteryStat, tiltStat);
 
   const render = (s: AppState) => {
@@ -479,8 +600,8 @@ function createSensorsCard(): HTMLElement {
       signature = sig;
       list.replaceChildren();
       rows.clear();
-      if (!all.length) list.append(emptyNote(s.robot ? "У этой модели нет датчиков расстояния." : "Подключите робота, чтобы увидеть показания."));
-      else if (!shown.length) list.append(emptyNote("Датчиков расстояния на роботе нет."));
+      if (!all.length) list.append(emptyNote(s.robot ? M.noDistance : M.connectForSensors));
+      else if (!shown.length) list.append(emptyNote(M.noDistanceOnRobot));
       for (const c of shown) {
         const value = h("div", { class: "sensor-value" }, "—");
         const bars = Array.from({ length: 7 }, () => h("span"));
@@ -495,8 +616,8 @@ function createSensorsCard(): HTMLElement {
             h("div", { class: "sensor-head" }, placeSelect(c, s.robot), h("span", { class: "sensor-id" }, c.id), value),
             h("div", { class: `levels${down ? " floor" : ""}`, "aria-hidden": "true" }, ...bars),
             down
-              ? h("div", { class: "levels-legend" }, h("span", {}, "белое"), h("span", {}, `чёрное — от ${threshold}`))
-              : h("div", { class: "levels-legend" }, h("span", {}, "близко"), h("span", {}, "далеко")),
+              ? h("div", { class: "levels-legend" }, h("span", {}, M.white), h("span", {}, M.blackFrom(threshold)))
+              : h("div", { class: "levels-legend" }, h("span", {}, M.near), h("span", {}, M.far)),
           ),
         );
         rows.set(c.id, { value, bars, line: down ? c : null });
@@ -504,8 +625,8 @@ function createSensorsCard(): HTMLElement {
       // Убранные датчики: строка «Нет на роботе: D1, D2» и кнопка вернуть их на места из сборки.
       absentRow.classList.toggle("hidden", !absent.length);
       absentRow.replaceChildren(
-        h("span", {}, `Нет на роботе: ${absent.map((c) => c.id).join(", ")}`),
-        h("button", { class: "btn small ghost", onclick: () => place(Object.fromEntries(absent.map((c) => [c.id, null]))) }, icon(icons.eye), "Вернуть"),
+        h("span", {}, M.absent(absent.map((c) => c.id).join(", "))),
+        h("button", { class: "btn small ghost", onclick: () => place(Object.fromEntries(absent.map((c) => [c.id, null]))) }, icon(icons.eye), M.restore),
       );
     }
 
@@ -515,11 +636,11 @@ function createSensorsCard(): HTMLElement {
       const cm = t?.distancesCm[id];
       const known = level !== null && level !== undefined;
       if (row.line) {
-        row.value.innerHTML = known ? `${seesLine(row.line, level) ? "Чёрное" : "Белое"}<small> · ${level} / 6</small>` : "—";
+        row.value.innerHTML = known ? `${seesLine(row.line, level) ? M.Black : M.White}<small> · ${level} / 6</small>` : "—";
         row.bars.forEach((bar, i) => bar.classList.toggle("on", known && i <= level));
         continue;
       }
-      row.value.innerHTML = known ? `${level}<small> / 6${cm != null ? ` · ${Math.round(cm)} см` : ""}</small>` : "—";
+      row.value.innerHTML = known ? `${level}<small> / 6${cm != null ? ` · ${Math.round(cm)} ${M.cm}` : ""}</small>` : "—";
       row.bars.forEach((bar, i) => {
         const on = known && i <= level;
         bar.className = on ? `on ${level <= 1 ? "near" : level <= 3 ? "mid" : "far"}` : "";
@@ -539,7 +660,7 @@ function createSensorsCard(): HTMLElement {
 
 /* ---------- Свет ---------- */
 function createLightsCard(): HTMLElement {
-  const { root, body } = card("Свет", icons.bulb);
+  const { root, body } = card(M.light, icons.bulb);
   let signature: string | null = null;
   const swatchesById = new Map<string, Map<RobotColor, HTMLButtonElement>>();
 
@@ -577,10 +698,10 @@ function createLightsCard(): HTMLElement {
       body.replaceChildren();
       swatchesById.clear();
       if (!lights.length) {
-        body.append(emptyNote(s.robot ? "У этой модели нет светодиодов." : "Подключите робота, чтобы менять цвет огоньков."));
+        body.append(emptyNote(s.robot ? M.noLights : M.connectForLights));
         return;
       }
-      body.append(row("Все", lights.map((l) => l.id)).el);
+      body.append(row(M.all, lights.map((l) => l.id)).el);
       for (const l of lights) {
         const r = row(l.id, [l.id]);
         swatchesById.set(l.id, r.swatches);
@@ -597,7 +718,7 @@ function createLightsCard(): HTMLElement {
 
 /* ---------- Моторы ---------- */
 function createMotorsCard(): HTMLElement {
-  const { root, body } = card("Моторы", icons.motor, "двойной щелчок — 0");
+  const { root, body } = card(M.motors, icons.motor, M.motorsHint);
   let signature: string | null = null;
   const sliders = new Map<string, { input: HTMLInputElement; out: HTMLOutputElement }>();
   let keepAlive: number | undefined;
@@ -637,12 +758,12 @@ function createMotorsCard(): HTMLElement {
     body.replaceChildren();
     sliders.clear();
     if (!motors.length) {
-      body.append(emptyNote(s.robot ? "У этой модели нет моторов." : "Подключите робота, чтобы крутить каждый мотор отдельно."));
+      body.append(emptyNote(s.robot ? M.noMotors : M.connectForMotors));
       return;
     }
     for (const c of motors) {
       const out = h("output", {}, "0");
-      const input = h("input", { type: "range", class: "bipolar", min: -100, max: 100, step: 5, value: 0, "aria-label": `Мотор ${c.id}` });
+      const input = h("input", { type: "range", class: "bipolar", min: -100, max: 100, step: 5, value: 0, "aria-label": M.motor(c.id) });
       paintRange(input);
       input.addEventListener("input", () => {
         out.textContent = input.value;

@@ -45,6 +45,15 @@ public sealed class HubOptions
     /// <summary>Куда сохраняются запускаемые программы. По умолчанию — %TEMP%\Gearbit\programs.</summary>
     public string? ProgramsDirectory { get; set; }
 
+    /// <summary>
+    /// Где хранятся настройки интерфейса (settings.json) и история программ (History).
+    /// По умолчанию — %LOCALAPPDATA%\Gearbit: не %TEMP%, его чистит Windows.
+    /// </summary>
+    public string? DataDirectory { get; set; }
+
+    internal string EffectiveDataDirectory =>
+        DataDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Gearbit");
+
     /// <summary>Сколько длится сканирование по умолчанию, мс.</summary>
     public int ScanDurationMs { get; set; } = 4000;
 

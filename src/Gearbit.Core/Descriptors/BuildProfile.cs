@@ -8,7 +8,7 @@ public sealed class BuildProfile
 {
     public required string Id { get; init; }
 
-    public string Title { get; init; } = "";
+    public LocalizedText Title { get; init; } = LocalizedText.Empty;
 
     /// <summary>Id описания устройства (devices/*.json), к которому относится сборка.</summary>
     public required string Device { get; init; }

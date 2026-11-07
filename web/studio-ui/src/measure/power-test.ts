@@ -1,3 +1,4 @@
+import { messages } from "../i18n";
 import { icons } from "../icons";
 import { h, icon } from "../ui/dom";
 import { toast } from "../ui/toasts";
@@ -12,7 +13,70 @@ import { addMark } from "./recorder";
  * (сейчас в devices/tudao-superbot.json безопасная заглушка ±10).
  */
 
-const RESULTS = ["—", "стоит", "еле крутится", "медленно", "быстрее", "так же", "рывками"];
+const M = messages({
+  ru: {
+    results: ["—", "стоит", "еле крутится", "медленно", "быстрее", "так же", "рывками"],
+    motor: "Мотор",
+    direction: "Направление",
+    plus: "плюс (+)",
+    minus: "минус (−)",
+    valuesLabel: "Значения мощности через запятую",
+    values: "Значения (1–127)",
+    secondsPerStep: "Секунд на шаг",
+    run: "Запустить",
+    abort: "Прервать",
+    copy: "Скопировать результаты",
+    enterValues: "Впишите значения мощности через запятую, например 5, 10, 20.",
+    tooMany: (max: number) => `Не больше ${max} значений за один тест.`,
+    badValue: "Мощность — целые числа от 1 до 127 (знак задаёт «Направление».)",
+    howAt: (value: number) => `Как крутилось на ${value}`,
+    markStart: "Тест мощности: старт",
+    markResults: "Тест мощности: результаты",
+    step: (n: number, total: number, frame: string) => `Шаг ${n} из ${total}: ${frame}. Смотрите на колесо.`,
+    aborted: "Тест прерван, моторы остановлены.",
+    done: "Готово. Отметьте в таблице, как крутилось колесо на каждом шаге, и скопируйте результаты.",
+    stopped: "Тест остановлен.",
+    copyHead: (motor: string, seconds: number) => `Тест мощности ${motor}, ${seconds} с на шаг`,
+    copied: "Результаты скопированы — вставьте их в чек-лист (п. 12)",
+    intro:
+      "Найдём, какую мощность понимает робот. Поставьте его на подставку: колёса должны крутиться в воздухе. Мотор получает каждое значение по очереди, между шагами — пауза. Отмечайте, как крутится колесо: где оно перестаёт ускоряться, там и предел.",
+    power: "Мощность",
+    byte: "Байт",
+    how: "Как крутилось",
+  },
+  en: {
+    results: ["—", "stands still", "barely turns", "slow", "faster", "the same", "jerky"],
+    motor: "Motor",
+    direction: "Direction",
+    plus: "plus (+)",
+    minus: "minus (−)",
+    valuesLabel: "Power values separated by commas",
+    values: "Values (1–127)",
+    secondsPerStep: "Seconds per step",
+    run: "Run",
+    abort: "Abort",
+    copy: "Copy the results",
+    enterValues: "Enter power values separated by commas, for example 5, 10, 20.",
+    tooMany: (max) => `No more than ${max} values per test.`,
+    badValue: "Power is a whole number from 1 to 127 (the sign is set by «Direction»).",
+    howAt: (value) => `How it turned at ${value}`,
+    markStart: "Power test: start",
+    markResults: "Power test: results",
+    step: (n, total, frame) => `Step ${n} of ${total}: ${frame}. Watch the wheel.`,
+    aborted: "Test aborted, motors stopped.",
+    done: "Done. Mark in the table how the wheel turned at each step and copy the results.",
+    stopped: "Test stopped.",
+    copyHead: (motor, seconds) => `Power test ${motor}, ${seconds} s per step`,
+    copied: "Results copied — paste them into the checklist (item 12)",
+    intro:
+      "Let's find which power the robot understands. Put it on a stand so the wheels turn in the air. The motor gets each value in turn with a pause between steps. Mark how the wheel turns: where it stops speeding up, that is the limit.",
+    power: "Power",
+    byte: "Byte",
+    how: "How it turned",
+  },
+});
+
+const RESULTS = M.results;
 const STEP_RESEND_MS = 250;
 const PAUSE_MS = 1000;
 const MAX_STEPS = 12;
@@ -25,17 +89,17 @@ interface Run {
 export function createPowerTab(ctx: MeasureContext): { element: HTMLElement; stop(): void } {
   const motor = h(
     "select",
-    { "aria-label": "Мотор" },
+    { "aria-label": M.motor },
     h("option", { value: "0" }, "M1"),
     h("option", { value: "1" }, "M2"),
     h("option", { value: "2" }, "M3"),
   );
-  const direction = h("select", { "aria-label": "Направление" }, h("option", { value: "1" }, "плюс (+)"), h("option", { value: "-1" }, "минус (−)"));
-  const values = h("input", { class: "text-input", type: "text", value: "5, 10, 20, 50, 100", "aria-label": "Значения мощности через запятую" });
-  const seconds = h("input", { class: "text-input", type: "number", min: 1, max: 10, step: 1, value: 3, "aria-label": "Секунд на шаг" });
-  const runBtn = h("button", { class: "btn primary" }, icon(icons.play), "Запустить");
-  const abortBtn = h("button", { class: "btn hidden" }, icon(icons.stop), "Прервать");
-  const copyBtn = h("button", { class: "btn small", disabled: true }, "Скопировать результаты");
+  const direction = h("select", { "aria-label": M.direction }, h("option", { value: "1" }, M.plus), h("option", { value: "-1" }, M.minus));
+  const values = h("input", { class: "text-input", type: "text", value: "5, 10, 20, 50, 100", "aria-label": M.valuesLabel });
+  const seconds = h("input", { class: "text-input", type: "number", min: 1, max: 10, step: 1, value: 3, "aria-label": M.secondsPerStep });
+  const runBtn = h("button", { class: "btn primary" }, icon(icons.play), M.run);
+  const abortBtn = h("button", { class: "btn hidden" }, icon(icons.stop), M.abort);
+  const copyBtn = h("button", { class: "btn small", disabled: true }, M.copy);
   const progress = h("p", { class: "muted" }, "");
   const rows = h("tbody");
 
@@ -55,17 +119,17 @@ export function createPowerTab(ctx: MeasureContext): { element: HTMLElement; sto
   /** «5, 10 20» → [5, 10, 20]; ошибка — текст для ребёнка и взрослого. */
   const parse = (): number[] | string => {
     const parts = values.value.split(/[\s,;]+/).filter(Boolean);
-    if (!parts.length) return "Впишите значения мощности через запятую, например 5, 10, 20.";
-    if (parts.length > MAX_STEPS) return `Не больше ${MAX_STEPS} значений за один тест.`;
+    if (!parts.length) return M.enterValues;
+    if (parts.length > MAX_STEPS) return M.tooMany(MAX_STEPS);
     const list = parts.map(Number);
-    if (list.some((n) => !Number.isInteger(n) || n < 1 || n > 127)) return "Мощность — целые числа от 1 до 127 (знак задаёт «Направление».)";
+    if (list.some((n) => !Number.isInteger(n) || n < 1 || n > 127)) return M.badValue;
     return list;
   };
 
   const renderRows = (active: number | null) => {
     rows.replaceChildren(
       ...steps.map((step, i) => {
-        const result = h("select", { "aria-label": `Как крутилось на ${step.value}` }, ...RESULTS.map((r) => h("option", { value: r }, r)));
+        const result = h("select", { "aria-label": M.howAt(step.value) }, ...RESULTS.map((r) => h("option", { value: r }, r)));
         result.value = step.result;
         result.addEventListener("change", () => {
           step.result = result.value;
@@ -104,14 +168,14 @@ export function createPowerTab(ctx: MeasureContext): { element: HTMLElement; sto
     const r: Run = { cancelled: false, wake: null };
     run = r;
     setRunning(true);
-    addMark("Тест мощности: старт", { ...setup, values: list });
+    addMark(M.markStart, { ...setup, values: list });
     try {
       for (let i = 0; i < steps.length && !r.cancelled; i++) {
         const power = setup.sign * steps[i]!.value;
         const motors = [0, 0, 0];
         motors[slot] = power;
         const frame = stateFrame(motors);
-        progress.textContent = `Шаг ${i + 1} из ${steps.length}: ${setup.motor} = ${power > 0 ? "+" : ""}${power} (0x${powerByte(power)}). Смотрите на колесо.`;
+        progress.textContent = M.step(i + 1, steps.length, `${setup.motor} = ${power > 0 ? "+" : ""}${power} (0x${powerByte(power)})`);
         renderRows(i);
         // Кадр повторяем: прошивка может останавливать моторы без новых кадров (п. 8).
         const end = performance.now() + setup.seconds * 1000;
@@ -123,10 +187,10 @@ export function createPowerTab(ctx: MeasureContext): { element: HTMLElement; sto
         if (!r.cancelled) await wait(r, PAUSE_MS);
       }
       progress.textContent = r.cancelled
-        ? "Тест прерван, моторы остановлены."
-        : "Готово. Отметьте в таблице, как крутилось колесо на каждом шаге, и скопируйте результаты.";
+        ? M.aborted
+        : M.done;
     } catch (e) {
-      progress.textContent = "Тест остановлен.";
+      progress.textContent = M.stopped;
       toast(e instanceof Error ? e.message : String(e), "error");
     } finally {
       // Чем бы ни кончилось — моторы в 0. Если замеры уже закончены, хаб сам остановил робота.
@@ -149,12 +213,12 @@ export function createPowerTab(ctx: MeasureContext): { element: HTMLElement; sto
   abortBtn.onclick = stop;
   copyBtn.onclick = async () => {
     const data = results();
-    addMark("Тест мощности: результаты", data);
+    addMark(M.markResults, data);
     const text = [
-      `Тест мощности ${data.motor}, ${data.seconds} с на шаг`,
+      M.copyHead(data.motor, data.seconds),
       ...data.steps.map((s) => `${s.power > 0 ? "+" : ""}${s.power} (${s.hex}): ${s.result}`),
     ].join("\n");
-    if (await copyText(text)) toast("Результаты скопированы — вставьте их в чек-лист (п. 12)", "ok");
+    if (await copyText(text)) toast(M.copied, "ok");
   };
 
   const element = h(
@@ -163,22 +227,22 @@ export function createPowerTab(ctx: MeasureContext): { element: HTMLElement; sto
     h(
       "p",
       { class: "muted" },
-      "Найдём, какую мощность понимает робот. Поставьте его на подставку: колёса должны крутиться в воздухе. Мотор получает каждое значение по очереди, между шагами — пауза. Отмечайте, как крутится колесо: где оно перестаёт ускоряться, там и предел.",
+      M.intro,
     ),
     h(
       "div",
       { class: "measure-form" },
-      h("label", {}, h("span", {}, "Мотор"), motor),
-      h("label", {}, h("span", {}, "Направление"), direction),
-      h("label", { class: "grow" }, h("span", {}, "Значения (1–127)"), values),
-      h("label", {}, h("span", {}, "Секунд на шаг"), seconds),
+      h("label", {}, h("span", {}, M.motor), motor),
+      h("label", {}, h("span", {}, M.direction), direction),
+      h("label", { class: "grow" }, h("span", {}, M.values), values),
+      h("label", {}, h("span", {}, M.secondsPerStep), seconds),
     ),
     h("div", { class: "frame-actions" }, runBtn, abortBtn, h("div", { class: "spacer" }), copyBtn),
     progress,
     h(
       "table",
       { class: "measure-table" },
-      h("thead", {}, h("tr", {}, h("th", {}, "№"), h("th", {}, "Мощность"), h("th", {}, "Байт"), h("th", {}, "Как крутилось"))),
+      h("thead", {}, h("tr", {}, h("th", {}, "№"), h("th", {}, M.power), h("th", {}, M.byte), h("th", {}, M.how))),
       rows,
     ),
   );

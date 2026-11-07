@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Gearbit.Hub;
 
 /// <summary>Найденное устройство вместе с подобранным описанием.</summary>
-public sealed record ScanResult(DiscoveredDevice Device, string? DescriptorId, string? DescriptorTitle);
+public sealed record ScanResult(DiscoveredDevice Device, string? DescriptorId, LocalizedText? DescriptorTitle);
 
 public sealed record ScanReport(IReadOnlyList<ScanResult> Devices, IReadOnlyList<string> Warnings);
 

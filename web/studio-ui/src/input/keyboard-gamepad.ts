@@ -1,4 +1,7 @@
+import { messages } from "../i18n";
 import { emergencyStop, press, release, setGamepad, type Direction } from "./drive";
+
+const M = messages({ ru: { gamepad: "Геймпад" }, en: { gamepad: "Gamepad" } });
 
 /** Клавиатура: WASD или стрелки, Q/E — разворот на месте, Пробел/Esc — СТОП. */
 const KEYS: Record<string, Direction> = {
@@ -76,7 +79,7 @@ function shape(value: number): number {
 function poll(): void {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   const pad = Array.from(pads).find((p): p is Gamepad => !!p && p.connected);
-  const name = pad ? pad.id.replace(/\s*\(.*?\)\s*/g, " ").trim() || "Геймпад" : null;
+  const name = pad ? pad.id.replace(/\s*\(.*?\)\s*/g, " ").trim() || M.gamepad : null;
   if (name !== connectedName) {
     connectedName = name;
     for (const l of gamepadListeners) l(name);

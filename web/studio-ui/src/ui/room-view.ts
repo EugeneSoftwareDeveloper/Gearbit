@@ -1,9 +1,47 @@
 import { hub } from "../hub";
+import { messages } from "../i18n";
 import { icons } from "../icons";
 import { lacksTilt, NO_SENSOR, seesLine, sensorPlace, store, type EmulatorScene, type EmulatorState, type Obstacle } from "../model";
 import { onSettings } from "../settings";
 import { cssVar, h, icon } from "./dom";
 import { toast } from "./toasts";
+
+const M = messages({
+  ru: {
+    room: "Комната эмулятора",
+    toStart: "На старт",
+    clearObstacles: "Убрать препятствия",
+    roomSceneTitle: "Комната с препятствиями",
+    roomScene: "Комната",
+    lineSceneTitle: "Белый лист с чёрной линией: езда по линии",
+    lineScene: "Линия",
+    floor: "Что на полу",
+    tiltForward: "Наклонить вперёд",
+    tiltBackward: "Наклонить назад",
+    tiltLeft: "Наклонить влево",
+    tiltRight: "Наклонить вправо",
+    tiltCar: "Наклонить машинку",
+    tilt: "Наклонить:",
+    hint: "Протяните мышью — новое препятствие, двойной щелчок — убрать",
+  },
+  en: {
+    room: "Emulator room",
+    toStart: "To start",
+    clearObstacles: "Remove obstacles",
+    roomSceneTitle: "A room with obstacles",
+    roomScene: "Room",
+    lineSceneTitle: "White paper with a black line: line following",
+    lineScene: "Line",
+    floor: "What is on the floor",
+    tiltForward: "Tilt forward",
+    tiltBackward: "Tilt backward",
+    tiltLeft: "Tilt left",
+    tiltRight: "Tilt right",
+    tiltCar: "Tilt the car",
+    tilt: "Tilt:",
+    hint: "Drag with the mouse — a new obstacle, double-click — remove it",
+  },
+});
 
 /** На сколько градусов кнопки «Наклонить» наклоняют виртуальную машинку: больше порога 15°. */
 const TILT_DEGREES = 30;
@@ -42,26 +80,26 @@ export class RoomView {
   private tilt = { x: 0, y: 0 };
 
   constructor() {
-    this.canvas = h("canvas", { class: "stage-canvas", "aria-label": "Комната эмулятора" });
-    const reset = h("button", { class: "btn small", onclick: () => this.reset() }, icon(icons.home), "На старт");
-    this.clear = h("button", { class: "btn small ghost", onclick: () => this.setObstacles([]) }, icon(icons.trash), "Убрать препятствия");
+    this.canvas = h("canvas", { class: "stage-canvas", "aria-label": M.room });
+    const reset = h("button", { class: "btn small", onclick: () => this.reset() }, icon(icons.home), M.toStart);
+    this.clear = h("button", { class: "btn small ghost", onclick: () => this.setObstacles([]) }, icon(icons.trash), M.clearObstacles);
     // Что лежит на полу: комната с препятствиями или лист с линией (езда по линии).
     this.sceneButtons = {
-      room: h("button", { "aria-pressed": "true", title: "Комната с препятствиями", onclick: () => this.setScene("room") }, "Комната"),
-      line: h("button", { "aria-pressed": "false", title: "Белый лист с чёрной линией: езда по линии", onclick: () => this.setScene("line") }, "Линия"),
+      room: h("button", { "aria-pressed": "true", title: M.roomSceneTitle, onclick: () => this.setScene("room") }, M.roomScene),
+      line: h("button", { "aria-pressed": "false", title: M.lineSceneTitle, onclick: () => this.setScene("line") }, M.lineScene),
     };
-    const scene = h("div", { class: "segmented compact", role: "group", "aria-label": "Что на полу" }, this.sceneButtons.room, this.sceneButtons.line);
+    const scene = h("div", { class: "segmented compact", role: "group", "aria-label": M.floor }, this.sceneButtons.room, this.sceneButtons.line);
     // Наклон держится, пока держат кнопку: отпустили — машинка снова ровная.
     this.tiltButtons = [
-      this.tiltButton("Наклонить вперёд", icons.up, 0, TILT_DEGREES),
-      this.tiltButton("Наклонить назад", icons.down, 0, -TILT_DEGREES),
-      this.tiltButton("Наклонить влево", icons.left, -TILT_DEGREES, 0),
-      this.tiltButton("Наклонить вправо", icons.right, TILT_DEGREES, 0),
+      this.tiltButton(M.tiltForward, icons.up, 0, TILT_DEGREES),
+      this.tiltButton(M.tiltBackward, icons.down, 0, -TILT_DEGREES),
+      this.tiltButton(M.tiltLeft, icons.left, -TILT_DEGREES, 0),
+      this.tiltButton(M.tiltRight, icons.right, TILT_DEGREES, 0),
     ];
     this.tiltPad = h(
       "div",
-      { class: "tilt-pad", role: "group", "aria-label": "Наклонить машинку" },
-      h("span", { class: "muted" }, "Наклонить:"),
+      { class: "tilt-pad", role: "group", "aria-label": M.tiltCar },
+      h("span", { class: "muted" }, M.tilt),
       ...this.tiltButtons,
     );
     this.element = h(
@@ -75,7 +113,7 @@ export class RoomView {
         reset,
         this.clear,
         this.tiltPad,
-        h("span", { class: "muted", style: "font-size:.8rem;margin-left:auto" }, "Протяните мышью — новое препятствие, двойной щелчок — убрать"),
+        h("span", { class: "muted", style: "font-size:.8rem;margin-left:auto" }, M.hint),
       ),
     );
 

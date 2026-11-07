@@ -3,6 +3,23 @@
  * Тот же протокол используют Python- и C#-клиенты (docs/dev/hub-api.md).
  */
 
+import { lang, messages } from "./i18n";
+
+const M = messages({
+  ru: {
+    noHub: "Нет связи с хабом",
+    noAnswer: (method: string) => `Хаб не ответил: ${method}`,
+    lost: "Связь с хабом прервана",
+    clientName: "Пульт Gearbit",
+  },
+  en: {
+    noHub: "No connection to the hub",
+    noAnswer: (method) => `The hub did not answer: ${method}`,
+    lost: "Connection to the hub was lost",
+    clientName: "Gearbit remote",
+  },
+});
+
 export class RpcError extends Error {
   constructor(
     readonly code: number,
@@ -38,13 +55,13 @@ export class HubClient {
   call<T = any>(method: string, params: Record<string, unknown> = {}, timeoutMs = 15000): Promise<T> {
     const socket = this.socket;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-      return Promise.reject(new RpcError(-1, "Нет связи с хабом"));
+      return Promise.reject(new RpcError(-1, M.noHub));
     }
     const id = this.nextId++;
     return new Promise<T>((resolve, reject) => {
       const timer = window.setTimeout(() => {
         this.pending.delete(id);
-        reject(new RpcError(-2, `Хаб не ответил: ${method}`));
+        reject(new RpcError(-2, M.noAnswer(method)));
       }, timeoutMs);
       this.pending.set(id, { resolve: resolve as (v: unknown) => void, reject, timer });
       socket.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
@@ -85,7 +102,7 @@ export class HubClient {
     socket.onopen = async () => {
       this.retryMs = 500;
       this.setStatus("open");
-      this.emit("hub.connected", await this.call("hub.hello", { name: this.clientName }).catch(() => null));
+      this.emit("hub.connected", await this.call("hub.hello", { name: this.clientName, lang: lang() }).catch(() => null));
     };
 
     socket.onmessage = (event) => {
@@ -110,7 +127,7 @@ export class HubClient {
     socket.onclose = () => {
       for (const [, p] of this.pending) {
         clearTimeout(p.timer);
-        p.reject(new RpcError(-1, "Связь с хабом прервана"));
+        p.reject(new RpcError(-1, M.lost));
       }
       this.pending.clear();
       this.setStatus("closed");
@@ -126,4 +143,4 @@ export class HubClient {
 }
 
 const protocol = location.protocol === "https:" ? "wss" : "ws";
-export const hub = new HubClient(`${protocol}://${location.host}/ws`, "Пульт Gearbit");
+export const hub = new HubClient(`${protocol}://${location.host}/ws`, M.clientName);

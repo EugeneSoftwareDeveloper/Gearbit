@@ -18,6 +18,12 @@ import {
   type DecorationSet,
 } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
+import { messages } from "../i18n";
+
+const M = messages({
+  ru: { placeholder: "Напишите программу здесь…", label: "Текст программы" },
+  en: { placeholder: "Write your program here…", label: "Program text" },
+});
 
 /**
  * Редактор кода для вкладок Python и C# (CodeMirror 6). Цвета — только CSS-переменные из tokens.css,
@@ -162,10 +168,10 @@ export function createCodeEditor(parent: HTMLElement, options: CodeEditorOptions
     highlightSelectionMatches(),
     lintGutter(),
     errorLine,
-    placeholder("Напишите программу здесь…"),
+    placeholder(M.placeholder),
     options.language,
     theme,
-    EditorView.contentAttributes.of({ "aria-label": "Текст программы", spellcheck: "false", autocorrect: "off", autocapitalize: "off" }),
+    EditorView.contentAttributes.of({ "aria-label": M.label, spellcheck: "false", autocorrect: "off", autocapitalize: "off" }),
     // Tab принимает подсказку, а без подсказки делает отступ.
     Prec.high(keymap.of([{ key: "Mod-Enter", run: () => (options.onRun(), true) }, { key: "Tab", run: acceptCompletion }])),
     keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...completionKeymap, indentWithTab]),

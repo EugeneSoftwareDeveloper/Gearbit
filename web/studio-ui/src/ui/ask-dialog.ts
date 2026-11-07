@@ -1,10 +1,16 @@
+import { messages } from "../i18n";
 import { icons } from "../icons";
 import { h, icon } from "./dom";
 
 /**
- * Свои окна вместо window.prompt/confirm/alert: в стиле приложения, с тёмной темой и по-русски.
+ * Свои окна вместо window.prompt/confirm/alert: в стиле приложения, с тёмной темой и на языке интерфейса.
  * Используются редактором блоков (имя переменной, «удалить все блоки?»).
  */
+
+const M = messages({
+  ru: { cancel: "Отмена", done: "Готово", yes: "Да", gotIt: "Понятно" },
+  en: { cancel: "Cancel", done: "Done", yes: "Yes", gotIt: "Got it" },
+});
 
 interface Options {
   title: string;
@@ -22,7 +28,7 @@ function open(options: Options): Promise<string | null> {
         ? h("input", { class: "text-input", type: "text", value: options.input, maxlength: 60, "aria-label": options.title })
         : null;
     const okBtn = h("button", { class: `btn ${options.danger ? "danger" : "primary"}`, type: "submit" }, options.ok ?? "OK");
-    const cancelBtn = options.cancel === null ? null : h("button", { class: "btn ghost", type: "button" }, options.cancel ?? "Отмена");
+    const cancelBtn = options.cancel === null ? null : h("button", { class: "btn ghost", type: "button" }, options.cancel ?? M.cancel);
     const form = h(
       "form",
       { method: "dialog" },
@@ -56,13 +62,13 @@ function open(options: Options): Promise<string | null> {
 
 /** Спросить строку. null — нажали «Отмена» или Esc. */
 export function askText(title: string, message: string, initial = ""): Promise<string | null> {
-  return open({ title, message, input: initial, ok: "Готово" });
+  return open({ title, message, input: initial, ok: M.done });
 }
 
-export async function askConfirm(title: string, message: string, ok = "Да", danger = false): Promise<boolean> {
+export async function askConfirm(title: string, message: string, ok = M.yes, danger = false): Promise<boolean> {
   return (await open({ title, message, ok, danger })) !== null;
 }
 
 export async function showAlert(title: string, message: string): Promise<void> {
-  await open({ title, message, ok: "Понятно", cancel: null });
+  await open({ title, message, ok: M.gotIt, cancel: null });
 }

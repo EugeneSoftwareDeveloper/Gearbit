@@ -113,16 +113,16 @@
   },
 
   "components": [
-    { "id": "M1", "type": "motor", "title": "Мотор 1" },
-    { "id": "M2", "type": "motor", "title": "Мотор 2" },
-    { "id": "M3", "type": "motor", "title": "Мотор 3" },
-    { "id": "D1", "type": "distance", "title": "Датчик расстояния 1" },
-    { "id": "D2", "type": "distance", "title": "Датчик расстояния 2" },
-    { "id": "IMU", "type": "imu", "title": "Гироскоп (наклон)", "requiresFirmware": "v2" },
-    { "id": "L1", "type": "light", "title": "Свет 1" },
-    { "id": "L2", "type": "light", "title": "Свет 2" },
-    { "id": "L3", "type": "light", "title": "Свет 3" },
-    { "id": "L4", "type": "light", "title": "Свет 4" },
-    { "id": "BAT", "type": "battery", "title": "Батарея" }
+    { "id": "M1", "type": "motor", "title": { "ru": "Мотор 1", "en": "Motor 1" } },
+    { "id": "M2", "type": "motor", "title": { "ru": "Мотор 2", "en": "Motor 2" } },
+    { "id": "M3", "type": "motor", "title": { "ru": "Мотор 3", "en": "Motor 3" } },
+    { "id": "D1", "type": "distance", "title": { "ru": "Датчик расстояния 1", "en": "Distance sensor 1" } },
+    { "id": "D2", "type": "distance", "title": { "ru": "Датчик расстояния 2", "en": "Distance sensor 2" } },
+    { "id": "IMU", "type": "imu", "title": { "ru": "Гироскоп (наклон)", "en": "Gyroscope (tilt)" }, "requiresFirmware": "v2" },
+    { "id": "L1", "type": "light", "title": { "ru": "Свет 1", "en": "Light 1" } },
+    { "id": "L2", "type": "light", "title": { "ru": "Свет 2", "en": "Light 2" } },
+    { "id": "L3", "type": "light", "title": { "ru": "Свет 3", "en": "Light 3" } },
+    { "id": "L4", "type": "light", "title": { "ru": "Свет 4", "en": "Light 4" } },
+    { "id": "BAT", "type": "battery", "title": { "ru": "Батарея", "en": "Battery" } }
   ]
 }

@@ -1,10 +1,38 @@
 import * as SB from "scratch-blocks";
+import { messages } from "../i18n";
 import { cssVar } from "../ui/dom";
 
 /**
  * Палитра блоков (toolbox): категории в порядке, привычном по Scratch.
- * Встроенные блоки Scratch берут русские подписи из scratch-l10n, блоки робота — из robot-blocks.ts.
+ * Встроенные блоки Scratch берут подписи на языке интерфейса из scratch-l10n, блоки робота — из robot-blocks.ts.
  */
+
+const M = messages({
+  ru: {
+    events: "События",
+    motion: "Движение",
+    looks: "Огоньки",
+    control: "Управление",
+    sensing: "Датчики",
+    operators: "Операторы",
+    variables: "Переменные",
+    hello: "Привет!",
+    join1: "Привет, ",
+    join2: "робот",
+  },
+  en: {
+    events: "Events",
+    motion: "Motion",
+    looks: "Lights",
+    control: "Control",
+    sensing: "Sensing",
+    operators: "Operators",
+    variables: "Variables",
+    hello: "Hello!",
+    join1: "Hello, ",
+    join2: "robot",
+  },
+});
 
 type Item = Record<string, unknown>;
 
@@ -37,12 +65,12 @@ export function buildToolbox(withVariables = true): SB.utils.toolbox.ToolboxDefi
   const toolbox = {
     kind: "categoryToolbox",
     contents: [
-      category("События", "event", [
+      category(M.events, "event", [
         block("event_whenflagclicked"),
         block("robot_when_distance", { VALUE: num(2) }),
         block("robot_when_tilted"),
       ]),
-      category("Движение", "motion", [
+      category(M.motion, "motion", [
         block("robot_move", { POWER: num(50) }),
         block("robot_turn", { POWER: num(40) }),
         block("robot_move_for", { SECS: num(1, "math_positive_number"), POWER: num(50) }),
@@ -52,13 +80,13 @@ export function buildToolbox(withVariables = true): SB.utils.toolbox.ToolboxDefi
         gap(),
         block("robot_stop"),
       ]),
-      category("Огоньки", "looks", [
+      category(M.looks, "looks", [
         block("robot_light", undefined, { COLOR: "green" }),
         block("robot_lights_off"),
         gap(),
-        block("robot_say", { TEXT: text("Привет!") }),
+        block("robot_say", { TEXT: text(M.hello) }),
       ]),
-      category("Управление", "control", [
+      category(M.control, "control", [
         block("control_wait", { DURATION: num(1, "math_positive_number") }),
         gap(),
         block("control_repeat", { TIMES: num(10, "math_whole_number") }),
@@ -71,7 +99,7 @@ export function buildToolbox(withVariables = true): SB.utils.toolbox.ToolboxDefi
         gap(),
         block("control_stop"),
       ]),
-      category("Датчики", "sensing", [
+      category(M.sensing, "sensing", [
         block("robot_distance"),
         block("robot_obstacle"),
         block("robot_on_line"),
@@ -83,7 +111,7 @@ export function buildToolbox(withVariables = true): SB.utils.toolbox.ToolboxDefi
         block("sensing_timer"),
         block("sensing_resettimer"),
       ]),
-      category("Операторы", "operators", [
+      category(M.operators, "operators", [
         block("operator_add", { NUM1: num(""), NUM2: num("") }),
         block("operator_subtract", { NUM1: num(""), NUM2: num("") }),
         block("operator_multiply", { NUM1: num(""), NUM2: num("") }),
@@ -99,13 +127,13 @@ export function buildToolbox(withVariables = true): SB.utils.toolbox.ToolboxDefi
         block("operator_or"),
         block("operator_not"),
         gap(),
-        block("operator_join", { STRING1: text("Привет, "), STRING2: text("робот") }),
+        block("operator_join", { STRING1: text(M.join1), STRING2: text(M.join2) }),
         gap(),
         block("operator_mod", { NUM1: num(""), NUM2: num("") }),
         block("operator_round", { NUM: num("") }),
         block("operator_mathop", { NUM: num("") }),
       ]),
-      ...(withVariables ? [category("Переменные", "data", VARIABLES_CALLBACK)] : []),
+      ...(withVariables ? [category(M.variables, "data", VARIABLES_CALLBACK)] : []),
     ],
   };
   return toolbox as unknown as SB.utils.toolbox.ToolboxDefinition;

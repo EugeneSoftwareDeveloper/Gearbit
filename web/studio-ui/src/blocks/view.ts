@@ -1,4 +1,5 @@
 import * as SB from "scratch-blocks";
+import { lang, messages } from "../i18n";
 import { icons } from "../icons";
 import { emergencyStop, onStop } from "../input/drive";
 import { onSettings, settings } from "../settings";
@@ -19,6 +20,105 @@ import { buildToolbox, VARIABLES_CALLBACK, variablesCategory } from "./toolbox";
  * а справа — комната эмулятора (или радар), датчики и таблички переменных.
  * Модуль грузится при первом открытии вкладки (см. main.ts): Blockly большой.
  */
+
+const M = messages({
+  ru: {
+    runTitle: "Запустить программу",
+    run: "Запустить",
+    stopTitle: "Остановить программу и робота (Пробел)",
+    stop: "Стоп",
+    ready: "Готово к запуску",
+    running: "Программа работает",
+    examplesTitle: "Готовые программы",
+    examples: "Примеры",
+    openTitle: "Открыть программу из файла",
+    open: "Открыть",
+    saveTitle: "Сохранить программу в файл",
+    save: "Сохранить",
+    newProgram: "Новая программа",
+    variables: "Переменные",
+    variable: "Переменная",
+    finished: "Программа закончилась — робот остановился. Чтобы ехать дольше, добавьте «ждать» или «повторять всегда».",
+    addFlag: "Добавьте блок «когда флажок нажат» из «Событий» и соберите программу под ним.",
+    hidden: "Программа остановлена: окно свернули.",
+    noVariables: "Создайте переменную в «Переменных» и отметьте её галочкой — здесь появится её значение.",
+    newConfirm: "Убрать все блоки и начать с чистого листа? Сохраните программу в файл, если она ещё нужна.",
+    startOver: "Начать заново",
+    openFailed: "Не получилось открыть",
+    notProgram: "Это не программа Gearbit. Выберите файл, который сохранили кнопкой «Сохранить».",
+    openConfirmTitle: "Открыть программу?",
+    openConfirm: "Программа из файла заменит блоки на экране. Сохраните свою программу, если она ещё нужна.",
+    opened: "Программа открыта",
+    broken: (details: string) => `Файл повреждён или сделан в другой версии Gearbit. ${details}`,
+    examplesIntro: "Откройте пример, запустите его и попробуйте поменять числа или блоки.",
+    exampleConfirmTitle: "Открыть пример?",
+    exampleConfirm: (title: string) => `Пример «${title}» заменит блоки на экране. Сохраните свою программу в файл, если она ещё нужна.`,
+    deleteTitle: "Удалить?",
+    delete: "Удалить",
+    fileDescription: "Программа Gearbit",
+    fileName: "Моя программа",
+    saved: "Программа сохранена",
+    saveFailed: "Не получилось сохранить файл",
+  },
+  en: {
+    runTitle: "Run the program",
+    run: "Run",
+    stopTitle: "Stop the program and the robot (Space)",
+    stop: "Stop",
+    ready: "Ready to run",
+    running: "The program is running",
+    examplesTitle: "Ready-made programs",
+    examples: "Examples",
+    openTitle: "Open a program from a file",
+    open: "Open",
+    saveTitle: "Save the program to a file",
+    save: "Save",
+    newProgram: "New program",
+    variables: "Variables",
+    variable: "Variable",
+    finished: "The program has ended and the robot stopped. To drive longer, add «wait» or «forever».",
+    addFlag: "Add the «when flag clicked» block from «Events» and build the program under it.",
+    hidden: "The program stopped: the window was minimized.",
+    noVariables: "Create a variable in «Variables» and tick it: its value will appear here.",
+    newConfirm: "Remove all blocks and start from scratch? Save the program to a file if you still need it.",
+    startOver: "Start over",
+    openFailed: "Could not open",
+    notProgram: "This is not a Gearbit program. Choose a file saved with the «Save» button.",
+    openConfirmTitle: "Open the program?",
+    openConfirm: "The program from the file will replace the blocks on the screen. Save your program if you still need it.",
+    opened: "Program opened",
+    broken: (details) => `The file is damaged or made in another version of Gearbit. ${details}`,
+    examplesIntro: "Open an example, run it and try changing the numbers or blocks.",
+    exampleConfirmTitle: "Open the example?",
+    exampleConfirm: (title) => `The «${title}» example will replace the blocks on the screen. Save your program to a file if you still need it.`,
+    deleteTitle: "Delete?",
+    delete: "Delete",
+    fileDescription: "Gearbit program",
+    fileName: "My program",
+    saved: "Program saved",
+    saveFailed: "Could not save the file",
+  },
+});
+
+/** Подписи scratch-blocks, которых нет в переводе Scratch или которые здесь звучат странно. */
+const SCRATCH_MSGS = messages<Record<string, string>>({
+  ru: {
+    VARIABLE_ALREADY_EXISTS: "Переменная «%1» уже есть. Придумайте другое имя.",
+    VARIABLE_ALREADY_EXISTS_FOR_ANOTHER_TYPE: "Имя «%1» уже занято. Придумайте другое.",
+    RENAME_VARIABLE_TITLE: "Новое имя для «%1»:",
+    DELETE_VARIABLE: "Удалить переменную «%1»",
+    DELETE_ALL_BLOCKS: "Удалить все блоки (%1)?",
+    DELETE_X_BLOCKS: "Удалить блоки (%1)",
+    CLEAN_UP: "Упорядочить блоки",
+    CONTROL_STOP_OTHER: "другие скрипты",
+    OPERATORS_RANDOM: "случайное от %1 до %2",
+  },
+  en: {
+    VARIABLE_ALREADY_EXISTS: "There is already a variable «%1». Think of another name.",
+    VARIABLE_ALREADY_EXISTS_FOR_ANOTHER_TYPE: "The name «%1» is taken. Think of another one.",
+    CONTROL_STOP_OTHER: "other scripts",
+  },
+});
 
 export interface BlocksView {
   /** Сюда main.ts переносит карточку комнаты/радара из «Пульта». */
@@ -46,13 +146,13 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
   setupScratchBlocks();
 
   /* ---------- Разметка ---------- */
-  const runBtn = h("button", { class: "btn run-btn", title: "Запустить программу" }, icon(icons.flag), h("span", {}, "Запустить"));
-  const stopBtn = h("button", { class: "btn", title: "Остановить программу и робота (Пробел)" }, icon(icons.stop), h("span", {}, "Стоп"));
-  const status = h("span", { class: "run-status", role: "status" }, h("span", { class: "dot" }), h("span", { class: "text" }, "Готово к запуску"));
-  const examplesBtn = h("button", { class: "btn ghost", title: "Готовые программы" }, icon(icons.book), h("span", { class: "label" }, "Примеры"));
-  const openBtn = h("button", { class: "btn ghost icon", title: "Открыть программу из файла", "aria-label": "Открыть" }, icon(icons.folder));
-  const saveBtn = h("button", { class: "btn ghost icon", title: "Сохранить программу в файл", "aria-label": "Сохранить" }, icon(icons.save));
-  const newBtn = h("button", { class: "btn ghost icon", title: "Новая программа", "aria-label": "Новая программа" }, icon(icons.filePlus));
+  const runBtn = h("button", { class: "btn run-btn", title: M.runTitle }, icon(icons.flag), h("span", {}, M.run));
+  const stopBtn = h("button", { class: "btn", title: M.stopTitle }, icon(icons.stop), h("span", {}, M.stop));
+  const status = h("span", { class: "run-status", role: "status" }, h("span", { class: "dot" }), h("span", { class: "text" }, M.ready));
+  const examplesBtn = h("button", { class: "btn ghost", title: M.examplesTitle }, icon(icons.book), h("span", { class: "label" }, M.examples));
+  const openBtn = h("button", { class: "btn ghost icon", title: M.openTitle, "aria-label": M.open }, icon(icons.folder));
+  const saveBtn = h("button", { class: "btn ghost icon", title: M.saveTitle, "aria-label": M.save }, icon(icons.save));
+  const newBtn = h("button", { class: "btn ghost icon", title: M.newProgram, "aria-label": M.newProgram }, icon(icons.filePlus));
   const toolbar = h("div", { class: "program-toolbar" }, runBtn, stopBtn, status, h("div", { class: "spacer" }), examplesBtn, newBtn, openBtn, saveBtn);
 
   const editor = h("div", { class: "blocks-editor" });
@@ -63,7 +163,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
   const variablesCard = h(
     "article",
     { class: "card" },
-    h("header", { class: "card-head" }, icon(icons.variable), h("h2", {}, "Переменные")),
+    h("header", { class: "card-head" }, icon(icons.variable), h("h2", {}, M.variables)),
     variables,
   );
   root.replaceChildren(
@@ -90,7 +190,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
     running(running) {
       root.dataset.running = String(running);
       runBtn.classList.toggle("running", running);
-      status.querySelector(".text")!.textContent = running ? "Программа работает" : "Готово к запуску";
+      status.querySelector(".text")!.textContent = running ? M.running : M.ready;
     },
     say(text) {
       bubble.textContent = text;
@@ -106,13 +206,13 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
       }
     },
     finished(motorsStopped) {
-      if (motorsStopped) toast("Программа закончилась — робот остановился. Чтобы ехать дольше, добавьте «ждать» или «повторять всегда».", "info", 6000);
+      if (motorsStopped) toast(M.finished, "info", 6000);
     },
   });
 
   runBtn.onclick = () => {
     if (!runtime.hasEntryPoints()) {
-      toast("Добавьте блок «когда флажок нажат» из «Событий» и соберите программу под ним.", "info", 5000);
+      toast(M.addFlag, "info", 5000);
       return;
     }
     runtime.start();
@@ -124,7 +224,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && runtime.running) {
       void runtime.stop();
-      toast("Программа остановлена: окно свернули.", "info");
+      toast(M.hidden, "info");
     }
   });
 
@@ -205,9 +305,9 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
     const shown = [...monitors]
       .map(variableById)
       .filter((v): v is SB.IVariableModel<SB.IVariableState> => !!v)
-      .sort((a, b) => a.getName().localeCompare(b.getName(), "ru"));
+      .sort((a, b) => a.getName().localeCompare(b.getName(), lang()));
     if (shown.length === 0) {
-      variables.replaceChildren(h("p", { class: "muted", style: "margin:0" }, "Создайте переменную в «Переменных» и отметьте её галочкой — здесь появится её значение."));
+      variables.replaceChildren(h("p", { class: "muted", style: "margin:0" }, M.noVariables));
       return;
     }
     variables.replaceChildren(
@@ -287,7 +387,7 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
   }
 
   newBtn.onclick = async () => {
-    if (hasUnsavedWork() && !(await askConfirm("Новая программа", "Убрать все блоки и начать с чистого листа? Сохраните программу в файл, если она ещё нужна.", "Начать заново", true))) return;
+    if (hasUnsavedWork() && !(await askConfirm(M.newProgram, M.newConfirm, M.startOver, true))) return;
     void runtime.stop();
     workspace.clear();
     applyLoaded([]);
@@ -308,20 +408,20 @@ export function mountBlocksView(root: HTMLElement): BlocksView {
       file = JSON.parse(text) as ProjectFile;
       if (file.format !== FILE_FORMAT || typeof file.workspace !== "object") throw new Error();
     } catch {
-      void showAlert("Не получилось открыть", "Это не программа Gearbit. Выберите файл, который сохранили кнопкой «Сохранить».");
+      void showAlert(M.openFailed, M.notProgram);
       return;
     }
-    if (hasUnsavedWork() && !(await askConfirm("Открыть программу?", "Программа из файла заменит блоки на экране. Сохраните свою программу, если она ещё нужна.", "Открыть"))) return;
+    if (hasUnsavedWork() && !(await askConfirm(M.openConfirmTitle, M.openConfirm, M.open))) return;
     try {
       loadProject(file);
-      toast("Программа открыта", "ok");
+      toast(M.opened, "ok");
     } catch (e) {
-      void showAlert("Не получилось открыть", `Файл повреждён или сделан в другой версии Gearbit. ${e instanceof Error ? e.message : ""}`);
+      void showAlert(M.openFailed, M.broken(e instanceof Error ? e.message : ""));
     }
   };
 
-  const examples = createExamplesDialog(EXAMPLES, "Откройте пример, запустите его и попробуйте поменять числа или блоки.", async (example) => {
-    if (hasUnsavedWork() && !(await askConfirm("Открыть пример?", `Пример «${example.title}» заменит блоки на экране. Сохраните свою программу в файл, если она ещё нужна.`, "Открыть"))) return;
+  const examples = createExamplesDialog(EXAMPLES, M.examplesIntro, async (example) => {
+    if (hasUnsavedWork() && !(await askConfirm(M.exampleConfirmTitle, M.exampleConfirm(example.title), M.open))) return;
     loadExample(example);
   });
   examplesBtn.onclick = examples.open;
@@ -360,42 +460,31 @@ function scaleFor(): number {
 
 /* ---------- Настройка scratch-blocks (один раз) ---------- */
 function setupScratchBlocks(): void {
-  SB.ScratchMsgs.setLocale("ru");
-  // Подписи, которых нет в русском переводе Scratch или которые здесь звучат странно.
-  Object.assign(SB.Msg, {
-    VARIABLE_ALREADY_EXISTS: "Переменная «%1» уже есть. Придумайте другое имя.",
-    VARIABLE_ALREADY_EXISTS_FOR_ANOTHER_TYPE: "Имя «%1» уже занято. Придумайте другое.",
-    RENAME_VARIABLE_TITLE: "Новое имя для «%1»:",
-    DELETE_VARIABLE: "Удалить переменную «%1»",
-    DELETE_ALL_BLOCKS: "Удалить все блоки (%1)?",
-    DELETE_X_BLOCKS: "Удалить блоки (%1)",
-    CLEAN_UP: "Упорядочить блоки",
-    CONTROL_STOP_OTHER: "другие скрипты",
-    OPERATORS_RANDOM: "случайное от %1 до %2",
-  });
+  SB.ScratchMsgs.setLocale(lang());
+  Object.assign(SB.Msg, SCRATCH_MSGS);
   registerRobotBlocks();
 
   SB.ScratchVariables.setPromptHandler((message, defaultValue, callback, title) => {
-    void askText(title ?? "Переменная", message, defaultValue).then((name) => callback(name?.trim() ?? "", []));
+    void askText(title ?? M.variable, message, defaultValue).then((name) => callback(name?.trim() ?? "", []));
   });
-  SB.dialog.setAlert((message, callback) => void showAlert("Переменные", message).then(() => callback?.()));
-  SB.dialog.setConfirm((message, callback) => void askConfirm("Удалить?", message, "Удалить", true).then(callback));
+  SB.dialog.setAlert((message, callback) => void showAlert(M.variables, message).then(() => callback?.()));
+  SB.dialog.setConfirm((message, callback) => void askConfirm(M.deleteTitle, message, M.delete, true).then(callback));
 
   // Галочка у переменной в палитре отмечена, если её табличка показана.
   (SB.CheckboxBubble.prototype as unknown as { isChecked(id: string): boolean }).isChecked = (id) => monitors.has(id);
 }
 
 /* ---------- Файлы ---------- */
-const PROGRAM_FILE = { description: "Программа Gearbit", suffix: FILE_SUFFIX };
+const PROGRAM_FILE = { description: M.fileDescription, suffix: FILE_SUFFIX };
 
 /** Сохранить в файл. true — сохранено (или отдано браузеру на скачивание). */
 async function saveToFile(file: ProjectFile): Promise<boolean> {
   try {
-    if (!(await saveJsonFile(file, `Моя программа${FILE_SUFFIX}`, PROGRAM_FILE))) return false;
-    toast("Программа сохранена", "ok");
+    if (!(await saveJsonFile(file, `${M.fileName}${FILE_SUFFIX}`, PROGRAM_FILE))) return false;
+    toast(M.saved, "ok");
     return true;
   } catch {
-    toast("Не получилось сохранить файл", "error");
+    toast(M.saveFailed, "error");
     return false;
   }
 }

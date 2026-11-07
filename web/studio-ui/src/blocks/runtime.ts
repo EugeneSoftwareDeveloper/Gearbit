@@ -1,5 +1,6 @@
 import * as SB from "scratch-blocks";
 import { hub } from "../hub";
+import { messages } from "../i18n";
 import { COLORS, isTilted, lacksTilt, seesLine, sensorPlace, store, type ComponentInfo, type RobotColor } from "../model";
 import { LIGHTS, LINE_SENSORS, OBSTACLE_LEVEL, SENSORS, TILT_DIRS } from "./robot-blocks";
 
@@ -14,6 +15,29 @@ import { LIGHTS, LINE_SENSORS, OBSTACLE_LEVEL, SENSORS, TILT_DIRS } from "./robo
  */
 
 export type Value = number | string | boolean;
+
+const M = messages({
+  ru: {
+    unsupported: (block: string) => `Блок «${block}» пока не работает в Gearbit.`,
+    noTilt: (direction: string) => `Этот робот не знает, наклонён ли он «${direction}»: гироскоп есть только у роботов с новой прошивкой.`,
+    noSensor: (sensor: string) => `У этой сборки нет датчика «${sensor}». Выберите другой в блоке.`,
+    noRobot: "Робот не подключён. Нажмите «Нет робота» вверху и выберите робота или эмулятор.",
+    noLight: (light: string) => `У этой модели нет огонька «${light}».`,
+    yes: "да",
+    no: "нет",
+    infinity: "бесконечность",
+  },
+  en: {
+    unsupported: (block) => `The «${block}» block does not work in Gearbit yet.`,
+    noTilt: (direction) => `This robot cannot tell if it is tilted «${direction}»: only robots with new firmware have a gyroscope.`,
+    noSensor: (sensor) => `This build has no «${sensor}» sensor. Choose another one in the block.`,
+    noRobot: "No robot connected. Press «No robot» at the top and choose a robot or the emulator.",
+    noLight: (light) => `This model has no «${light}» light.`,
+    yes: "yes",
+    no: "no",
+    infinity: "Infinity",
+  },
+});
 
 /** Пауза в конце каждого шага цикла: даёт обновиться экрану и датчикам. */
 const TICK_MS = 20;
@@ -424,7 +448,7 @@ export class Runtime {
         return;
 
       default:
-        throw new ProgramError(`Блок «${blockText(b)}» пока не работает в Gearbit.`, b.id);
+        throw new ProgramError(M.unsupported(blockText(b)), b.id);
     }
   }
 
@@ -498,7 +522,7 @@ export class Runtime {
         return store.state.telemetry?.battery ?? 0;
 
       default:
-        throw new ProgramError(`Блок «${blockText(b)}» пока не работает в Gearbit.`, b.id);
+        throw new ProgramError(M.unsupported(blockText(b)), b.id);
     }
   }
 
@@ -537,7 +561,7 @@ export class Runtime {
     if (!robot || robot.state !== "connected") return false;
     if (lacksTilt(robot)) {
       throw new ProgramError(
-        `Этот робот не знает, наклонён ли он «${label(TILT_DIRS, direction)}»: гироскоп есть только у роботов с новой прошивкой.`,
+        M.noTilt(label(TILT_DIRS, direction)),
         blockId,
       );
     }
@@ -550,7 +574,7 @@ export class Runtime {
     if (!robot || robot.state !== "connected") return null;
     // «Впереди» — тот датчик, который стоит спереди (пользователь мог переставить его в карточке «Датчики»).
     const sensor = robot.components.find((c) => c.kind === "distance" && (c.id === key || sensorPlace(c, robot) === key));
-    if (!sensor) throw new ProgramError(`У этой сборки нет датчика «${label(options, key)}». Выберите другой в блоке.`, blockId);
+    if (!sensor) throw new ProgramError(M.noSensor(label(options, key)), blockId);
     return sensor;
   }
 
@@ -558,7 +582,7 @@ export class Runtime {
 
   private requireRobot(blockId?: string): void {
     if (store.state.robot?.state !== "connected") {
-      throw new ProgramError("Робот не подключён. Нажмите «Нет робота» вверху и выберите робота или эмулятор.", blockId);
+      throw new ProgramError(M.noRobot, blockId);
     }
   }
 
@@ -602,7 +626,7 @@ export class Runtime {
     const all = store.state.robot?.components.filter((c) => c.kind === "light").map((c) => c.id) ?? [];
     const ids = id === "all" ? all : [id];
     if (id !== "all" && !all.includes(id)) {
-      throw new ProgramError(`У этой модели нет огонька «${label(LIGHTS, id)}».`, block.id);
+      throw new ProgramError(M.noLight(label(LIGHTS, id)), block.id);
     }
     const target = (COLORS as string[]).includes(color) ? (color as RobotColor) : "off";
     for (const lightId of ids) {
@@ -650,14 +674,15 @@ function toBoolean(v: Value): boolean {
   if (typeof v === "boolean") return v;
   if (typeof v === "number") return v !== 0;
   const s = v.trim().toLowerCase();
-  return s !== "" && s !== "0" && s !== "false" && s !== "нет";
+  // «нет» и «no» — ложь на любом языке: программа ведёт себя одинаково после смены языка.
+  return s !== "" && s !== "0" && s !== "false" && s !== "нет" && s !== "no";
 }
 
 /** Текст для «сказать», «объединить» и табличек переменных. */
 export function toText(v: Value): string {
-  if (typeof v === "boolean") return v ? "да" : "нет";
+  if (typeof v === "boolean") return v ? M.yes : M.no;
   if (typeof v === "number") {
-    if (!Number.isFinite(v)) return v > 0 ? "бесконечность" : v < 0 ? "−бесконечность" : "0";
+    if (!Number.isFinite(v)) return v > 0 ? M.infinity : v < 0 ? `−${M.infinity}` : "0";
     return String(Number.isInteger(v) ? v : Number(v.toFixed(3)));
   }
   return v;

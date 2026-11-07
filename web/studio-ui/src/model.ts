@@ -1,28 +1,60 @@
 /** Типы данных хаба (зеркало Dto.cs) и простое хранилище состояния с подписками. */
 
+import { messages, text, type LocalizedText } from "./i18n";
 import { sensorPlaces } from "./settings";
+
+const M = messages({
+  ru: {
+    colors: { off: "Выключен", red: "Красный", orange: "Оранжевый", yellow: "Жёлтый", green: "Зелёный", cyan: "Голубой", blue: "Синий", purple: "Фиолетовый", white: "Белый" },
+    places: {
+      front: "Спереди",
+      front_right: "Спереди справа",
+      right: "Справа",
+      back_right: "Сзади справа",
+      back: "Сзади",
+      back_left: "Сзади слева",
+      left: "Слева",
+      front_left: "Спереди слева",
+      down_left: "Вниз слева",
+      down: "Вниз",
+      down_right: "Вниз справа",
+    },
+    tilt: { forward: "вперёд", backward: "назад", left: "влево", right: "вправо", any: "куда-нибудь" },
+    leftWheel: "Левое колесо",
+    rightWheel: "Правое колесо",
+  },
+  en: {
+    colors: { off: "Off", red: "Red", orange: "Orange", yellow: "Yellow", green: "Green", cyan: "Light blue", blue: "Blue", purple: "Purple", white: "White" },
+    places: {
+      front: "Front",
+      front_right: "Front right",
+      right: "Right",
+      back_right: "Back right",
+      back: "Back",
+      back_left: "Back left",
+      left: "Left",
+      front_left: "Front left",
+      down_left: "Down left",
+      down: "Down",
+      down_right: "Down right",
+    },
+    tilt: { forward: "forward", backward: "backward", left: "left", right: "right", any: "any way" },
+    leftWheel: "Left wheel",
+    rightWheel: "Right wheel",
+  },
+});
 
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "lost";
 export type ComponentKind = "motor" | "distance" | "imu" | "light" | "battery";
 export type RobotColor = "off" | "red" | "orange" | "yellow" | "green" | "cyan" | "blue" | "purple" | "white";
 
 export const COLORS: RobotColor[] = ["off", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "white"];
-export const COLOR_NAMES: Record<RobotColor, string> = {
-  off: "Выключен",
-  red: "Красный",
-  orange: "Оранжевый",
-  yellow: "Жёлтый",
-  green: "Зелёный",
-  cyan: "Голубой",
-  blue: "Синий",
-  purple: "Фиолетовый",
-  white: "Белый",
-};
+export const COLOR_NAMES: Record<RobotColor, string> = M.colors;
 
 export interface ComponentInfo {
   id: string;
   kind: ComponentKind;
-  title: string;
+  title: LocalizedText;
   available: boolean;
   aliases: string[];
   /** Датчик расстояния, смотрящий вниз: с какого уровня под ним чёрная линия (калибровка сборки или середина шкалы). */
@@ -34,10 +66,10 @@ export interface RobotInfo {
   name: string;
   state: ConnectionState;
   deviceId: string;
-  deviceTitle: string;
+  deviceTitle: LocalizedText;
   deviceStatus: string;
   profileId: string | null;
-  profileTitle: string | null;
+  profileTitle: LocalizedText | null;
   uid: string | null;
   firmware: string | null;
   maxPowerPercent: number;
@@ -111,13 +143,13 @@ export interface ScanDevice {
   rssi: number | null;
   transport: string;
   deviceId: string | null;
-  deviceTitle: string | null;
+  deviceTitle: LocalizedText | null;
   known: boolean;
 }
 
 export interface Catalog {
-  devices: { id: string; title: string; status: string; protocol: string; components: string[] }[];
-  profiles: { id: string; title: string; device: string; status: string; maxPowerPercent: number; aliases: Record<string, string> }[];
+  devices: { id: string; title: LocalizedText; status: string; protocol: string; components: string[] }[];
+  profiles: { id: string; title: LocalizedText; device: string; status: string; maxPowerPercent: number; aliases: Record<string, string> }[];
 }
 
 export interface AppState {
@@ -153,20 +185,20 @@ export const store = new Store();
 /** Понятное имя компонента: «Спереди», если у сборки есть псевдоним или датчик переставлен. */
 export function displayName(c: ComponentInfo): string {
   const alias = c.kind === "distance" ? sensorPlace(c) : c.aliases[0];
-  if (alias === NO_SENSOR) return c.title;
-  return alias ? (ALIAS_NAMES[alias] ?? alias) : c.title;
+  if (alias === NO_SENSOR) return text(c.title);
+  return alias ? (ALIAS_NAMES[alias] ?? alias) : text(c.title);
 }
 
 /** Места для датчика расстояния: угол от «вперёд» по часовой стрелке. */
 export const SENSOR_PLACES: { id: string; title: string; angle: number }[] = [
-  { id: "front", title: "Спереди", angle: 0 },
-  { id: "front_right", title: "Спереди справа", angle: 45 },
-  { id: "right", title: "Справа", angle: 90 },
-  { id: "back_right", title: "Сзади справа", angle: 135 },
-  { id: "back", title: "Сзади", angle: 180 },
-  { id: "back_left", title: "Сзади слева", angle: 225 },
-  { id: "left", title: "Слева", angle: 270 },
-  { id: "front_left", title: "Спереди слева", angle: 315 },
+  { id: "front", title: M.places.front, angle: 0 },
+  { id: "front_right", title: M.places.front_right, angle: 45 },
+  { id: "right", title: M.places.right, angle: 90 },
+  { id: "back_right", title: M.places.back_right, angle: 135 },
+  { id: "back", title: M.places.back, angle: 180 },
+  { id: "back_left", title: M.places.back_left, angle: 225 },
+  { id: "left", title: M.places.left, angle: 270 },
+  { id: "front_left", title: M.places.front_left, angle: 315 },
 ];
 
 /**
@@ -174,9 +206,9 @@ export const SENSOR_PLACES: { id: string; title: string; angle: number }[] = [
  * offset — смещение поперёк машинки, см (минус — левее).
  */
 export const DOWN_PLACES: { id: string; title: string; offset: number }[] = [
-  { id: "down_left", title: "Вниз слева", offset: -2.5 },
-  { id: "down", title: "Вниз", offset: 0 },
-  { id: "down_right", title: "Вниз справа", offset: 2.5 },
+  { id: "down_left", title: M.places.down_left, offset: -2.5 },
+  { id: "down", title: M.places.down, offset: 0 },
+  { id: "down_right", title: M.places.down_right, offset: 2.5 },
 ];
 
 /** Место «датчика нет на роботе». */
@@ -218,11 +250,11 @@ export type TiltDirection = "forward" | "backward" | "left" | "right" | "any";
 
 /** Куда можно наклонить робота: Y больше 0 — вперёд, X больше 0 — вправо (как у Makerzoid, на роботе не проверено). */
 export const TILT_DIRECTIONS: { id: TiltDirection; title: string }[] = [
-  { id: "forward", title: "вперёд" },
-  { id: "backward", title: "назад" },
-  { id: "left", title: "влево" },
-  { id: "right", title: "вправо" },
-  { id: "any", title: "куда-нибудь" },
+  { id: "forward", title: M.tilt.forward },
+  { id: "backward", title: M.tilt.backward },
+  { id: "left", title: M.tilt.left },
+  { id: "right", title: M.tilt.right },
+  { id: "any", title: M.tilt.any },
 ];
 
 /** Наклонён ли робот в эту сторону. Нет гироскопа или данных — «нет». */
@@ -252,6 +284,6 @@ export function lacksTilt(robot = store.state.robot): boolean {
 const ALIAS_NAMES: Record<string, string> = {
   ...Object.fromEntries(SENSOR_PLACES.map((p) => [p.id, p.title])),
   ...Object.fromEntries(DOWN_PLACES.map((p) => [p.id, p.title])),
-  left_wheel: "Левое колесо",
-  right_wheel: "Правое колесо",
+  left_wheel: M.leftWheel,
+  right_wheel: M.rightWheel,
 };

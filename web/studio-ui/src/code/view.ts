@@ -1,6 +1,7 @@
 import type { CompletionSource } from "@codemirror/autocomplete";
 import type { Extension } from "@codemirror/state";
 import { hub } from "../hub";
+import { lang, messages } from "../i18n";
 import { icons } from "../icons";
 import { emergencyStop, onStop } from "../input/drive";
 import { store } from "../model";
@@ -20,6 +21,117 @@ import { createCodeEditor } from "./editor";
  * только показывает её вывод. Остановка — как у «Блоков»: СТОП, страж хаба, потеря связи,
  * уход с вкладки и свёрнутое окно прерывают программу.
  */
+
+const M = messages({
+  ru: {
+    defaultName: "Моя программа",
+    runTitle: "Запустить программу (F5 или Ctrl+Enter)",
+    run: "Запустить",
+    stopTitle: "Остановить программу и робота (Shift+F5 или Esc)",
+    stop: "Стоп",
+    ready: "Готово к запуску",
+    running: "Программа работает",
+    starting: "Запускаю…",
+    examplesTitle: "Готовые программы",
+    examples: "Примеры",
+    newProgram: "Новая программа",
+    openTitle: (suffix: string) => `Открыть программу (${suffix})`,
+    open: "Открыть",
+    saveTitle: (suffix: string) => `Сохранить программу в файл ${suffix}`,
+    save: "Сохранить",
+    recheck: "Проверить снова",
+    outputLabel: "Вывод программы",
+    clearOutput: "Очистить вывод",
+    output: "Вывод",
+    writeFirst: "Сначала напишите программу или откройте пример.",
+    noHub: "Нет связи с хабом Gearbit.",
+    notFound: (title: string) => `${title} не найден`,
+    notFoundDot: (title: string) => `${title} не найден.`,
+    unsupported: (title: string) => `Эта версия Gearbit пока не умеет запускать ${title}.`,
+    noRobot: "Робот не подключён: программа запустится, но команды роботу не сработают. Подключите робота или эмулятор кнопкой «Нет робота» вверху.",
+    ended: (seconds: string) => `■ Программа закончилась (${seconds} с).`,
+    stopped: "■ Программа остановлена.",
+    lost: "■ Связь с роботом пропала — программа остановлена.",
+    closing: "■ Gearbit закрывается — программа остановлена.",
+    replaced: "■ Запущена другая программа.",
+    showLine: (line: number) => `Показать строку ${line}`,
+    errorAt: (line: number) => `■ Программа остановилась из-за ошибки в строке ${line}.`,
+    errorCode: (code: number) => `■ Программа остановилась из-за ошибки (код ${code}).`,
+    hubLost: "■ Нет связи с хабом — программа остановлена.",
+    hidden: "Программа остановлена: окно свернули.",
+    changed: "изменена",
+    changedTitle: "Программа изменена и ещё не сохранена в файл",
+    newConfirm: "Стереть текст и начать с чистого листа? Сохраните программу в файл, если она ещё нужна.",
+    startOver: "Начать заново",
+    saved: "Программа сохранена",
+    saveFailed: "Не получилось сохранить файл",
+    openFailed: "Не получилось открыть",
+    notText: (suffix: string) => `Это не текст программы. Выберите файл ${suffix}.`,
+    openConfirmTitle: "Открыть программу?",
+    openConfirm: "Программа из файла заменит текст на экране. Сохраните свою программу, если она ещё нужна.",
+    opened: "Программа открыта",
+    examplesIntro: "Откройте пример, запустите его и попробуйте поменять числа или команды.",
+    exampleConfirmTitle: "Открыть пример?",
+    exampleConfirm: (title: string) => `Пример «${title}» заменит текст на экране. Сохраните свою программу в файл, если она ещё нужна.`,
+    insert: "Вставить в программу",
+    commands: "Команды",
+    clickToInsert: "щелчок — вставить",
+  },
+  en: {
+    defaultName: "My program",
+    runTitle: "Run the program (F5 or Ctrl+Enter)",
+    run: "Run",
+    stopTitle: "Stop the program and the robot (Shift+F5 or Esc)",
+    stop: "Stop",
+    ready: "Ready to run",
+    running: "The program is running",
+    starting: "Starting…",
+    examplesTitle: "Ready-made programs",
+    examples: "Examples",
+    newProgram: "New program",
+    openTitle: (suffix) => `Open a program (${suffix})`,
+    open: "Open",
+    saveTitle: (suffix) => `Save the program to a ${suffix} file`,
+    save: "Save",
+    recheck: "Check again",
+    outputLabel: "Program output",
+    clearOutput: "Clear the output",
+    output: "Output",
+    writeFirst: "Write a program or open an example first.",
+    noHub: "No connection to the Gearbit hub.",
+    notFound: (title) => `${title} not found`,
+    notFoundDot: (title) => `${title} not found.`,
+    unsupported: (title) => `This version of Gearbit cannot run ${title} yet.`,
+    noRobot: "No robot connected: the program will start, but robot commands will not work. Connect a robot or the emulator with the «No robot» button at the top.",
+    ended: (seconds) => `■ The program has ended (${seconds} s).`,
+    stopped: "■ The program was stopped.",
+    lost: "■ The connection to the robot was lost, the program was stopped.",
+    closing: "■ Gearbit is closing, the program was stopped.",
+    replaced: "■ Another program was started.",
+    showLine: (line) => `Show line ${line}`,
+    errorAt: (line) => `■ The program stopped because of an error on line ${line}.`,
+    errorCode: (code) => `■ The program stopped because of an error (code ${code}).`,
+    hubLost: "■ No connection to the hub, the program was stopped.",
+    hidden: "The program stopped: the window was minimized.",
+    changed: "changed",
+    changedTitle: "The program has changed and is not saved to a file yet",
+    newConfirm: "Erase the text and start from scratch? Save the program to a file if you still need it.",
+    startOver: "Start over",
+    saved: "Program saved",
+    saveFailed: "Could not save the file",
+    openFailed: "Could not open",
+    notText: (suffix) => `This is not program text. Choose a ${suffix} file.`,
+    openConfirmTitle: "Open the program?",
+    openConfirm: "The program from the file will replace the text on the screen. Save your program if you still need it.",
+    opened: "Program opened",
+    examplesIntro: "Open an example, run it and try changing the numbers or commands.",
+    exampleConfirmTitle: "Open the example?",
+    exampleConfirm: (title) => `The «${title}» example will replace the text on the screen. Save your program to a file if you still need it.`,
+    insert: "Insert into the program",
+    commands: "Commands",
+    clickToInsert: "click to insert",
+  },
+});
 
 export interface CodeExample {
   id: string;
@@ -80,23 +192,23 @@ interface Exited {
   durationMs: number;
 }
 
-const DEFAULT_NAME = "Моя программа";
+const DEFAULT_NAME = M.defaultName;
 const OUTPUT_LIMIT = 200_000;
 
 export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeView {
   /* ---------- Разметка ---------- */
-  const runBtn = h("button", { class: "btn run-btn", title: "Запустить программу (F5 или Ctrl+Enter)" }, icon(icons.play), h("span", {}, "Запустить"));
-  const stopBtn = h("button", { class: "btn", title: "Остановить программу и робота (Shift+F5 или Esc)" }, icon(icons.stop), h("span", {}, "Стоп"));
-  const statusText = h("span", { class: "text" }, "Готово к запуску");
+  const runBtn = h("button", { class: "btn run-btn", title: M.runTitle }, icon(icons.play), h("span", {}, M.run));
+  const stopBtn = h("button", { class: "btn", title: M.stopTitle }, icon(icons.stop), h("span", {}, M.stop));
+  const statusText = h("span", { class: "text" }, M.ready);
   const status = h("span", { class: "run-status", role: "status" }, h("span", { class: "dot" }), statusText);
-  const examplesBtn = h("button", { class: "btn ghost", title: "Готовые программы" }, icon(icons.book), h("span", { class: "label" }, "Примеры"));
-  const newBtn = h("button", { class: "btn ghost icon", title: "Новая программа", "aria-label": "Новая программа" }, icon(icons.filePlus));
-  const openBtn = h("button", { class: "btn ghost icon", title: `Открыть программу (${spec.file.suffix})`, "aria-label": "Открыть" }, icon(icons.folder));
-  const saveBtn = h("button", { class: "btn ghost icon", title: `Сохранить программу в файл ${spec.file.suffix}`, "aria-label": "Сохранить" }, icon(icons.save));
+  const examplesBtn = h("button", { class: "btn ghost", title: M.examplesTitle }, icon(icons.book), h("span", { class: "label" }, M.examples));
+  const newBtn = h("button", { class: "btn ghost icon", title: M.newProgram, "aria-label": M.newProgram }, icon(icons.filePlus));
+  const openBtn = h("button", { class: "btn ghost icon", title: M.openTitle(spec.file.suffix), "aria-label": M.open }, icon(icons.folder));
+  const saveBtn = h("button", { class: "btn ghost icon", title: M.saveTitle(spec.file.suffix), "aria-label": M.save }, icon(icons.save));
   const toolbar = h("div", { class: "program-toolbar" }, runBtn, stopBtn, status, h("div", { class: "spacer" }), examplesBtn, newBtn, openBtn, saveBtn);
 
   const noticeText = h("div", { class: "text" });
-  const recheckBtn = h("button", { class: "btn", onclick: () => void checkLanguage(true) }, icon(icons.refresh), h("span", {}, "Проверить снова"));
+  const recheckBtn = h("button", { class: "btn", onclick: () => void checkLanguage(true) }, icon(icons.refresh), h("span", {}, M.recheck));
   const notice = h("div", { class: "code-notice hidden", role: "alert" }, icon(icons.alert), noticeText, recheckBtn);
 
   const fileName = h("span", { class: "name" });
@@ -109,12 +221,12 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
     editorHost,
   );
 
-  const output = h("pre", { class: "code-output", tabindex: "0", "aria-label": "Вывод программы", "aria-live": "polite" });
-  const clearBtn = h("button", { class: "btn icon ghost small", title: "Очистить вывод", "aria-label": "Очистить вывод" }, icon(icons.trash));
+  const output = h("pre", { class: "code-output", tabindex: "0", "aria-label": M.outputLabel, "aria-live": "polite" });
+  const clearBtn = h("button", { class: "btn icon ghost small", title: M.clearOutput, "aria-label": M.clearOutput }, icon(icons.trash));
   const outputCard = h(
     "article",
     { class: "card code-output-card" },
-    h("header", { class: "card-head" }, icon(icons.terminal), h("h2", {}, "Вывод"), h("span", { class: "hint" }, spec.outputHint), clearBtn),
+    h("header", { class: "card-head" }, icon(icons.terminal), h("h2", {}, M.output), h("span", { class: "hint" }, spec.outputHint), clearBtn),
     output,
   );
 
@@ -177,24 +289,24 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
   function setRunning(running: boolean, text?: string): void {
     root.dataset.running = String(running);
     runBtn.classList.toggle("running", running);
-    statusText.textContent = text ?? (running ? "Программа работает" : idleText());
+    statusText.textContent = text ?? (running ? M.running : idleText());
   }
 
   async function run(): Promise<void> {
     if (starting) return;
     const code = editor.text();
     if (code.trim() === "") {
-      toast("Сначала напишите программу или откройте пример.", "info");
+      toast(M.writeFirst, "info");
       return;
     }
     if (hub.status !== "open") {
-      toast("Нет связи с хабом Gearbit.", "error");
+      toast(M.noHub, "error");
       return;
     }
     if (language && !language.available) {
       await checkLanguage(true);
       if (language && !language.available) {
-        void showAlert(`${spec.title} не найден`, `${language.problem ?? ""} ${spec.setupHint}`.trim());
+        void showAlert(M.notFound(spec.title), `${language.problem ?? ""} ${spec.setupHint}`.trim());
         return;
       }
     }
@@ -207,9 +319,9 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
     clearOutput();
     write(`▶ ${programName}`, "sys");
     if (store.state.robot?.state !== "connected") {
-      write("Робот не подключён: программа запустится, но команды роботу не сработают. Подключите робота или эмулятор кнопкой «Нет робота» вверху.", "sys");
+      write(M.noRobot, "sys");
     }
-    setRunning(true, "Запускаю…");
+    setRunning(true, M.starting);
     try {
       const result = await hub.call<{ runId: string }>(
         "program.run",
@@ -255,32 +367,32 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
   function finished(exited: Exited): void {
     runId = null;
     setRunning(false);
-    const seconds = (Math.max(exited.durationMs, performance.now() - startedAt) / 1000).toLocaleString("ru", { maximumFractionDigits: 1 });
+    const seconds = (Math.max(exited.durationMs, performance.now() - startedAt) / 1000).toLocaleString(lang(), { maximumFractionDigits: 1 });
     switch (exited.reason) {
       case "finished":
-        write(`■ Программа закончилась (${seconds} с).`, "ok");
+        write(M.ended(seconds), "ok");
         break;
       case "stopped":
-        write("■ Программа остановлена.", "sys");
+        write(M.stopped, "sys");
         break;
       case "robotLost":
-        write("■ Связь с роботом пропала — программа остановлена.", "bad");
+        write(M.lost, "bad");
         break;
       case "hubStopping":
-        write("■ Gearbit закрывается — программа остановлена.", "sys");
+        write(M.closing, "sys");
         break;
       case "replaced":
-        write("■ Запущена другая программа.", "sys");
+        write(M.replaced, "sys");
         break;
       default: {
         const error = exited.error;
         if (error?.line) {
           const line = error.line;
-          const show = h("button", { class: "btn small", onclick: () => editor.showError(line, error.column, error.message) }, `Показать строку ${line}`);
-          write(`■ Программа остановилась из-за ошибки в строке ${line}.`, "bad", show);
+          const show = h("button", { class: "btn small", onclick: () => editor.showError(line, error.column, error.message) }, M.showLine(line));
+          write(M.errorAt(line), "bad", show);
           editor.showError(line, error.column, error.message);
         } else {
-          write(`■ Программа остановилась из-за ошибки (код ${exited.exitCode}).`, "bad");
+          write(M.errorCode(exited.exitCode), "bad");
         }
       }
     }
@@ -297,7 +409,7 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
     if (s !== "open" && (runId || starting)) {
       runId = null;
       setRunning(false);
-      write("■ Нет связи с хабом — программа остановлена.", "bad");
+      write(M.hubLost, "bad");
     }
   });
   hub.on("hub.connected", () => {
@@ -311,7 +423,7 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && (runId || starting)) {
       void stopProgram();
-      toast("Программа остановлена: окно свернули.", "info");
+      toast(M.hidden, "info");
     }
   });
 
@@ -344,7 +456,7 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
         title: spec.title,
         available: false,
         version: null,
-        problem: `Эта версия Gearbit пока не умеет запускать ${spec.title}.`,
+        problem: M.unsupported(spec.title),
       };
     } catch {
       language = null;
@@ -352,11 +464,11 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
       recheckBtn.disabled = false;
     }
     notice.classList.toggle("hidden", !language || language.available);
-    noticeText.replaceChildren(h("strong", {}, language?.problem ?? `${spec.title} не найден.`), ` ${spec.setupHint}`);
+    noticeText.replaceChildren(h("strong", {}, language?.problem ?? M.notFoundDot(spec.title)), ` ${spec.setupHint}`);
     if (!runId && !starting) setRunning(false);
   }
   function idleText(): string {
-    return language?.available && language.version ? `Готово к запуску · ${spec.title} ${language.version}` : "Готово к запуску";
+    return language?.available && language.version ? `${M.ready} · ${spec.title} ${language.version}` : M.ready;
   }
 
   /* ---------- Сохранение ---------- */
@@ -371,8 +483,8 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
   function renderFile(): void {
     fileName.textContent = programName + spec.file.suffix;
     const dirty = editor.text() !== baseline;
-    fileState.textContent = dirty ? "изменена" : "";
-    fileState.title = dirty ? "Программа изменена и ещё не сохранена в файл" : "";
+    fileState.textContent = dirty ? M.changed : "";
+    fileState.title = dirty ? M.changedTitle : "";
   }
 
   let saveTimer: number | undefined;
@@ -414,7 +526,7 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
   }
 
   newBtn.onclick = async () => {
-    if (hasUnsavedWork() && !(await askConfirm("Новая программа", "Стереть текст и начать с чистого листа? Сохраните программу в файл, если она ещё нужна.", "Начать заново", true))) return;
+    if (hasUnsavedWork() && !(await askConfirm(M.newProgram, M.newConfirm, M.startOver, true))) return;
     load(spec.starter, DEFAULT_NAME);
     editor.focus();
   };
@@ -427,9 +539,9 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
       baseline = editor.text();
       renderFile();
       saveLocal();
-      toast("Программа сохранена", "ok");
+      toast(M.saved, "ok");
     } catch {
-      toast("Не получилось сохранить файл", "error");
+      toast(M.saveFailed, "error");
     }
   };
 
@@ -437,16 +549,16 @@ export function mountCodeView(root: HTMLElement, spec: CodeLanguageSpec): CodeVi
     const file = await openFile(spec.file);
     if (file === null) return;
     if (file.text.includes("\u0000")) {
-      void showAlert("Не получилось открыть", `Это не текст программы. Выберите файл ${spec.file.suffix}.`);
+      void showAlert(M.openFailed, M.notText(spec.file.suffix));
       return;
     }
-    if (hasUnsavedWork() && !(await askConfirm("Открыть программу?", "Программа из файла заменит текст на экране. Сохраните свою программу, если она ещё нужна.", "Открыть"))) return;
+    if (hasUnsavedWork() && !(await askConfirm(M.openConfirmTitle, M.openConfirm, M.open))) return;
     load(file.text.replace(/\r\n/g, "\n"), stripSuffix(file.name, spec.file.suffix));
-    toast("Программа открыта", "ok");
+    toast(M.opened, "ok");
   };
 
-  const examples = createExamplesDialog(spec.examples, "Откройте пример, запустите его и попробуйте поменять числа или команды.", async (example) => {
-    if (hasUnsavedWork() && !(await askConfirm("Открыть пример?", `Пример «${example.title}» заменит текст на экране. Сохраните свою программу в файл, если она ещё нужна.`, "Открыть"))) return;
+  const examples = createExamplesDialog(spec.examples, M.examplesIntro, async (example) => {
+    if (hasUnsavedWork() && !(await askConfirm(M.exampleConfirmTitle, M.exampleConfirm(example.title), M.open))) return;
     load(example.code, example.title);
   });
   examplesBtn.onclick = examples.open;
@@ -481,7 +593,7 @@ function createCommandsCard(groups: CommandGroup[], insert: (code: string) => vo
       list.append(
         h(
           "button",
-          { class: "code-command", title: "Вставить в программу", onclick: () => insert(item.code) },
+          { class: "code-command", title: M.insert, onclick: () => insert(item.code) },
           h("code", {}, item.code.split("\n")[0]!),
           h("span", {}, item.text),
         ),
@@ -491,7 +603,7 @@ function createCommandsCard(groups: CommandGroup[], insert: (code: string) => vo
   return h(
     "article",
     { class: "card" },
-    h("header", { class: "card-head" }, icon(icons.code), h("h2", {}, "Команды"), h("span", { class: "hint" }, "щелчок — вставить")),
+    h("header", { class: "card-head" }, icon(icons.code), h("h2", {}, M.commands), h("span", { class: "hint" }, M.clickToInsert)),
     list,
   );
 }
