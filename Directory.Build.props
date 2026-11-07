@@ -11,6 +11,8 @@
     <NoWarn>$(NoWarn);CS1591;CS1573;CA1515;CA1707;CA1848;CA1859;CA2007</NoWarn>
     <Version>0.1.0</Version>
     <Authors>EugeneSoftwareDeveloper</Authors>
+    <Copyright>Copyright © 2026 EugeneSoftwareDeveloper</Copyright>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <Product>Gearbit</Product>
     <RepositoryUrl>https://github.com/EugeneSoftwareDeveloper/Gearbit</RepositoryUrl>
     <Deterministic>true</Deterministic>

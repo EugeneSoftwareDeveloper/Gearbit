@@ -1,5 +1,7 @@
 # Сборка, запуск, тесты
 
+**Русский** · [English](../en/dev/building.md)
+
 ## Что нужно
 
 - Windows 10 (19041+) или 11.
@@ -75,7 +77,7 @@ cd web/studio-ui && npm run build && cd ../..
 dotnet publish src/Gearbit.App -c Release -r win-x64 --self-contained false
 ```
 
-Нужен .NET Desktop Runtime 10 и WebView2 Runtime. Установщик появится позже.
+Нужен .NET Desktop Runtime 10 и WebView2 Runtime. Установщик появится позже. Рядом с Gearbit.exe положите `LICENSE` и `THIRD-PARTY-NOTICES.md`.
 
 ## Известные мелочи
 

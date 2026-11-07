@@ -8,12 +8,14 @@ version = "0.1.0"
 description = "Управление роботом через Gearbit: robot.forward(50), robot.distance(\"front\")"
 readme = "README.md"
 requires-python = ">=3.9"
+license = { text = "GPL-3.0-only" }
 dependencies = []
 authors = [{ name = "EugeneSoftwareDeveloper" }]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: Microsoft :: Windows",
     "Topic :: Education",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 ]
 
 [project.urls]

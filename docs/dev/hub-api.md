@@ -1,5 +1,7 @@
 # API хаба (JSON-RPC 2.0)
 
+**Русский** · [English](../en/dev/hub-api.md)
+
 Хаб слушает `ws://localhost:5280/ws`. Сообщения — JSON-RPC 2.0, по одному JSON-объекту в текстовом кадре WebSocket. Имена полей в camelCase, перечисления — строки в camelCase (`"connected"`, `"remote"`).
 
 Живой список методов с описаниями отдаёт `hub.methods`.

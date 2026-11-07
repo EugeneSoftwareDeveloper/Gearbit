@@ -1,5 +1,7 @@
 # Gearbit — архитектура компонентов
 
+**Русский** · [English](en/ARCHITECTURE.md)
+
 Сопутствующие документы: [PLAN.md](PLAN.md) (план и этапы), [PROTOCOL-SUPERBOT.md](PROTOCOL-SUPERBOT.md) (протокол).
 
 ## 1. Общая схема

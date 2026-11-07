@@ -1,5 +1,7 @@
 # Интерфейс и темы
 
+**Русский** · [English](../en/dev/ui-and-themes.md)
+
 Веб-интерфейс — `web/studio-ui`: TypeScript без фреймворка + Vite. Один и тот же интерфейс показывается в окне Gearbit.exe (WebView2) и в обычном браузере.
 
 ## Структура `src/`
