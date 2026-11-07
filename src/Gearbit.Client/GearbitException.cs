@@ -1,6 +1,6 @@
 namespace Gearbit.Client;
 
-/// <summary>Хаб отказал или связи нет. Текст — по-русски, его можно показать ребёнку.</summary>
+/// <summary>Хаб отказал или связи нет. Текст — на языке программы (<c>GEARBIT_LANG</c>), его можно показать ребёнку.</summary>
 public class GearbitException : Exception
 {
     public GearbitException()
@@ -34,7 +34,7 @@ public class GearbitException : Exception
 public sealed class ProgramStoppedException : GearbitException
 {
     public ProgramStoppedException()
-        : base("Программу остановили.")
+        : base(ClientText.Current.Stopped)
     {
     }
 

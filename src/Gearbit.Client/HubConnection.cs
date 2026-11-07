@@ -21,15 +21,18 @@ internal sealed class HubConnection : IDisposable
     private readonly CancellationTokenSource _closing = new();
     private readonly CancellationTokenSource _interrupted = new();
     private readonly Task _reader;
+    private readonly IClientText _text;
     private int _nextId;
     private volatile JsonObject? _telemetry;
     private volatile JsonObject? _robot;
-    private volatile string _interruptMessage = "Программу остановили.";
+    private volatile string _interruptMessage;
     private volatile bool _closed;
 
-    private HubConnection(ClientWebSocket socket)
+    private HubConnection(ClientWebSocket socket, IClientText text)
     {
         _socket = socket;
+        _text = text;
+        _interruptMessage = text.Stopped;
         _reader = Task.Run(ReadLoopAsync);
     }
 
@@ -48,7 +51,8 @@ internal sealed class HubConnection : IDisposable
 
     public bool Closed => _closed;
 
-    public static HubConnection Connect(Uri url, string name, string? runId)
+    /// <param name="text">Язык сообщений: на нём же хаб присылает ошибки и <c>safety.event</c>.</param>
+    public static HubConnection Connect(Uri url, string name, string? runId, IClientText text)
     {
         var socket = new ClientWebSocket();
         try
@@ -59,13 +63,13 @@ internal sealed class HubConnection : IDisposable
         catch (Exception ex) when (ex is WebSocketException or OperationCanceledException or HttpRequestException)
         {
             socket.Dispose();
-            throw new GearbitException($"Не получилось связаться с Gearbit ({url}). Запустите Gearbit и попробуйте ещё раз. Подробно: {ex.Message}", ex);
+            throw new GearbitException(text.CannotConnect(url, ex.Message), ex);
         }
 
-        var connection = new HubConnection(socket);
+        var connection = new HubConnection(socket, text);
         try
         {
-            var hello = new JsonObject { ["name"] = name };
+            var hello = new JsonObject { ["name"] = name, ["lang"] = text.Language };
             if (!string.IsNullOrEmpty(runId))
             {
                 hello["runId"] = runId;
@@ -102,7 +106,7 @@ internal sealed class HubConnection : IDisposable
     {
         if (_closed)
         {
-            throw new GearbitException("Связь с Gearbit потеряна.");
+            throw new GearbitException(_text.ConnectionLost);
         }
 
         var id = Interlocked.Increment(ref _nextId);
@@ -125,7 +129,7 @@ internal sealed class HubConnection : IDisposable
         catch (Exception ex) when (ex is WebSocketException or OperationCanceledException or ObjectDisposedException)
         {
             _pending.TryRemove(id, out _);
-            throw new GearbitException("Связь с Gearbit потеряна.", ex);
+            throw new GearbitException(_text.ConnectionLost, ex);
         }
 
         try
@@ -135,7 +139,7 @@ internal sealed class HubConnection : IDisposable
         catch (TimeoutException)
         {
             _pending.TryRemove(id, out _);
-            throw new GearbitException($"Gearbit не ответил на команду {method}.");
+            throw new GearbitException(_text.NoAnswer(method));
         }
     }
 
@@ -210,13 +214,13 @@ internal sealed class HubConnection : IDisposable
             {
                 if (_pending.TryRemove(id, out var waiting))
                 {
-                    waiting.TrySetException(new GearbitException("Связь с Gearbit потеряна."));
+                    waiting.TrySetException(new GearbitException(_text.ConnectionLost));
                 }
             }
 
             if (!_closing.IsCancellationRequested)
             {
-                Interrupt("Связь с Gearbit потеряна.");
+                Interrupt(_text.ConnectionLost);
             }
         }
     }
@@ -245,7 +249,7 @@ internal sealed class HubConnection : IDisposable
                 if (message["error"] is JsonObject error)
                 {
                     var code = error["code"] is JsonValue c && c.TryGetValue<int>(out var number) ? number : (int?)null;
-                    waiting.TrySetException(new GearbitException((string?)error["message"] ?? "Ошибка Gearbit.", code));
+                    waiting.TrySetException(new GearbitException((string?)error["message"] ?? _text.HubError, code));
                 }
                 else
                 {
@@ -280,7 +284,7 @@ internal sealed class HubConnection : IDisposable
                 break;
             case "safety.event":
                 // СТОП, страж, потеря связи с роботом: программа прекращается, как блоки в интерфейсе.
-                Interrupt((string?)parameters?["message"] ?? "Программу остановили.");
+                Interrupt((string?)parameters?["message"] ?? _text.Stopped);
                 break;
         }
     }

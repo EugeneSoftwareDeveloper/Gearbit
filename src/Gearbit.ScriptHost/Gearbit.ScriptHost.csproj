@@ -4,8 +4,8 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Gearbit.ScriptHost</RootNamespace>
     <AssemblyName>Gearbit.ScriptHost</AssemblyName>
-    <Description>Запускатель программ на C# из вкладки «C#»: Roslyn Scripting в отдельном процессе, ошибки по-русски с номером строки.</Description>
-    <!-- Сообщения Roslyn по-русски для строки «(C#: …)» под понятным объяснением. Остальные языки не нужны. -->
+    <Description>Запускатель программ на C# из вкладки «C#»: Roslyn Scripting в отдельном процессе, понятные ошибки по-русски или по-английски с номером строки.</Description>
+    <!-- Сообщения Roslyn по-русски для строки «(C#: …)» под понятным объяснением. Английский — нейтральный язык Roslyn, ему сателлит не нужен. -->
     <SatelliteResourceLanguages>ru</SatelliteResourceLanguages>
   </PropertyGroup>
 

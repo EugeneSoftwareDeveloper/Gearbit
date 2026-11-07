@@ -138,6 +138,8 @@ public sealed class ProgramRunner : IHostedService, IAsyncDisposable
                 ["GEARBIT_URL"] = $"ws://localhost:{_options.Port}/ws",
                 ["GEARBIT_NAME"] = $"{language.Title}: {title}",
                 ["GEARBIT_RUN_ID"] = runId,
+                // Язык сообщений программы — язык вкладки, которая её запустила.
+                ["GEARBIT_LANG"] = owner.Text.Language,
                 ["GEARBIT_SENSOR_PLACES"] = JsonSerializer.Serialize(sensorPlaces ?? new Dictionary<string, string>()),
             };
 

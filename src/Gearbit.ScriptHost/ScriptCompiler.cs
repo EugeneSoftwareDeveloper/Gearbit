@@ -47,8 +47,9 @@ internal static class ScriptCompiler
             .WithImports(Imports);
 
     /// <summary>Собрать программу. Если в ней ошибки — первая из них с понятным объяснением.</summary>
-    public static (Script<object>? Script, ScriptError? Error, int ErrorCount) Compile(string code, string path)
+    public static (Script<object>? Script, ScriptError? Error, int ErrorCount) Compile(string code, string path, IScriptText? text = null)
     {
+        text ??= ScriptText.Current;
         var script = CSharpScript.Create(code, Options(path));
         var errors = script.Compile()
             .Where(d => d.Severity == DiagnosticSeverity.Error)
@@ -65,7 +66,7 @@ internal static class ScriptCompiler
         return (null, new ScriptError(
             position?.Line + 1,
             position?.Character + 1,
-            CompileErrors.Explain(first),
-            CompileErrors.Original(first)), errors.Count);
+            CompileErrors.Explain(first, text),
+            CompileErrors.Original(first, text)), errors.Count);
     }
 }

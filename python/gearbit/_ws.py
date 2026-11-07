@@ -16,6 +16,8 @@ import threading
 from typing import Optional
 from urllib.parse import urlsplit
 
+from ._texts import t
+
 _GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 OP_CONT = 0x0
@@ -71,7 +73,7 @@ class WebSocket:
     def connect(cls, url: str, timeout: float = 5.0, headers: Optional[dict] = None) -> "WebSocket":
         parts = urlsplit(url)
         if parts.scheme != "ws":
-            raise WebSocketError(f"Поддерживается только адрес ws://, а не {url}")
+            raise WebSocketError(t("ws_only_ws", url=url))
         host = parts.hostname or "localhost"
         port = parts.port or 80
         path = parts.path or "/"
@@ -81,7 +83,7 @@ class WebSocket:
         try:
             sock = socket.create_connection((host, port), timeout=timeout)
         except OSError as e:
-            raise WebSocketError(f"Не удалось подключиться к {host}:{port}: {e}") from e
+            raise WebSocketError(t("ws_connect_failed", host=host, port=port, detail=e)) from e
 
         key = base64.b64encode(os.urandom(16)).decode("ascii")
         lines = [
@@ -100,19 +102,19 @@ class WebSocket:
             while b"\r\n\r\n" not in response:
                 chunk = sock.recv(4096)
                 if not chunk:
-                    raise WebSocketError("Сервер закрыл соединение во время рукопожатия")
+                    raise WebSocketError(t("ws_closed_handshake"))
                 response += chunk
                 if len(response) > 16384:
-                    raise WebSocketError("Слишком длинный ответ сервера")
+                    raise WebSocketError(t("ws_long_answer"))
         except OSError as e:
             sock.close()
-            raise WebSocketError(f"Ошибка рукопожатия WebSocket: {e}") from e
+            raise WebSocketError(t("ws_handshake_failed", detail=e)) from e
 
         head, _, rest = response.partition(b"\r\n\r\n")
         status, *header_lines = head.decode("latin-1").split("\r\n")
         if " 101 " not in status + " ":
             sock.close()
-            raise WebSocketError(f"Сервер не открыл WebSocket: {status}")
+            raise WebSocketError(t("ws_not_opened", status=status))
         received = {}
         for line in header_lines:
             name, _, value = line.partition(":")
@@ -120,7 +122,7 @@ class WebSocket:
         expected = base64.b64encode(hashlib.sha1((key + _GUID).encode("ascii")).digest()).decode("ascii")
         if received.get("sec-websocket-accept") != expected:
             sock.close()
-            raise WebSocketError("Сервер ответил неверным ключом WebSocket")
+            raise WebSocketError(t("ws_bad_key"))
 
         sock.settimeout(None)
         ws = cls(sock)
@@ -135,7 +137,7 @@ class WebSocket:
         while len(data) < n:
             chunk = self._sock.recv(max(n - len(data), 4096))
             if not chunk:
-                raise WebSocketError("Соединение закрыто")
+                raise WebSocketError(t("ws_closed"))
             data += chunk
         if len(data) > n:
             self._pending = data[n:] + self._pending
@@ -153,7 +155,7 @@ class WebSocket:
         elif length == 127:
             (length,) = struct.unpack("!Q", self._recv_exact(8))
         if length > MAX_MESSAGE:
-            raise WebSocketError("Слишком большое сообщение")
+            raise WebSocketError(t("ws_too_big"))
         key = self._recv_exact(4) if masked else b""
         payload = self._recv_exact(length) if length else b""
         if masked:
@@ -164,11 +166,11 @@ class WebSocket:
         frame = encode_frame(opcode, payload)
         with self._send_lock:
             if self._closed:
-                raise WebSocketError("Соединение закрыто")
+                raise WebSocketError(t("ws_closed"))
             try:
                 self._sock.sendall(frame)
             except OSError as e:
-                raise WebSocketError(f"Не удалось отправить: {e}") from e
+                raise WebSocketError(t("ws_send_failed", detail=e)) from e
 
     def send_text(self, text: str) -> None:
         self._send_frame(OP_TEXT, text.encode("utf-8"))
@@ -202,7 +204,7 @@ class WebSocket:
                 parts.append(payload)
                 size += len(payload)
                 if size > MAX_MESSAGE:
-                    raise WebSocketError("Слишком большое сообщение")
+                    raise WebSocketError(t("ws_too_big"))
                 if fin:
                     return b"".join(parts).decode("utf-8", errors="replace")
 

@@ -10,11 +10,12 @@ import json
 import threading
 from typing import Any, Callable, Dict, Optional
 
+from ._texts import lang, t
 from ._ws import WebSocket, WebSocketError
 
 
 class GearbitError(Exception):
-    """Хаб отказал или связи нет. Текст — по-русски, его можно показать ребёнку."""
+    """Хаб отказал или связи нет. Текст — на языке программы (GEARBIT_LANG), его можно показать ребёнку."""
 
     def __init__(self, message: str, code: Optional[int] = None) -> None:
         super().__init__(message)
@@ -33,9 +34,7 @@ class HubConnection:
         try:
             self._ws = WebSocket.connect(url, timeout=timeout)
         except WebSocketError as e:
-            raise GearbitError(
-                f"Не получилось связаться с Gearbit ({url}). Запустите Gearbit и попробуйте ещё раз. Подробно: {e}"
-            ) from None
+            raise GearbitError(t("cannot_connect", url=url, detail=e)) from None
         self._lock = threading.Lock()
         self._pending: Dict[int, list] = {}
         self._next_id = 1
@@ -48,7 +47,7 @@ class HubConnection:
         self._reader = threading.Thread(target=self._read_loop, name="gearbit-hub", daemon=True)
         self._reader.start()
 
-        params: Dict[str, Any] = {"name": name}
+        params: Dict[str, Any] = {"name": name, "lang": lang()}
         if run_id:
             params["runId"] = run_id
         hello = self.call("hub.hello", params)
@@ -69,7 +68,7 @@ class HubConnection:
 
     def call(self, method: str, params: Optional[dict] = None, timeout: float = 5.0) -> Any:
         if self._closed.is_set():
-            raise GearbitError("Связь с Gearbit потеряна.")
+            raise GearbitError(t("connection_lost"))
         done = threading.Event()
         slot: list = [done, None, None]
         with self._lock:
@@ -82,14 +81,14 @@ class HubConnection:
         except WebSocketError:
             with self._lock:
                 self._pending.pop(request_id, None)
-            raise GearbitError("Связь с Gearbit потеряна.") from None
+            raise GearbitError(t("connection_lost")) from None
         if not done.wait(timeout):
             with self._lock:
                 self._pending.pop(request_id, None)
-            raise GearbitError(f"Gearbit не ответил на команду {method}.")
+            raise GearbitError(t("no_answer", method=method))
         _, result, error = slot
         if error is not None:
-            raise GearbitError(error.get("message") or "Ошибка хаба", error.get("code"))
+            raise GearbitError(error.get("message") or t("hub_error"), error.get("code"))
         return result
 
     def close(self) -> None:
@@ -126,10 +125,10 @@ class HubConnection:
                 pending = list(self._pending.values())
                 self._pending.clear()
             for slot in pending:
-                slot[2] = {"message": "Связь с Gearbit потеряна."}
+                slot[2] = {"message": t("connection_lost")}
                 slot[0].set()
             if not self.interrupted.is_set():
-                self.interrupt_message = "Связь с Gearbit потеряна."
+                self.interrupt_message = t("connection_lost")
                 self.interrupted.set()
 
     def _notify(self, method: str, params: Any) -> None:
@@ -144,7 +143,7 @@ class HubConnection:
                 self.robot = dict(self.robot, state=params.get("state"))
         elif method == "safety.event":
             # СТОП, страж, потеря связи: программа прекращается (как блоки в интерфейсе).
-            self.interrupt_message = (params or {}).get("message") or "Программу остановили."
+            self.interrupt_message = (params or {}).get("message") or t("stopped")
             self.interrupted.set()
         for listener in self._listeners.get(method, []):
             try:

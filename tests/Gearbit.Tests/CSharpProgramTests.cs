@@ -143,10 +143,30 @@ public sealed class CSharpProgramTests : IAsyncLifetime
 
     private static string Output(RpcClient tab) => string.Join("\n", tab.Notifications("program.output").Select(o => (string?)o["text"]));
 
-    private async Task<RpcClient> ConnectAsync()
+    [Fact]
+    public async Task Errors_come_in_the_language_of_the_tab()
+    {
+        await using var tab = await ConnectAsync("en");
+
+        await tab.CallAsync("program.run", new JsonObject { ["language"] = "csharp", ["code"] = "Console.WriteLine(1);\nrobot.Light(\"all\", \"pink\");\n" });
+
+        var exited = await tab.WaitNotificationAsync("program.exited", Wait);
+        Assert.Equal("error", (string?)exited["reason"]);
+        Assert.Equal(2, (int)exited["error"]!["line"]!);
+        Assert.Contains("I don't know the color «pink»", (string?)exited["error"]!["message"], StringComparison.Ordinal);
+        Assert.Contains("Error in line 2", Output(tab), StringComparison.Ordinal);
+    }
+
+    private async Task<RpcClient> ConnectAsync(string? lang = null)
     {
         var tab = await RpcClient.ConnectAsync(_port);
-        await tab.CallAsync("hub.hello", new JsonObject { ["name"] = "C#" });
+        var hello = new JsonObject { ["name"] = "C#" };
+        if (lang is not null)
+        {
+            hello["lang"] = lang;
+        }
+
+        await tab.CallAsync("hub.hello", hello);
         await tab.CallAsync("robot.connect", new JsonObject { ["id"] = "emulator:superbot" });
         return tab;
     }

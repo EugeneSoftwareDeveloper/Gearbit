@@ -16,6 +16,7 @@ import time
 from typing import Dict, Optional, Tuple
 
 from ._hub import GearbitError, HubConnection, ProgramStopped
+from ._texts import lang, t
 
 DEFAULT_URL = "ws://localhost:5280/ws"
 
@@ -107,15 +108,15 @@ def _emit(event: dict) -> None:
     sys.stdout.flush()
 
 
-def _power(value: object, what: str = "Мощность") -> int:
+def _power(value: object, what: str = "power") -> int:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise GearbitError(f"{what} — это число от -100 до 100, а не «{value}».")
+        raise GearbitError(t("not_number", what=t(what), value=value))
     return int(round(max(-100.0, min(100.0, float(value)))))
 
 
 def _seconds(value: object) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise GearbitError(f"Время — это число секунд, а не «{value}».")
+        raise GearbitError(t("not_seconds", value=value))
     return max(0.0, float(value))
 
 
@@ -139,7 +140,7 @@ class Robot:
             with self._connect_lock:
                 if self._hub is None:
                     url = self._url or os.environ.get("GEARBIT_URL") or DEFAULT_URL
-                    script = os.path.basename(sys.argv[0]) if sys.argv and sys.argv[0] else "программа"
+                    script = os.path.basename(sys.argv[0]) if sys.argv and sys.argv[0] else t("default_program")
                     name = self._name or os.environ.get("GEARBIT_NAME") or f"Python: {script}"
                     self._hub = HubConnection(url, name, os.environ.get("GEARBIT_RUN_ID"))
                     atexit.register(self._at_exit)
@@ -148,7 +149,7 @@ class Robot:
     def _check(self) -> HubConnection:
         hub = self._connection()
         if hub.interrupted.is_set():
-            raise ProgramStopped(hub.interrupt_message or "Программу остановили.")
+            raise ProgramStopped(hub.interrupt_message or t("stopped"))
         return hub
 
     def _command(self, method: str, params: dict) -> None:
@@ -157,7 +158,7 @@ class Robot:
             hub.call(method, dict(params, source="program"))
         except GearbitError:
             if hub.interrupted.is_set():
-                raise ProgramStopped(hub.interrupt_message or "Программу остановили.") from None
+                raise ProgramStopped(hub.interrupt_message or t("stopped")) from None
             raise
 
     @property
@@ -169,7 +170,7 @@ class Robot:
     def _info(self) -> dict:
         info = self._check().robot
         if not info or info.get("state") != "connected":
-            raise GearbitError("Робот не подключён. Нажмите «Нет робота» вверху Gearbit и выберите робота или эмулятор.")
+            raise GearbitError(t("no_robot"))
         return info
 
     # ---------- Движение ----------
@@ -196,7 +197,7 @@ class Robot:
 
     def tank(self, left: float, right: float, seconds: Optional[float] = None) -> None:
         """Мощность левого и правого колеса по отдельности, как у танка."""
-        pair = (_power(left, "Мощность левого колеса"), _power(right, "Мощность правого колеса"))
+        pair = (_power(left, "power_left"), _power(right, "power_right"))
         self._check()  # повтор той же команды в хаб не уходит, но остановку программы заметить должен
         if pair == (0, 0):
             self._stop_drive()
@@ -209,13 +210,13 @@ class Robot:
 
     def drive(self, throttle: float, turn: float, seconds: Optional[float] = None) -> None:
         """Газ и руль, как стик геймпада: turn > 0 — направо, turn < 0 — налево."""
-        t = _power(throttle, "Газ")
-        r = _power(turn, "Поворот")
+        gas = _power(throttle, "throttle")
+        r = _power(turn, "turn")
         self._check()
-        if t == 0 and r == 0:
+        if gas == 0 and r == 0:
             self._stop_drive()
         else:
-            self._command("drive.arcade", {"throttle": t, "turn": r})
+            self._command("drive.arcade", {"throttle": gas, "turn": r})
             self._drive = (None, None)  # точные мощности колёс считает хаб
         if seconds is not None:
             wait(seconds)
@@ -253,14 +254,14 @@ class Robot:
         info = self._info()
         target = _COLOR_WORDS.get(str(color).strip().lower(), str(color).strip().lower())
         if target not in COLORS:
-            raise GearbitError(f"Не знаю цвет «{color}». Можно: {', '.join(COLORS)}.")
+            raise GearbitError(t("unknown_color", color=color, colors=", ".join(COLORS)))
         lights = [c for c in info.get("components", []) if c.get("kind") == "light"]
         if light == "all":
             ids = [c["id"] for c in lights]
         else:
             found = [c["id"] for c in lights if c["id"] == light or light in (c.get("aliases") or [])]
             if not found:
-                raise GearbitError(f"У этого робота нет огонька «{light}». Есть: {', '.join(c['id'] for c in lights) or 'нет огоньков'}.")
+                raise GearbitError(t("no_light", light=light, lights=", ".join(c["id"] for c in lights) or t("no_lights")))
             ids = found[:1]
         for light_id in ids:
             if self._lights.get(light_id) != target:
@@ -292,10 +293,8 @@ class Robot:
         for c, place in self._sensors():
             if c["id"] == key or place == key:
                 return c
-        raise GearbitError(
-            f"У этой сборки нет датчика «{_PLACE_NAMES.get(key, key)}». "
-            "Проверьте, куда он поставлен, в карточке «Датчики» на вкладке «Пульт»."
-        )
+        place = _PLACE_NAMES.get(key, key) if lang() == "ru" else key
+        raise GearbitError(t("no_sensor", place=place))
 
     def _sensor(self, sensor: str) -> str:
         return self._find_sensor(sensor)["id"]
@@ -326,10 +325,7 @@ class Robot:
         if sensor is None:
             component = next((c for c, place in self._sensors() if place in DOWN_PLACES), None)
             if component is None:
-                raise GearbitError(
-                    "Ни один датчик не смотрит в пол. Поставьте датчик «Вниз» в карточке «Датчики» "
-                    "на вкладке «Пульт» или напишите, какой датчик спросить: robot.on_line(\"down_left\")."
-                )
+                raise GearbitError(t("no_down_sensor"))
         else:
             component = self._find_sensor(sensor)
         threshold = component.get("lineLevel")
@@ -347,13 +343,11 @@ class Robot:
         key = str(direction).strip().lower()
         key = _TILT_WORDS.get(key, key)
         if key not in TILT_DIRECTIONS:
-            raise GearbitError(
-                f"Не знаю, куда это — «{direction}». Напишите \"forward\", \"backward\", \"left\", \"right\" или \"any\"."
-            )
+            raise GearbitError(t("unknown_tilt", direction=direction))
         info = self._info()
         has_gyro = any(c.get("kind") == "imu" and c.get("available") for c in info.get("components", []))
         if info.get("firmware") and not has_gyro:
-            raise GearbitError("У этого робота нет гироскопа: наклон знают только роботы с новой прошивкой.")
+            raise GearbitError(t("no_gyro"))
         x, y = self.tilt()
         if key == "forward":
             return y >= TILT_LEVEL
@@ -378,7 +372,7 @@ class Robot:
         if _inside_gearbit():
             _emit({"type": "say", "text": message})
         elif message:  # пустая надпись в Gearbit убирает облачко, а в консоли печатать нечего
-            print(f"Робот: {message}", flush=True)
+            print(t("robot_says", text=message), flush=True)
 
     def _at_exit(self) -> None:
         """Программа закончилась: свои моторы — в 0, управление — свободно."""
@@ -396,11 +390,7 @@ class Robot:
                         hub.call("motor.setPower", {"id": motor_id, "power": 0, "source": "program"}, timeout=2)
                 hub.call("control.release", {}, timeout=2)
                 if moving:
-                    print(
-                        "Программа закончилась, и робот остановился. "
-                        "Чтобы ехать дольше, добавьте wait(секунды) или цикл while True.",
-                        flush=True,
-                    )
+                    print(t("finished_moving"), flush=True)
         except GearbitError:
             pass
         finally:
@@ -428,7 +418,7 @@ def wait(seconds: float) -> None:
     hub = robot._hub
     while True:
         if hub is not None and hub.interrupted.is_set():
-            raise ProgramStopped(hub.interrupt_message or "Программу остановили.")
+            raise ProgramStopped(hub.interrupt_message or t("stopped"))
         left = end - time.monotonic()
         if left <= 0:
             return

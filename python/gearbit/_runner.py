@@ -15,6 +15,7 @@ from typing import List
 
 from ._errors import explain, location
 from ._hub import ProgramStopped
+from ._texts import t
 
 MARKER = "@@gearbit:"
 
@@ -28,7 +29,7 @@ def _report(event: dict) -> None:
 def _fail(e: BaseException, path: str, source_lines: List[str]) -> int:
     message = explain(e)
     line, column = location(e, path)
-    where = f"Ошибка в строке {line}" if line else "Ошибка"
+    where = t("error_in_line", line=line) if line else t("error")
     sys.stderr.write(f"{where}: {message}\n")
     if line and 0 < line <= len(source_lines):
         sys.stderr.write(f"    {source_lines[line - 1].strip()}\n")
@@ -56,11 +57,11 @@ def run(path: str) -> int:
     try:
         exec(code, namespace)  # noqa: S102 — это и есть запуск программы пользователя
     except ProgramStopped as e:
-        sys.stderr.write(f"Программа остановлена: {e}\n")
+        sys.stderr.write(t("program_stopped", reason=e) + "\n")
         _report({"type": "stopped", "message": str(e)})
         return 2
     except KeyboardInterrupt:
-        sys.stderr.write("Программа остановлена.\n")
+        sys.stderr.write(t("program_stopped_plain") + "\n")
         return 2
     except SystemExit as e:
         return e.code if isinstance(e.code, int) else 0
@@ -71,7 +72,7 @@ def run(path: str) -> int:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        sys.stderr.write("Использование: python -m gearbit._runner программа.py\n")
+        sys.stderr.write(t("runner_usage") + "\n")
         sys.exit(64)
     # Вывод через канал (pipe) по умолчанию буферизуется: Gearbit показывает его сразу.
     for stream in (sys.stdout, sys.stderr):

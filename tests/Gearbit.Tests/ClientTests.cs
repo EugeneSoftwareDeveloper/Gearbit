@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Gearbit.Client;
 using Gearbit.Hub;
@@ -11,6 +12,12 @@ public sealed class ClientTests : IAsyncLifetime
     private WebApplication _app = null!;
     private RpcClient _tab = null!;
     private int _port;
+
+    public ClientTests()
+    {
+        // Тесты ниже проверяют русские тексты при любом языке Windows; английские — с ClientText.English явно.
+        ClientText.Current = ClientText.Russian;
+    }
 
     private string Url => $"ws://localhost:{_port}/ws";
 
@@ -127,6 +134,39 @@ public sealed class ClientTests : IAsyncLifetime
         Assert.Contains("СТОП", stopped.Message, StringComparison.Ordinal);
         Assert.Throws<ProgramStoppedException>(() => robot.Forward(30));
     }
+
+    [Fact]
+    public async Task English_program_gets_messages_in_english()
+    {
+        using var robot = new Robot(Url, "C#: english", ClientText.English);
+        var color = Assert.Throws<GearbitException>(() => robot.Light("all", "pink"));
+        Assert.Contains("I don't know the color «pink»", color.Message, StringComparison.Ordinal);
+        var sensor = Assert.Throws<GearbitException>(() => robot.Distance("sky"));
+        Assert.Contains("no «sky» sensor", sensor.Message, StringComparison.Ordinal);
+
+        // Хаб отвечает этой программе по-английски: она прислала lang в hub.hello.
+        var waiting = Task.Run(() =>
+        {
+            robot.Forward(30);
+            robot.Wait(10);
+        });
+        await WaitForMotorAsync();
+        await _tab.CallAsync("robot.stop");
+
+        var stopped = await Assert.ThrowsAsync<ProgramStoppedException>(() => waiting.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.Equal("Stopped with the STOP button", stopped.Message);
+    }
+
+    [Theory]
+    [InlineData(null, "ru-RU", "ru")]
+    [InlineData(null, "uk-UA", "ru")]
+    [InlineData(null, "de-DE", "en")]
+    [InlineData(null, "", "ru")]
+    [InlineData("en", "ru-RU", "en")]
+    [InlineData("ru_RU", "en-US", "ru")]
+    [InlineData("fr", "ru-RU", "en")]
+    public void Language_comes_from_gearbit_lang_then_windows(string? explicitLang, string culture, string expected) =>
+        Assert.Equal(expected, ClientText.Detect(explicitLang, CultureInfo.GetCultureInfo(culture)).Language);
 
     [Fact]
     public void Missing_hub_gives_a_clear_error()

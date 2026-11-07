@@ -53,17 +53,6 @@ public sealed class Robot : IDisposable
         ["вниз справа"] = "down_right",
     };
 
-    private static readonly Dictionary<string, string> PlaceNames = new()
-    {
-        ["front"] = "впереди",
-        ["right"] = "справа",
-        ["left"] = "слева",
-        ["back"] = "сзади",
-        ["down"] = "вниз",
-        ["down_left"] = "вниз слева",
-        ["down_right"] = "вниз справа",
-    };
-
     private static readonly Dictionary<string, string> TiltWords = new(StringComparer.OrdinalIgnoreCase)
     {
         ["вперёд"] = "forward",
@@ -104,6 +93,7 @@ public sealed class Robot : IDisposable
 
     private readonly string? _url;
     private readonly string? _name;
+    private readonly IClientText _text;
     private readonly Lock _lock = new();
     private readonly Dictionary<string, int> _motors = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _lights = new(StringComparer.Ordinal);
@@ -114,9 +104,16 @@ public sealed class Robot : IDisposable
     /// <param name="url">Адрес хаба. По умолчанию — <c>GEARBIT_URL</c> или <c>ws://localhost:5280/ws</c>.</param>
     /// <param name="name">Как программа называется в Gearbit («за рулём: …»).</param>
     public Robot(string? url = null, string? name = null)
+        : this(url, name, ClientText.Current)
+    {
+    }
+
+    /// <summary>Робот с заданным языком сообщений (для тестов).</summary>
+    internal Robot(string? url, string? name, IClientText text)
     {
         _url = url;
         _name = name;
+        _text = text;
     }
 
     /// <summary>Программа запущена из Gearbit (вкладка «C#»).</summary>
@@ -161,7 +158,7 @@ public sealed class Robot : IDisposable
     /// <summary>Мощность левого и правого колеса по отдельности, как у танка.</summary>
     public void Tank(double left, double right, double? seconds = null)
     {
-        var pair = (Power(left, "Мощность левого колеса"), Power(right, "Мощность правого колеса"));
+        var pair = (Power(left, _text.PowerLeft), Power(right, _text.PowerRight));
         Check(); // повтор той же команды в хаб не уходит, но остановку программы заметить должен
         if (pair == (0, 0))
         {
@@ -183,8 +180,8 @@ public sealed class Robot : IDisposable
     /// <summary>Газ и руль, как стик геймпада: <paramref name="turn"/> больше 0 — направо, меньше 0 — налево.</summary>
     public void Drive(double throttle, double turn, double? seconds = null)
     {
-        var t = Power(throttle, "Газ");
-        var r = Power(turn, "Поворот");
+        var t = Power(throttle, _text.Throttle);
+        var r = Power(turn, _text.Turn);
         Check();
         if (t == 0 && r == 0)
         {
@@ -249,7 +246,7 @@ public sealed class Robot : IDisposable
         var target = ColorWords.TryGetValue(key, out var word) ? word : key.ToLowerInvariant();
         if (!Colors.Contains(target))
         {
-            throw new GearbitException($"Не знаю цвет «{color}». Можно: {string.Join(", ", Colors)}.");
+            throw new GearbitException(_text.UnknownColor(color, string.Join(", ", Colors)));
         }
 
         var lights = Components(info, "light").ToList();
@@ -263,8 +260,8 @@ public sealed class Robot : IDisposable
             var found = lights.FirstOrDefault(c => (string?)c["id"] == light || Aliases(c).Contains(light));
             if (found is null)
             {
-                var names = lights.Count > 0 ? string.Join(", ", lights.Select(c => (string?)c["id"])) : "нет огоньков";
-                throw new GearbitException($"У этого робота нет огонька «{light}». Есть: {names}.");
+                var names = lights.Count > 0 ? string.Join(", ", lights.Select(c => (string?)c["id"])) : _text.NoLights;
+                throw new GearbitException(_text.NoLight(light, names));
             }
 
             ids = [(string)found["id"]!];
@@ -298,9 +295,7 @@ public sealed class Robot : IDisposable
         if (sensor is null)
         {
             component = PlacedSensors().Where(s => s.Place is { } place && DownPlaces.Contains(place)).Select(s => s.Component).FirstOrDefault()
-                ?? throw new GearbitException(
-                    "Ни один датчик не смотрит в пол. Поставьте датчик «Вниз» в карточке «Датчики» на вкладке «Пульт» " +
-                    "или напишите, какой датчик спросить: robot.OnLine(\"down_left\").");
+                ?? throw new GearbitException(_text.NoDownSensor);
         }
         else
         {
@@ -340,7 +335,7 @@ public sealed class Robot : IDisposable
         key = TiltWords.TryGetValue(key, out var word) ? word : key.ToLowerInvariant();
         if (!TiltDirections.Contains(key))
         {
-            throw new GearbitException($"Не знаю, куда это — «{direction}». Напишите \"forward\", \"backward\", \"left\", \"right\" или \"any\".");
+            throw new GearbitException(_text.UnknownTilt(direction));
         }
 
         var info = Info();
@@ -348,7 +343,7 @@ public sealed class Robot : IDisposable
             .Any(c => (string?)c["kind"] == "imu" && c["available"] is JsonValue available && available.TryGetValue<bool>(out var yes) && yes);
         if (info["firmware"] is JsonValue firmware && !string.IsNullOrEmpty((string?)firmware) && !hasGyro)
         {
-            throw new GearbitException("У этого робота нет гироскопа: наклон знают только роботы с новой прошивкой.");
+            throw new GearbitException(_text.NoGyro);
         }
 
         var (x, y) = Tilt();
@@ -382,14 +377,14 @@ public sealed class Robot : IDisposable
         else if (message.Length > 0)
         {
             // Пустая надпись в Gearbit убирает облачко, а в консоли печатать нечего.
-            Console.WriteLine($"Робот: {message}");
+            Console.WriteLine(_text.RobotSays(message));
         }
     }
 
     /// <summary>Подождать столько секунд. Робот при этом продолжает делать то, что ему сказали.</summary>
     public void Wait(double seconds)
     {
-        var duration = Duration(seconds);
+        var duration = Duration(seconds, _text);
         var hub = _hub;
         if (hub is null)
         {
@@ -447,7 +442,7 @@ public sealed class Robot : IDisposable
                 hub.Call("control.release", null, timeout);
                 if (moving)
                 {
-                    Console.WriteLine("Программа закончилась, и робот остановился. Чтобы ехать дольше, добавьте Wait(секунды) или цикл while (true).");
+                    Console.WriteLine(_text.FinishedMoving);
                 }
             }
         }
@@ -479,10 +474,10 @@ public sealed class Robot : IDisposable
                 var name = _name ?? Environment.GetEnvironmentVariable("GEARBIT_NAME") ?? $"C#: {AppDomain.CurrentDomain.FriendlyName}";
                 if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
                 {
-                    throw new GearbitException($"Неверный адрес Gearbit: {url}");
+                    throw new GearbitException(_text.BadUrl(url));
                 }
 
-                _hub = HubConnection.Connect(uri, name, Environment.GetEnvironmentVariable("GEARBIT_RUN_ID"));
+                _hub = HubConnection.Connect(uri, name, Environment.GetEnvironmentVariable("GEARBIT_RUN_ID"), _text);
             }
 
             return _hub;
@@ -532,7 +527,7 @@ public sealed class Robot : IDisposable
         var info = Check().Robot;
         if (info is null || (string?)info["state"] != "connected")
         {
-            throw new GearbitException("Робот не подключён. Нажмите «Нет робота» вверху Gearbit и выберите робота или эмулятор.");
+            throw new GearbitException(_text.NoRobot);
         }
 
         return info;
@@ -552,8 +547,7 @@ public sealed class Robot : IDisposable
             }
         }
 
-        throw new GearbitException(
-            $"У этой сборки нет датчика «{PlaceNames.GetValueOrDefault(key, key)}». Проверьте, куда он поставлен, в карточке «Датчики» на вкладке «Пульт».");
+        throw new GearbitException(_text.NoSensor(key));
     }
 
     /// <summary>Датчики расстояния, стоящие на роботе, и их места (null — место неизвестно).</summary>
@@ -600,11 +594,11 @@ public sealed class Robot : IDisposable
     }
 
     /// <summary>Секунды для <c>Wait</c>: не меньше 0 и не больше, чем принимают WaitOne и Sleep (почти 25 дней).</summary>
-    internal static TimeSpan Duration(double seconds)
+    internal static TimeSpan Duration(double seconds, IClientText? text = null)
     {
         if (double.IsNaN(seconds))
         {
-            throw new GearbitException("Время — это число секунд.");
+            throw new GearbitException((text ?? ClientText.Current).NotSeconds);
         }
 
         return seconds <= 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(Math.Min(seconds * 1000, int.MaxValue - 1));
@@ -614,11 +608,11 @@ public sealed class Robot : IDisposable
 
     private static int Int(JsonNode? node) => node is JsonValue value && value.TryGetValue<double>(out var number) ? (int)number : 0;
 
-    private static int Power(double value, string what = "Мощность")
+    private int Power(double value, string? what = null)
     {
         if (double.IsNaN(value))
         {
-            throw new GearbitException($"{what} — это число от -100 до 100.");
+            throw new GearbitException(_text.NotNumber(what ?? _text.Power));
         }
 
         return (int)Math.Round(Math.Clamp(value, -100, 100), MidpointRounding.AwayFromZero);

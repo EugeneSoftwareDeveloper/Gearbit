@@ -20,7 +20,11 @@ from gearbit import GearbitError, ProgramStopped, Robot, wait  # noqa: E402
 import gearbit._robot as robot_module  # noqa: E402
 from gearbit._errors import explain  # noqa: E402
 from gearbit._runner import run  # noqa: E402
+from gearbit._texts import set_lang  # noqa: E402
 from gearbit._ws import OP_TEXT, WebSocket, _mask, encode_frame  # noqa: E402
+
+# Тесты проверяют русские тексты; английские — в test_texts.py.
+set_lang("ru")
 
 
 def until(predicate, timeout=2.0):
@@ -67,7 +71,7 @@ class RobotTests(unittest.TestCase):
         self.robot.forward(50)  # повтор той же команды не отправляется
         self.robot.turn_left(30)
         self.robot.stop()
-        self.assertEqual(self.hub.calls[0], ("hub.hello", {"name": "тест"}))
+        self.assertEqual(self.hub.calls[0], ("hub.hello", {"name": "тест", "lang": "ru"}))
         drive = [(m, p) for m, p in self.hub.calls if m.startswith("drive.")]
         self.assertEqual(
             drive,

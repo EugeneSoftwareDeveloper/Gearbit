@@ -92,6 +92,7 @@ The process gets environment variables:
 | `GEARBIT_URL` | `ws://localhost:<port>/ws` |
 | `GEARBIT_NAME` | `Python: <name>` or `C#: <name>` — the name in the «Сейчас управляет…» bar |
 | `GEARBIT_RUN_ID` | `runId` for `hub.hello` |
+| `GEARBIT_LANG` | the language of the tab that started the program (`ru`, `en`): the program writes its errors in it and passes it in `hub.hello {lang}` |
 | `GEARBIT_SENSOR_PLACES` | JSON `sensors` from `program.run` |
 
 Output lines starting with `@@gearbit:` are service lines: the hub doesn't show them but parses the JSON. `{"type":"say","text"}` is a bubble above the robot (`program.say`), `{"type":"error","line","column","message"}` is an error for line highlighting (it goes into `program.exited.error`).

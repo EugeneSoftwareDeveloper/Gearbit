@@ -3,31 +3,30 @@ using Gearbit.Client;
 
 namespace Gearbit.ScriptHost;
 
-/// <summary>Ошибки во время работы программы по-русски и строка программы, где они случились.</summary>
+/// <summary>Ошибки во время работы программы понятными словами и строка программы, где они случились.</summary>
 internal static class RuntimeErrors
 {
-    public static ScriptError Explain(Exception exception, string path)
+    public static ScriptError Explain(Exception exception, string path, IScriptText? text = null)
     {
         ArgumentNullException.ThrowIfNull(exception);
         var (line, column) = Locate(exception, path);
-        var message = Message(exception);
+        var message = Message(exception, text ?? ScriptText.Current);
         var original = $"{exception.GetType().Name}: {exception.Message}";
         return new ScriptError(line, column, message, exception is GearbitException || message == exception.Message ? null : original);
     }
 
-    private static string Message(Exception exception) => exception switch
+    private static string Message(Exception exception, IScriptText t) => exception switch
     {
         GearbitException e => e.Message,
-        DivideByZeroException => "Делить на ноль нельзя.",
-        IndexOutOfRangeException or ArgumentOutOfRangeException =>
-            "Такого номера в списке нет. Номера начинаются с 0, а последний на один меньше, чем элементов в списке.",
-        NullReferenceException => "Здесь пустое значение (null): переменной ещё ничего не дали.",
-        FormatException => "Не получилось превратить текст в число. Проверьте, что в тексте только цифры.",
-        OverflowException => "Число получилось слишком большим.",
-        InvalidCastException => "Значение не того типа.",
-        KeyNotFoundException => "Такого ключа в словаре нет.",
-        InvalidOperationException e when e.Message.Contains("no elements", StringComparison.Ordinal) => "Список пустой.",
-        _ => $"Ошибка: {exception.Message}",
+        DivideByZeroException => t.DivideByZero,
+        IndexOutOfRangeException or ArgumentOutOfRangeException => t.IndexOutOfRange,
+        NullReferenceException => t.NullReference,
+        FormatException => t.BadNumberText,
+        OverflowException => t.Overflow,
+        InvalidCastException => t.InvalidCast,
+        KeyNotFoundException => t.KeyNotFound,
+        InvalidOperationException e when e.Message.Contains("no elements", StringComparison.Ordinal) => t.EmptyList,
+        _ => t.OtherError(exception.Message),
     };
 
     /// <summary>Самое глубокое место в файле программы: там ребёнок и ошибся (а не внутри Gearbit или .NET).</summary>

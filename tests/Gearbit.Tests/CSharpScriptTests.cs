@@ -2,7 +2,7 @@ using Gearbit.ScriptHost;
 
 namespace Gearbit.Tests;
 
-/// <summary>Ошибки компиляции программ на C# — по-русски и с правильной строкой.</summary>
+/// <summary>Ошибки компиляции программ на C# — понятными словами и с правильной строкой.</summary>
 public sealed class CSharpScriptTests
 {
     private const string Path = "program.csx";
@@ -23,13 +23,35 @@ public sealed class CSharpScriptTests
     [InlineData("robot.Tank(50);", 1, "не хватает значения")]
     public void Compile_error_is_explained(string code, int line, string expected)
     {
-        var (script, error, _) = ScriptCompiler.Compile(code, Path);
+        var (script, error, _) = ScriptCompiler.Compile(code, Path, ScriptText.Russian);
 
         Assert.Null(script);
         Assert.NotNull(error);
         Assert.Equal(line, error.Line);
         Assert.Contains(expected, error.Message, StringComparison.Ordinal);
         Assert.StartsWith("CS", error.Original, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("var x = 1\nrobot.Forward(50);", "needs a semicolon")]
+    [InlineData("robot.forwrd(50);", "no command «forwrd». Maybe robot.Forward?")]
+    [InlineData("robot.Forward(\"fast\");", "a number is needed, but here is text in quotes")]
+    [InlineData("Consol.WriteLine(1);", "C# does not know «Consol»")]
+    public void Compile_error_is_explained_in_english(string code, string expected)
+    {
+        var (_, error, _) = ScriptCompiler.Compile(code, Path, ScriptText.English);
+
+        Assert.NotNull(error);
+        Assert.Contains(expected, error.Message, StringComparison.Ordinal);
+        Assert.DoesNotMatch("[А-Яа-яЁё]", error.Original!);
+    }
+
+    [Fact]
+    public void Runtime_error_is_explained_in_english()
+    {
+        var error = RuntimeErrors.Explain(new DivideByZeroException(), Path, ScriptText.English);
+
+        Assert.Equal("You cannot divide by zero.", error.Message);
     }
 
     [Fact]

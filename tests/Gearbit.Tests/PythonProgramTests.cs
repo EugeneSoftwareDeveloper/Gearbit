@@ -115,11 +115,40 @@ public sealed class PythonProgramTests(ITestOutputHelper output) : IAsyncLifetim
         Assert.Contains("двоеточие", (string?)exited["error"]!["message"], StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Errors_come_in_the_language_of_the_tab()
+    {
+        await using var tab = await ConnectAsync("en");
+        if (tab is null)
+        {
+            return;
+        }
+
+        await tab.CallAsync("program.run", new JsonObject
+        {
+            ["language"] = "python",
+            ["code"] = "from gearbit import robot\n\nrobot.light(\"all\", \"pink\")\n",
+        });
+
+        var exited = await tab.WaitNotificationAsync("program.exited", Wait);
+        Assert.Equal("error", (string?)exited["reason"]);
+        Assert.Equal(3, (int)exited["error"]!["line"]!);
+        Assert.Contains("I don't know the color «pink»", (string?)exited["error"]!["message"], StringComparison.Ordinal);
+        var text = string.Join("\n", tab.Notifications("program.output").Select(o => (string?)o["text"]));
+        Assert.Contains("Error in line 3", text, StringComparison.Ordinal);
+    }
+
     /// <summary>Вкладка с подключённым эмулятором или null, если Python не установлен.</summary>
-    private async Task<RpcClient?> ConnectAsync()
+    private async Task<RpcClient?> ConnectAsync(string? lang = null)
     {
         var tab = await RpcClient.ConnectAsync(_port);
-        await tab.CallAsync("hub.hello", new JsonObject { ["name"] = "Python" });
+        var hello = new JsonObject { ["name"] = "Python" };
+        if (lang is not null)
+        {
+            hello["lang"] = lang;
+        }
+
+        await tab.CallAsync("hub.hello", hello);
         var python = (await tab.CallAsync("program.languages")).AsArray().Single(l => (string?)l!["id"] == "python")!;
         if (!(bool)python["available"]!)
         {

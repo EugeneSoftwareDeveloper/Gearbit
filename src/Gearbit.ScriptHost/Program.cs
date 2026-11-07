@@ -23,9 +23,10 @@ internal static class Program
         Console.SetOut(new StreamWriter(Console.OpenStandardOutput(), utf8) { AutoFlush = true });
         Console.SetError(new StreamWriter(Console.OpenStandardError(), utf8) { AutoFlush = true });
 
+        var text = ScriptText.Current;
         if (args.Length < 1 || !File.Exists(args[0]))
         {
-            Console.Error.WriteLine("Использование: Gearbit.ScriptHost программа.csx");
+            Console.Error.WriteLine(text.Usage);
             return 64;
         }
 
@@ -34,15 +35,15 @@ internal static class Program
         var lines = code.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
         Directory.SetCurrentDirectory(Path.GetDirectoryName(path)!);
 
-        var (script, compileError, errorCount) = ScriptCompiler.Compile(code, path);
+        var (script, compileError, errorCount) = ScriptCompiler.Compile(code, path, text);
         if (compileError is not null)
         {
             if (errorCount > 1)
             {
-                compileError = compileError with { Original = $"{compileError.Original} (всего ошибок: {errorCount})" };
+                compileError = compileError with { Original = text.TotalErrors(compileError.Original ?? "", errorCount) };
             }
 
-            return Fail(compileError, lines);
+            return Fail(compileError, lines, text);
         }
 
         try
@@ -52,7 +53,7 @@ internal static class Program
         }
         catch (ProgramStoppedException e)
         {
-            Console.Error.WriteLine($"Программа остановлена: {e.Message}");
+            Console.Error.WriteLine(text.ProgramStopped(e.Message));
             Report(new JsonObject { ["type"] = "stopped", ["message"] = e.Message });
             return Stopped;
         }
@@ -60,7 +61,7 @@ internal static class Program
         catch (Exception e)
 #pragma warning restore CA1031
         {
-            return Fail(RuntimeErrors.Explain(e, path), lines);
+            return Fail(RuntimeErrors.Explain(e, path, text), lines, text);
         }
         finally
         {
@@ -68,9 +69,9 @@ internal static class Program
         }
     }
 
-    private static int Fail(ScriptError error, string[] lines)
+    private static int Fail(ScriptError error, string[] lines, IScriptText text)
     {
-        var where = error.Line is { } line ? $"Ошибка в строке {line}" : "Ошибка";
+        var where = error.Line is { } line ? text.ErrorInLine(line) : text.Error;
         Console.Error.WriteLine($"{where}: {error.Message}");
         if (error.Line is { } number && number > 0 && number <= lines.Length)
         {

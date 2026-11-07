@@ -92,6 +92,7 @@
 | `GEARBIT_URL` | `ws://localhost:<порт>/ws` |
 | `GEARBIT_NAME` | `Python: <name>` или `C#: <name>` — имя в полоске «Сейчас управляет…» |
 | `GEARBIT_RUN_ID` | `runId` для `hub.hello` |
+| `GEARBIT_LANG` | язык вкладки, которая запустила программу (`ru`, `en`): на нём программа пишет ошибки и передаёт его в `hub.hello {lang}` |
 | `GEARBIT_SENSOR_PLACES` | JSON `sensors` из `program.run` |
 
 Строки вывода, которые начинаются с `@@gearbit:`, — служебные: хаб их не показывает, а разбирает JSON. `{"type":"say","text"}` — облачко над роботом (`program.say`), `{"type":"error","line","column","message"}` — ошибка для подсветки строки (попадает в `program.exited.error`).

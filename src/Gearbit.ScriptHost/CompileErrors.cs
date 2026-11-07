@@ -6,11 +6,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Gearbit.ScriptHost;
 
-/// <summary>Ошибки компиляции по-русски: «В конце команды нужна точка с запятой» вместо CS1002.</summary>
+/// <summary>Ошибки компиляции понятными словами: «В конце команды нужна точка с запятой» вместо CS1002. Тексты — в <see cref="IScriptText"/>.</summary>
 internal static partial class CompileErrors
 {
-    private static readonly CultureInfo Russian = CultureInfo.GetCultureInfo("ru-RU");
-
     /// <summary>Команды и свойства робота — для подсказки «Может быть, robot.Forward?».</summary>
     public static readonly IReadOnlyList<string> RobotMembers =
     [
@@ -28,182 +26,119 @@ internal static partial class CompileErrors
     private static readonly IReadOnlyList<string> MathMembers =
         [.. typeof(Math).GetMembers(BindingFlags.Public | BindingFlags.Static).Select(m => m.Name).Distinct()];
 
-    /// <summary>Сообщение C# как есть (по-русски, если есть перевод Roslyn): строкой ниже объяснения, для взрослых.</summary>
-    public static string Original(Diagnostic diagnostic) => $"{diagnostic.Id}: {diagnostic.GetMessage(Russian)}";
-
-    public static string Explain(Diagnostic diagnostic)
+    /// <summary>Сообщение C# как есть, на языке программы (русский — из перевода Roslyn): строкой ниже объяснения, для взрослых.</summary>
+    public static string Original(Diagnostic diagnostic, IScriptText? text = null)
     {
         ArgumentNullException.ThrowIfNull(diagnostic);
-        var text = diagnostic.GetMessage(CultureInfo.InvariantCulture);
-        var quoted = Quoted().Matches(text).Select(m => m.Groups[1].Value).ToList();
-        string Arg(int index) => index < quoted.Count ? quoted[index] : "";
-
-        switch (diagnostic.Id)
-        {
-            case "CS1002":
-                return "В конце команды нужна точка с запятой «;».";
-            case "CS1513":
-                return "Не хватает закрывающей фигурной скобки «}». У каждой «{» должна быть своя «}».";
-            case "CS1514":
-                return "Не хватает открывающей фигурной скобки «{».";
-            case "CS1026":
-                return "Не хватает закрывающей скобки «)».";
-            case "CS1003":
-                return $"Здесь не хватает «{Arg(0)}».";
-            case "CS1525":
-                return $"Здесь не может стоять «{Arg(0)}». Проверьте скобки и знаки.";
-            case "CS1001":
-                return "Здесь нужно имя: переменной, команды или типа.";
-            case "CS1010":
-            case "CS1039":
-                return "Текст не закрыт: не хватает кавычки \" в конце.";
-            case "CS1011":
-            case "CS1012":
-                return "Текст пишется в двойных кавычках: \"привет\". В одинарных — только одна буква: 'а'.";
-            case "CS1022":
-                return "Лишняя закрывающая скобка «}» или команда после конца программы.";
-            case "CS1056":
-                return $"Странный символ «{Arg(0)}». Возможно, это русская буква или «умная» кавычка вместо обычной.";
-            case "CS0103":
-                return UnknownName(Arg(0));
-            case "CS1061":
-            case "CS0117":
-                return UnknownMember(Arg(0), Arg(1));
-            case "CS1501":
-                return $"У команды {Arg(0)} не бывает столько значений в скобках. Наведите мышь на команду или посмотрите карточку «Команды».";
-            case "CS7036":
-                return $"Команде не хватает значения в скобках: нужно ещё «{Arg(0)}».";
-            case "CS1503":
-                return ArgumentMismatch(text, Arg(0), Arg(1));
-            case "CS0029":
-            case "CS0266":
-                return Conversion(diagnostic.Id, Arg(0), Arg(1));
-            case "CS0165":
-                return $"Переменной «{Arg(0)}» ещё не дали значение. Например: {Arg(0)} = 0;";
-            case "CS0128":
-                return AlreadyDefined(Arg(0));
-            case "CS0102":
-                // В скрипте переменные верхнего уровня — поля класса Submission#0.
-                return AlreadyDefined(Arg(1));
-            case "CS0841":
-                return $"Переменную «{Arg(0)}» используют раньше, чем создали. Перенесите строку с var {Arg(0)} = … выше.";
-            case "CS0019":
-                return $"Знак «{Arg(0)}» не работает с {TypeName(Arg(1))} и {TypeName(Arg(2))}.";
-            case "CS0201":
-                return "Эта строка ничего не делает. Может быть, у команды не хватает скобок: robot.Stop(); или написано == вместо =?";
-            case "CS0428":
-                return $"После команды {Arg(0)} нужны скобки: {Arg(0)}().";
-            case "CS1955":
-                return $"«{Arg(0)}» — не команда: скобки после него не нужны.";
-            case "CS0246":
-                return $"C# не знает тип «{Arg(0)}». Для переменных подойдёт var: var x = 5;";
-            case "CS0131":
-                return "Слева от = должна быть переменная. Чтобы сравнить, пишите ==.";
-            case "CS0139":
-                return "break и continue работают только внутри цикла.";
-            case "CS0815":
-            case "CS0818":
-                return "C# не понял, что будет в переменной. Дайте ей значение сразу: var x = 0;";
-            case "CS0122":
-                return $"«{Arg(0)}» — внутренняя часть, её нельзя использовать в программе.";
-            default:
-                return "C# не понял эту строку. Проверьте скобки, кавычки, точки с запятой и знаки.";
-        }
+        return $"{diagnostic.Id}: {diagnostic.GetMessage((text ?? ScriptText.Current).RoslynCulture)}";
     }
 
-    private static string UnknownName(string name)
+    public static string Explain(Diagnostic diagnostic, IScriptText? text = null)
+    {
+        ArgumentNullException.ThrowIfNull(diagnostic);
+        var t = text ?? ScriptText.Current;
+
+        // Имена из сообщения берутся в нейтральной культуре: там они всегда в 'кавычках'.
+        var message = diagnostic.GetMessage(CultureInfo.InvariantCulture);
+        var quoted = Quoted().Matches(message).Select(m => m.Groups[1].Value).ToList();
+        string Arg(int index) => index < quoted.Count ? quoted[index] : "";
+
+        return diagnostic.Id switch
+        {
+            "CS1002" => t.Semicolon,
+            "CS1513" => t.CloseBrace,
+            "CS1514" => t.OpenBrace,
+            "CS1026" => t.CloseParen,
+            "CS1003" => t.Missing(Arg(0)),
+            "CS1525" => t.CannotStand(Arg(0)),
+            "CS1001" => t.NeedName,
+            "CS1010" or "CS1039" => t.TextNotClosed,
+            "CS1011" or "CS1012" => t.TextQuotes,
+            "CS1022" => t.ExtraBrace,
+            "CS1056" => t.StrangeChar(Arg(0)),
+            "CS0103" => UnknownName(t, Arg(0)),
+            "CS1061" or "CS0117" => UnknownMember(t, Arg(0), Arg(1)),
+            "CS1501" => t.WrongArgCount(Arg(0)),
+            "CS7036" => t.MissingArg(Arg(0)),
+            "CS1503" => ArgumentMismatch(t, message, Arg(0), Arg(1)),
+            "CS0029" or "CS0266" => Conversion(t, diagnostic.Id, Arg(0), Arg(1)),
+            "CS0165" => t.Unassigned(Arg(0)),
+            "CS0128" => t.AlreadyDefined(Arg(0)),
+
+            // В скрипте переменные верхнего уровня — поля класса Submission#0.
+            "CS0102" => t.AlreadyDefined(Arg(1)),
+            "CS0841" => t.UsedBeforeDeclared(Arg(0)),
+            "CS0019" => t.Operator(Arg(0), t.TypeName(Arg(1)), t.TypeName(Arg(2))),
+            "CS0201" => t.NoEffect,
+            "CS0428" => t.NeedParens(Arg(0)),
+            "CS1955" => t.NotCommand(Arg(0)),
+            "CS0246" => t.UnknownType(Arg(0)),
+            "CS0131" => t.AssignLeft,
+            "CS0139" => t.BreakOutsideLoop,
+            "CS0815" or "CS0818" => t.CannotInfer,
+            "CS0122" => t.Inaccessible(Arg(0)),
+            _ => t.NotUnderstood,
+        };
+    }
+
+    private static string UnknownName(IScriptText t, string name)
     {
         if (string.Equals(name, "wait", StringComparison.OrdinalIgnoreCase))
         {
-            return "Пишите Wait с большой буквы: Wait(1);";
+            return t.WaitCapital;
         }
 
         if (string.Equals(name, "print", StringComparison.OrdinalIgnoreCase))
         {
-            return "В C# печатают так: Console.WriteLine(\"Привет!\");";
+            return t.PrintHint;
         }
 
         if (name is "True" or "False" or "TRUE" or "FALSE")
         {
-            return $"В C# пишут {name.ToLowerInvariant()} с маленькой буквы.";
+            return t.LowercaseBool(name.ToLowerInvariant());
         }
 
         if (string.Equals(name, "robot", StringComparison.OrdinalIgnoreCase))
         {
-            return "Робот называется robot — с маленькой буквы: robot.Forward(50);";
+            return t.RobotLowercase;
         }
 
         if (Similar(name, RobotMembers) is { } command)
         {
-            return $"«{name}» — это команда робота. Пишите так: robot.{command}(…);";
+            return t.IsRobotCommand(name, command);
         }
 
-        return $"C# не знает «{name}». Проверьте, как написано: большие и маленькие буквы различаются. Новую переменную сначала создают: var {name} = 0;";
+        return t.UnknownName(name);
     }
 
-    private static string UnknownMember(string type, string name)
+    private static string UnknownMember(IScriptText t, string type, string name) => type switch
     {
-        switch (type)
-        {
-            case "Robot":
-            case "Gearbit.Client.Robot":
-                var guess = Similar(name, RobotMembers);
-                var hint = guess is null ? "" : $" Может быть, robot.{guess}?";
-                return $"У робота нет команды «{name}».{hint} Все команды — в карточке «Команды» справа от программы.";
-            case "Console":
-            case "System.Console":
-                return Similar(name, ConsoleMembers) is { } console
-                    ? $"У Console нет «{name}». Может быть, Console.{console}?"
-                    : $"У Console нет «{name}». Чтобы напечатать строчку: Console.WriteLine(\"Привет!\");";
-            case "Math":
-            case "System.Math":
-                return Similar(name, MathMembers) is { } math
-                    ? $"У Math нет «{name}». Может быть, Math.{math}?"
-                    : $"У Math нет «{name}».";
-            default:
-                return $"У {TypeName(type)} нет «{name}». Проверьте, как написано: большие и маленькие буквы различаются.";
-        }
-    }
+        "Robot" or "Gearbit.Client.Robot" => t.RobotNoCommand(name, Similar(name, RobotMembers)),
+        "Console" or "System.Console" => t.ConsoleNo(name, Similar(name, ConsoleMembers)),
+        "Math" or "System.Math" => t.MathNo(name, Similar(name, MathMembers)),
+        _ => t.TypeNo(t.TypeName(type), name),
+    };
 
-    private static string AlreadyDefined(string name) =>
-        $"Переменная «{name}» уже есть. Чтобы поменять её значение, пишите без var: {name} = …;";
-
-    private static string ArgumentMismatch(string text, string from, string to)
+    private static string ArgumentMismatch(IScriptText t, string message, string from, string to)
     {
-        var number = ArgumentNumber().Match(text) is { Success: true } m ? m.Groups[1].Value : null;
-        var which = number is null ? "Значение" : $"Значение номер {number}";
-        return $"{which} в скобках не подходит: нужно {TypeName(to)}, а здесь {TypeName(from)}.";
+        var number = ArgumentNumber().Match(message) is { Success: true } m ? m.Groups[1].Value : null;
+        return t.ArgumentMismatch(number, t.TypeName(to), t.TypeName(from));
     }
 
-    private static string Conversion(string id, string from, string to)
+    private static string Conversion(IScriptText t, string id, string from, string to)
     {
         if (to == "bool")
         {
-            return "Здесь нужно условие, которое бывает true или false. Чтобы сравнить, пишите ==, а не =.";
+            return t.NeedCondition;
         }
 
         if (id == "CS0266" && to == "int" && from is "double" or "float" or "decimal")
         {
-            return "Дробное число не помещается в int. Объявите переменную как double или округлите: (int)Math.Round(x).";
+            return t.FractionToInt;
         }
 
-        return $"Нельзя положить {TypeName(from)} туда, где нужно {TypeName(to)}.";
+        return t.CannotPut(t.TypeName(from), t.TypeName(to));
     }
-
-    /// <summary>Тип словами: «число», «текст в кавычках».</summary>
-    private static string TypeName(string type) => type switch
-    {
-        "int" or "double" or "float" or "decimal" or "long" or "short" or "byte" or "uint" or "ulong" or "int?" or "double?" => "число",
-        "string" => "текст в кавычках",
-        "bool" => "true или false",
-        "char" => "одна буква в одинарных кавычках",
-        "void" => "ничего (эта команда ничего не возвращает)",
-        "method group" => "команда без скобок",
-        "<null>" => "null",
-        "(int X, int Y)" => "пара чисел",
-        "" => "это",
-        _ => $"«{type}»",
-    };
 
     /// <summary>Похожее имя: те же буквы без «_» и регистра (turn_left → TurnLeft) или одна-две опечатки.</summary>
     internal static string? Similar(string name, IEnumerable<string> candidates)
