@@ -109,12 +109,25 @@ internal sealed class RpcClient : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await _cts.CancelAsync();
-        if (_socket.State == WebSocketState.Open)
+        // Сначала закрываем вежливо и ждём ответный Close в цикле приёма, как HubConnection.
+        // Отмена ждущего ReceiveAsync обрывает сокет, и если отменить раньше, обрыв гонится
+        // с CloseAsync и тест падает на закрытии (так было на GitHub Actions).
+        try
         {
-            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+            if (_socket.State == WebSocketState.Open)
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                await _socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, timeout.Token);
+            }
+
+            await _receiver.WaitAsync(TimeSpan.FromSeconds(2));
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or WebSocketException or TimeoutException)
+        {
+            // Хаб уже закрыл соединение или не ответил: дальше отменим приём.
         }
 
+        await _cts.CancelAsync();
         try
         {
             await _receiver;

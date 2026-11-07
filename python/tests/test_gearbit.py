@@ -232,8 +232,16 @@ class FriendlyErrorTests(unittest.TestCase):
         self.assertIn("Ошибка в строке 2", err)
         self.assertIn("robot.forward", err)
 
+    def test_missing_colon_on_old_python(self):
+        # Так ту же ошибку описывает Python 3.9: без «expected ':'».
+        old = SyntaxError("invalid syntax", ("program.py", 2, 9, "if x > 0  # проверка\n"))
+        self.assertIn("двоеточие", explain(old))
+        other = SyntaxError("invalid syntax", ("program.py", 1, 5, "x = = 1\n"))
+        self.assertNotIn("двоеточие", explain(other))
+
     def test_missing_import(self):
-        self.assertIn("from gearbit import robot", explain(NameError("name 'robot' is not defined", name="robot")))
+        # Без name=…: этот аргумент появился только в Python 3.10, а имя всё равно берётся из текста.
+        self.assertIn("from gearbit import robot", explain(NameError("name 'robot' is not defined")))
 
     def test_unknown_robot_command_suggests_similar(self):
         from gearbit import Robot

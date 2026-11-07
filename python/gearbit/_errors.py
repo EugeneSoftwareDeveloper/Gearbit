@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import difflib
+import re
 import traceback
 from types import TracebackType
 from typing import Optional, Tuple
@@ -17,6 +18,15 @@ _ROBOT_COMMANDS = {
 }
 
 
+_BLOCK_START = re.compile(r"^(if|elif|else|for|while|def|class|try|except|finally|with)\b")
+
+
+def _missing_colon(text: Optional[str]) -> bool:
+    """Python 3.9 пишет про забытое двоеточие просто «invalid syntax»: угадываем по самой строке."""
+    line = (text or "").split("#", 1)[0].strip()
+    return bool(_BLOCK_START.match(line)) and not line.endswith(":")
+
+
 def _syntax_hint(e: SyntaxError) -> str:
     msg = (e.msg or "").lower()
     if isinstance(e, TabError):
@@ -27,7 +37,7 @@ def _syntax_hint(e: SyntaxError) -> str:
         if "unexpected indent" in msg:
             return t("syntax_indent_unexpected")
         return t("syntax_indent_mismatch")
-    if "expected ':'" in msg:
+    if "expected ':'" in msg or (msg == "invalid syntax" and _missing_colon(e.text)):
         return t("syntax_colon")
     if "was never closed" in msg:
         return t("syntax_never_closed")
