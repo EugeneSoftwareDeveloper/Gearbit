@@ -71,6 +71,27 @@ public sealed class ClientTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Robot_sees_black_line_with_sensor_looking_down()
+    {
+        await _tab.CallAsync("emulator.setScene", new JsonObject { ["scene"] = "line" });
+        await _tab.CallAsync("emulator.setSensorAngles", new JsonObject { ["down"] = new JsonObject { ["D1"] = 0, ["D2"] = 2.5 } });
+
+        await Task.Run(() =>
+        {
+            using var robot = new Robot(Url, "C#: линия");
+            // Мест «вниз» в сборке нет (front, right), а настройки вкладки этому процессу не переданы.
+            var error = Assert.Throws<GearbitException>(() => robot.OnLine());
+            Assert.Contains("Вниз", error.Message, StringComparison.Ordinal);
+
+            // Старт сцены «линия»: D1 над линией, D2 на 2,5 см правее — над белым листом.
+            // Ждём свежую телеметрию: до перестановки D2 смотрел вправо, в далёкую стену (тоже 6).
+            Assert.True(SpinWait.SpinUntil(() => robot.Distance("D2") == 0, TimeSpan.FromSeconds(3)));
+            Assert.True(robot.OnLine("D1"));
+            Assert.False(robot.OnLine("D2"));
+        });
+    }
+
+    [Fact]
     public async Task Stop_button_interrupts_wait()
     {
         using var robot = new Robot(Url, "C#: ждёт");

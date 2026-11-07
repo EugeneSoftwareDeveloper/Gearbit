@@ -18,7 +18,11 @@ public sealed record EmulatorSnapshot(
     double RoomHeight,
     double RobotRadius,
     IReadOnlyDictionary<string, double> SensorAngles,
-    IReadOnlyList<Obstacle> Obstacles);
+    IReadOnlyList<Obstacle> Obstacles,
+    IReadOnlyDictionary<string, double> SensorDown,
+    double DownSensorForward,
+    EmulatorScene Scene,
+    LineTrack? Line);
 
 /// <summary>
 /// Эмулятор прошивки TUDAO: принимает те же байты, что и настоящий робот, двигает машинку
@@ -53,7 +57,7 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
         World = world;
         _motors = new int[options.MotorSlots.Count];
         _lights = new byte[options.LightSlots.Count];
-        _pose = world.Settings.StartPose;
+        _pose = world.StartPose;
     }
 
     public event EventHandler<DataReceivedEventArgs>? SendToHost;
@@ -97,12 +101,12 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
         }
     }
 
-    /// <summary>Вернуть машинку в начальную точку.</summary>
+    /// <summary>Вернуть машинку в начальную точку текущей сцены.</summary>
     public void Reset()
     {
         lock (_lock)
         {
-            _pose = World.Settings.StartPose;
+            _pose = World.StartPose;
             _bumped = false;
             _battery = 100;
         }
@@ -159,6 +163,12 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
                 levels[sensor] = ToLevel(distance);
             }
 
+            var down = World.SensorDown;
+            foreach (var (sensor, offset) in down)
+            {
+                levels[sensor] = MeasureFloor(offset);
+            }
+
             return new EmulatorSnapshot(
                 PoweredOn,
                 _pose,
@@ -173,7 +183,11 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
                 settings.RoomHeight,
                 settings.RobotRadius,
                 angles,
-                World.Obstacles);
+                World.Obstacles,
+                down,
+                settings.DownSensorForward,
+                World.Scene,
+                World.Line);
         }
     }
 
@@ -251,6 +265,11 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
                 values[sensor] = ToLevel(MeasureCm(angle));
             }
 
+            foreach (var (sensor, offset) in World.SensorDown)
+            {
+                values[sensor] = MeasureFloor(offset);
+            }
+
             frame = _codec.EncodeTelemetry(World.Settings.Firmware, values);
         }
 
@@ -279,6 +298,21 @@ public sealed class TudaoEmulator : IVirtualDevice, IDisposable
         var sx = _pose.X + (Math.Cos(rad) * settings.RobotRadius);
         var sy = _pose.Y + (Math.Sin(rad) * settings.RobotRadius);
         return World.CastRay(sx, sy, angle);
+    }
+
+    /// <summary>
+    /// Датчик смотрит вниз: белый пол отражает много ИК-света (уровень 0, «близко»),
+    /// чёрная линия почти ничего (уровень 6, «далеко»). Это гипотеза до замера на настоящем роботе.
+    /// </summary>
+    private int MeasureFloor(double offset)
+    {
+        var settings = World.Settings;
+        var rad = _pose.Heading * Math.PI / 180;
+        var (sin, cos) = Math.SinCos(rad);
+        var x = _pose.X + (cos * settings.DownSensorForward) - (sin * offset);
+        var y = _pose.Y + (sin * settings.DownSensorForward) + (cos * offset);
+        var darkness = World.FloorDarkness(x, y);
+        return _options.DistanceMin + (int)Math.Round(darkness * (_options.DistanceMax - _options.DistanceMin), MidpointRounding.AwayFromZero);
     }
 
     private int ToLevel(double cm) =>

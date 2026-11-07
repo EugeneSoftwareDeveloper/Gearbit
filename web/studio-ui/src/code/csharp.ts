@@ -1,7 +1,7 @@
 import { snippetCompletion, type Completion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { StreamLanguage, syntaxTree } from "@codemirror/language";
 import { csharp } from "@codemirror/legacy-modes/mode/clike";
-import { COLOR_NAMES, COLORS, SENSOR_PLACES, store } from "../model";
+import { COLOR_NAMES, COLORS, DOWN_PLACES, SENSOR_PLACES, store } from "../model";
 import { CURSOR_MARK as C } from "./editor";
 import { mountCodeView, type CodeExample, type CodeLanguageSpec, type CodeView } from "./view";
 
@@ -90,6 +90,56 @@ while (true)
 `,
   },
   {
+    id: "line",
+    title: "По линии",
+    text: "Два датчика смотрят в пол, чёрная линия между ними.",
+    code: `// По линии: два датчика смотрят в пол, линия — между ними.
+// «Пульт» → «Датчики»: «Вниз слева» и «Вниз справа».
+// В эмуляторе под комнатой выберите «Линия».
+robot.Say("Еду по линии!");
+while (true)
+{
+    var left = robot.OnLine("down_left");
+    var right = robot.OnLine("down_right");
+    if (left && !right)
+    {
+        robot.Tank(0, 40);   // линия ушла влево
+    }
+    else if (right && !left)
+    {
+        robot.Tank(40, 0);   // линия ушла вправо
+    }
+    else
+    {
+        robot.Forward(40);   // линия между датчиками
+    }
+    Wait(0.02);
+}
+`,
+  },
+  {
+    id: "line-edge",
+    title: "По краю линии",
+    text: "Хватит одного датчика: едет зигзагом вдоль края.",
+    code: `// По краю линии: один датчик смотрит в пол.
+// «Пульт» → «Датчики»: поставьте датчик «Вниз».
+// Чёрное — уходим вправо, белое — влево, к линии.
+robot.Say("Держусь края!");
+while (true)
+{
+    if (robot.OnLine())
+    {
+        robot.Tank(40, 10);
+    }
+    else
+    {
+        robot.Tank(10, 40);
+    }
+    Wait(0.02);
+}
+`,
+  },
+  {
     id: "traffic-light",
     title: "Светофор",
     text: "Огоньки меняют цвет, а в облачке — подсказка.",
@@ -162,6 +212,7 @@ const COMMANDS: CodeLanguageSpec["commands"] = [
     items: [
       { code: 'robot.Distance("front")', text: "Расстояние: 0 — вплотную, 6 — далеко" },
       { code: 'robot.Obstacle("front")', text: "true, если препятствие близко" },
+      { code: "robot.OnLine()", text: "true, если датчик «вниз» видит чёрную линию" },
       { code: "robot.Tilt()", text: "Наклон робота: (X, Y)" },
     ],
   },
@@ -192,6 +243,12 @@ const ROBOT_METHODS: Completion[] = [
   method('Distance("${1:front}")', "Distance", "(датчик) → int", "Уровень датчика расстояния: 0 — препятствие вплотную, 6 — далеко."),
   method('DistanceCm("${1:front}")', "DistanceCm", "(датчик) → double?", "Расстояние в сантиметрах, если датчик откалиброван (иначе null)."),
   method('Obstacle("${1:front}")', "Obstacle", "(датчик) → bool", "true, если препятствие близко (уровень меньше 2)."),
+  method(
+    'OnLine("${1:down}")',
+    "OnLine",
+    "(датчик) → bool",
+    "true, если датчик, смотрящий в пол, видит чёрную линию. Без датчика — первый, поставленный «Вниз»: robot.OnLine().",
+  ),
   method("Tilt()", "Tilt", "() → (X, Y)", "Наклон робота: var (x, y) = robot.Tilt();"),
   method("Battery()", "Battery", "() → int", "Заряд батареи."),
   method('Light("${1:all}", "${2:green}");', "Light", "(огонёк, цвет)", 'Включить огонёк: robot.Light("L1", "red"); или все сразу: robot.Light("all", "green");'),
@@ -250,11 +307,12 @@ function inside(text: string): string {
 }
 
 function stringOptions(context: CompletionContext): CompletionResult | null {
-  const sensor = context.matchBefore(/\b(?:Distance|DistanceCm|Obstacle)\(\s*"\w*/);
+  const sensor = context.matchBefore(/\b(?:Distance|DistanceCm|Obstacle|OnLine)\(\s*"\w*/);
   if (sensor) {
+    const places = sensor.text.startsWith("OnLine") ? DOWN_PLACES : [...SENSOR_PLACES, ...DOWN_PLACES];
     return {
       from: sensor.to - inside(sensor.text).length,
-      options: SENSOR_PLACES.map((p) => ({ label: p.id, detail: p.title.toLowerCase(), type: "constant" })),
+      options: places.map((p) => ({ label: p.id, detail: p.title.toLowerCase(), type: "constant" })),
       validFor: /^\w*$/,
     };
   }

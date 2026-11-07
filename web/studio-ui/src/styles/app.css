@@ -556,6 +556,16 @@ select {
   color: var(--text);
   box-shadow: var(--shadow);
 }
+/* Небольшой переключатель в панели инструментов (например, «Комната / Линия» под комнатой эмулятора). */
+.segmented.compact {
+  padding: 3px;
+  gap: 2px;
+}
+.segmented.compact button {
+  height: 26px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+}
 
 .field {
   display: grid;
@@ -814,6 +824,25 @@ kbd {
 }
 .levels span.on.far {
   background: var(--ok);
+}
+/* Датчик смотрит в пол: шкала на «полоске бумаги», после порога — зона чёрного. */
+.levels.floor {
+  padding: 3px;
+  border-radius: 7px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.levels.floor span {
+  background: color-mix(in srgb, var(--paper-line) 8%, var(--paper));
+}
+.levels.floor span.black-zone {
+  background: color-mix(in srgb, var(--paper-line) 22%, var(--paper));
+}
+.levels.floor span.on {
+  background: color-mix(in srgb, var(--paper-line) 45%, var(--paper));
+}
+.levels.floor span.on.black-zone {
+  background: var(--paper-line);
 }
 .levels-legend {
   display: flex;

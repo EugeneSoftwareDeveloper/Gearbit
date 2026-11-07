@@ -63,6 +63,9 @@ public interface IDistanceSensor : IRobotComponent
 
     /// <summary>Расстояние в сантиметрах по таблице калибровки сборки; null — нет калибровки или нет данных.</summary>
     double? Centimeters { get; }
+
+    /// <summary>Датчик смотрит вниз: уровень, начиная с которого под ним чёрная линия (калибровка сборки или середина шкалы).</summary>
+    int LineLevel { get; }
 }
 
 public interface IImu : IRobotComponent

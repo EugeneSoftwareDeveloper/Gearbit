@@ -23,7 +23,12 @@ DEFAULT_URL = "ws://localhost:5280/ws"
 OBSTACLE_LEVEL = 2
 DISTANCE_MAX = 6
 
+#: Уровень датчика, смотрящего в пол, с которого под ним чёрная линия, если сборка не откалибрована.
+LINE_LEVEL = 3
+
 SENSOR_PLACES = ("front", "front_right", "right", "back_right", "back", "back_left", "left", "front_left")
+#: Места «смотрит в пол» — для езды по линии.
+DOWN_PLACES = ("down_left", "down", "down_right")
 _PLACE_WORDS = {
     "впереди": "front",
     "спереди": "front",
@@ -32,6 +37,19 @@ _PLACE_WORDS = {
     "слева": "left",
     "сзади": "back",
     "позади": "back",
+    "вниз": "down",
+    "снизу": "down",
+    "вниз слева": "down_left",
+    "вниз справа": "down_right",
+}
+_PLACE_NAMES = {
+    "front": "впереди",
+    "right": "справа",
+    "left": "слева",
+    "back": "сзади",
+    "down": "вниз",
+    "down_left": "вниз слева",
+    "down_right": "вниз справа",
 }
 
 COLORS = ("off", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "white")
@@ -236,32 +254,42 @@ class Robot:
 
     # ---------- Датчики ----------
 
-    def _sensor(self, sensor: str) -> str:
-        info = self._info()
-        key = _PLACE_WORDS.get(str(sensor).strip().lower(), str(sensor).strip())
-        sensors = [c for c in info.get("components", []) if c.get("kind") == "distance"]
+    def _sensors(self) -> list:
+        """Датчики расстояния, стоящие на роботе: [(описание, место или None)]."""
         places = _sensor_places()
-        for c in sensors:
+        result = []
+        for c in self._info().get("components", []):
+            if c.get("kind") != "distance":
+                continue
             place = places.get(c["id"])
             if place is None:
-                place = next((a for a in c.get("aliases") or [] if a in SENSOR_PLACES), None)
-            if place == "none":
-                continue
+                place = next((a for a in c.get("aliases") or [] if a in SENSOR_PLACES or a in DOWN_PLACES), None)
+            if place != "none":
+                result.append((c, place))
+        return result
+
+    def _find_sensor(self, sensor: str) -> dict:
+        key = _PLACE_WORDS.get(str(sensor).strip().lower(), str(sensor).strip())
+        for c, place in self._sensors():
             if c["id"] == key or place == key:
-                return c["id"]
-        names = {"front": "впереди", "right": "справа", "left": "слева", "back": "сзади"}
+                return c
         raise GearbitError(
-            f"У этой сборки нет датчика «{names.get(key, key)}». "
+            f"У этой сборки нет датчика «{_PLACE_NAMES.get(key, key)}». "
             "Проверьте, куда он поставлен, в карточке «Датчики» на вкладке «Пульт»."
         )
 
-    def distance(self, sensor: str = "front") -> int:
-        """Уровень датчика расстояния: 0 — препятствие вплотную, 6 — далеко или ничего нет."""
-        sensor_id = self._sensor(sensor)
+    def _sensor(self, sensor: str) -> str:
+        return self._find_sensor(sensor)["id"]
+
+    def _level(self, sensor_id: str) -> int:
         time.sleep(_SENSOR_PAUSE)
         telemetry = self._check().telemetry or {}
         value = (telemetry.get("distances") or {}).get(sensor_id)
         return DISTANCE_MAX if value is None else int(value)
+
+    def distance(self, sensor: str = "front") -> int:
+        """Уровень датчика расстояния: 0 — препятствие вплотную, 6 — далеко или ничего нет."""
+        return self._level(self._sensor(sensor))
 
     def distance_cm(self, sensor: str = "front") -> Optional[float]:
         """Расстояние в сантиметрах, если датчик откалиброван (иначе None)."""
@@ -273,6 +301,20 @@ class Robot:
     def obstacle(self, sensor: str = "front") -> bool:
         """Есть ли препятствие близко (уровень меньше 2)."""
         return self.distance(sensor) < OBSTACLE_LEVEL
+
+    def on_line(self, sensor: Optional[str] = None) -> bool:
+        """Видит ли датчик, смотрящий в пол, чёрную линию. Без имени — первый датчик, поставленный «вниз»."""
+        if sensor is None:
+            component = next((c for c, place in self._sensors() if place in DOWN_PLACES), None)
+            if component is None:
+                raise GearbitError(
+                    "Ни один датчик не смотрит в пол. Поставьте датчик «Вниз» в карточке «Датчики» "
+                    "на вкладке «Пульт» или напишите, какой датчик спросить: robot.on_line(\"down_left\")."
+                )
+        else:
+            component = self._find_sensor(sensor)
+        threshold = component.get("lineLevel")
+        return self._level(component["id"]) >= (LINE_LEVEL if threshold is None else int(threshold))
 
     def tilt(self) -> Tuple[int, int]:
         """Наклон робота (x, y). Если гироскопа нет — (0, 0)."""

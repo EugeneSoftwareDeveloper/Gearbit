@@ -249,24 +249,47 @@ public sealed class HubMethods(
             return list.Count;
         });
 
-        rpc.Register("emulator.setSensorAngles", "Куда смотрят датчики виртуальной машинки: {angles: {D1: 0, D2: 90}}, градусы от «вперёд» по часовой стрелке. Возвращает все углы.", (_, p) =>
+        rpc.Register(
+            "emulator.setSensorAngles",
+            "Куда смотрят датчики виртуальной машинки: {angles: {D1: 0}, down: {D2: -2.5}}. angles — градусы от «вперёд» по часовой стрелке, " +
+            "down — датчик смотрит в пол (езда по линии), число — смещение поперёк машинки в см, минус — левее. Возвращает {angles, down}.",
+            (_, p) =>
+            {
+                if (emulator is null)
+                {
+                    throw new HubException(HubErrors.NotSupported, "Эмулятор не включён.");
+                }
+
+                return emulator.World.SetSensorMounts(Numbers(p.Node?["angles"]), Numbers(p.Node?["down"]));
+            });
+
+        rpc.Register("emulator.setScene", "Что лежит в комнате эмулятора: {scene: \"room\" | \"line\"}. Машинка возвращается на старт сцены.", (_, p) =>
         {
             if (emulator is null)
             {
                 throw new HubException(HubErrors.NotSupported, "Эмулятор не включён.");
             }
 
-            var angles = new Dictionary<string, double>();
-            foreach (var (id, value) in p.Node?["angles"] as JsonObject ?? new JsonObject())
-            {
-                if (value is JsonValue v && v.TryGetValue<double>(out var angle))
-                {
-                    angles[id] = angle;
-                }
-            }
-
-            return emulator.World.SetSensorAngles(angles);
+            var scene = p.Enum<EmulatorScene>("scene");
+            emulator.World.SetScene(scene);
+            emulator.Current?.Reset();
+            return scene;
         });
+    }
+
+    /// <summary>Объект {id: число} из параметров; не числа пропускаются.</summary>
+    private static Dictionary<string, double> Numbers(JsonNode? node)
+    {
+        var result = new Dictionary<string, double>();
+        foreach (var (id, value) in node as JsonObject ?? new JsonObject())
+        {
+            if (value is JsonValue v && v.TryGetValue<double>(out var number))
+            {
+                result[id] = number;
+            }
+        }
+
+        return result;
     }
 
     private ProtocolRobot RequireRobot() =>

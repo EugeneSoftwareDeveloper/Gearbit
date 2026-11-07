@@ -56,4 +56,10 @@ public sealed class DistanceCalibration
 {
     /// <summary>Таблица «уровень → сантиметры» (индекс массива = уровень). null — не откалибровано.</summary>
     public IReadOnlyList<double>? LevelToCm { get; init; }
+
+    /// <summary>
+    /// Датчик смотрит вниз (езда по линии): с какого уровня он видит чёрное. Тёмное отражает меньше
+    /// ИК-света, поэтому уровень выше, чем над белым. null — середина шкалы (не откалибровано).
+    /// </summary>
+    public int? LineLevel { get; init; }
 }

@@ -1,7 +1,7 @@
 import * as SB from "scratch-blocks";
 import { hub } from "../hub";
-import { COLORS, sensorPlace, store, type RobotColor } from "../model";
-import { LIGHTS, OBSTACLE_LEVEL, SENSORS } from "./robot-blocks";
+import { COLORS, seesLine, sensorPlace, store, type ComponentInfo, type RobotColor } from "../model";
+import { LIGHTS, LINE_SENSORS, OBSTACLE_LEVEL, SENSORS } from "./robot-blocks";
 
 /**
  * Интерпретатор блоков. Работает прямо по блокам рабочей области (как Scratch):
@@ -470,6 +470,10 @@ export class Runtime {
         return this.distance(b.getFieldValue("SENSOR"), b.id);
       case "robot_obstacle":
         return this.distance(b.getFieldValue("SENSOR"), b.id) < OBSTACLE_LEVEL;
+      case "robot_on_line": {
+        const sensor = this.sensor(b.getFieldValue("SENSOR"), b.id, LINE_SENSORS);
+        return sensor ? seesLine(sensor, store.state.telemetry?.distances[sensor.id]) : false;
+      }
       case "robot_tilt": {
         const tilt = store.state.telemetry?.tilt;
         return tilt ? (b.getFieldValue("AXIS") === "y" ? tilt.y : tilt.x) : 0;
@@ -507,12 +511,18 @@ export class Runtime {
   }
 
   private distance(key: string, blockId: string): number {
+    const sensor = this.sensor(key, blockId, SENSORS);
+    return (sensor && store.state.telemetry?.distances[sensor.id]) ?? DISTANCE_MAX;
+  }
+
+  /** Датчик по месту или порту; null — робот не подключён. */
+  private sensor(key: string, blockId: string, options: [string, string][]): ComponentInfo | null {
     const robot = store.state.robot;
-    if (!robot || robot.state !== "connected") return DISTANCE_MAX;
+    if (!robot || robot.state !== "connected") return null;
     // «Впереди» — тот датчик, который стоит спереди (пользователь мог переставить его в карточке «Датчики»).
     const sensor = robot.components.find((c) => c.kind === "distance" && (c.id === key || sensorPlace(c, robot) === key));
-    if (!sensor) throw new ProgramError(`У этой сборки нет датчика «${label(SENSORS, key)}». Выберите другой в блоке.`, blockId);
-    return store.state.telemetry?.distances[sensor.id] ?? DISTANCE_MAX;
+    if (!sensor) throw new ProgramError(`У этой сборки нет датчика «${label(options, key)}». Выберите другой в блоке.`, blockId);
+    return sensor;
   }
 
   /* ---------- Команды роботу ---------- */

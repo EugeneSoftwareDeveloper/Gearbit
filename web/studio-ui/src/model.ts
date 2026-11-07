@@ -25,6 +25,8 @@ export interface ComponentInfo {
   title: string;
   available: boolean;
   aliases: string[];
+  /** Датчик расстояния, смотрящий вниз: с какого уровня под ним чёрная линия (калибровка сборки или середина шкалы). */
+  lineLevel?: number | null;
 }
 
 export interface RobotInfo {
@@ -88,7 +90,17 @@ export interface EmulatorState {
   sensorAngles: Record<string, number>;
   battery: number;
   obstacles: Obstacle[];
+  /** Датчики, которые смотрят в пол: id → смещение поперёк машинки, см (минус — левее). */
+  sensorDown: Record<string, number>;
+  /** Насколько датчики, смотрящие в пол, вынесены вперёд от центра машинки, см. */
+  downSensorForward: number;
+  scene: EmulatorScene;
+  /** Чёрная линия на полу (только на сцене «линия»). */
+  line: { points: { x: number; y: number }[]; width: number; closed: boolean } | null;
 }
+
+/** Что лежит в комнате эмулятора: препятствия или белый лист с чёрной линией. */
+export type EmulatorScene = "room" | "line";
 
 export interface ScanDevice {
   id: string;
@@ -154,26 +166,51 @@ export const SENSOR_PLACES: { id: string; title: string; angle: number }[] = [
   { id: "front_left", title: "Спереди слева", angle: 315 },
 ];
 
+/**
+ * Места «вниз» — для езды по линии: датчик смотрит в пол у носа машинки и отличает белое от чёрного.
+ * offset — смещение поперёк машинки, см (минус — левее).
+ */
+export const DOWN_PLACES: { id: string; title: string; offset: number }[] = [
+  { id: "down_left", title: "Вниз слева", offset: -2.5 },
+  { id: "down", title: "Вниз", offset: 0 },
+  { id: "down_right", title: "Вниз справа", offset: 2.5 },
+];
+
 /** Место «датчика нет на роботе». */
 export const NO_SENSOR = "none";
+
+/** С какого уровня датчик, смотрящий вниз, видит чёрное, если сборка не откалибрована (середина шкалы 0..6). */
+export const DEFAULT_LINE_LEVEL = 3;
 
 /**
  * Где стоит датчик: как переставил пользователь (settings.sensorPlaces), иначе как в профиле сборки.
  * null — место неизвестно, NO_SENSOR — датчика на роботе нет.
  */
 export function sensorPlace(c: ComponentInfo, robot = store.state.robot): string | null {
-  return sensorPlaces(robot)[c.id] ?? c.aliases.find((a) => SENSOR_PLACES.some((p) => p.id === a)) ?? null;
+  return sensorPlaces(robot)[c.id] ?? c.aliases.find((a) => SENSOR_PLACES.some((p) => p.id === a) || DOWN_PLACES.some((p) => p.id === a)) ?? null;
 }
 
-/** Угол датчика для радара и эмулятора; null — датчика нет. */
+/** Угол датчика для радара и эмулятора; null — датчика нет или он смотрит вниз. */
 export function sensorAngle(c: ComponentInfo, index: number, robot = store.state.robot): number | null {
   const place = sensorPlace(c, robot);
-  if (place === NO_SENSOR) return null;
+  if (place === NO_SENSOR || sensorDownOffset(c, robot) !== null) return null;
   return SENSOR_PLACES.find((p) => p.id === place)?.angle ?? (index === 0 ? 0 : 90);
+}
+
+/** Датчик смотрит вниз: смещение поперёк машинки, см; null — смотрит по сторонам или его нет. */
+export function sensorDownOffset(c: ComponentInfo, robot = store.state.robot): number | null {
+  const place = sensorPlace(c, robot);
+  return DOWN_PLACES.find((p) => p.id === place)?.offset ?? null;
+}
+
+/** Видит ли датчик, смотрящий вниз, чёрную линию при таком уровне (тёмное отражает меньше света — уровень выше). */
+export function seesLine(c: ComponentInfo, level: number | null | undefined): boolean {
+  return level !== null && level !== undefined && level >= (c.lineLevel ?? DEFAULT_LINE_LEVEL);
 }
 
 const ALIAS_NAMES: Record<string, string> = {
   ...Object.fromEntries(SENSOR_PLACES.map((p) => [p.id, p.title])),
+  ...Object.fromEntries(DOWN_PLACES.map((p) => [p.id, p.title])),
   left_wheel: "Левое колесо",
   right_wheel: "Правое колесо",
 };

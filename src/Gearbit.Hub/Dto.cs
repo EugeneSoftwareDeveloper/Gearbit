@@ -6,7 +6,8 @@ using Gearbit.Emulator;
 namespace Gearbit.Hub;
 
 /// <summary>Формы данных, которые хаб отдаёт клиентам. Имена полей — camelCase (см. docs/dev/hub-api.md).</summary>
-public sealed record ComponentDto(string Id, ComponentKind Kind, string Title, bool Available, IReadOnlyList<string> Aliases);
+/// <param name="LineLevel">Только у датчиков расстояния: с какого уровня датчик, смотрящий вниз, видит чёрную линию.</param>
+public sealed record ComponentDto(string Id, ComponentKind Kind, string Title, bool Available, IReadOnlyList<string> Aliases, int? LineLevel = null);
 
 public sealed record RobotDto(
     string Id,
@@ -50,7 +51,8 @@ public sealed record RobotDto(
                     c.Kind,
                     c.Title,
                     c.Available,
-                    aliases.Where(a => string.Equals(a.Value, c.Id, StringComparison.OrdinalIgnoreCase)).Select(a => a.Key).ToList()))
+                    aliases.Where(a => string.Equals(a.Value, c.Id, StringComparison.OrdinalIgnoreCase)).Select(a => a.Key).ToList(),
+                    (c as IDistanceSensor)?.LineLevel))
                 .ToList());
     }
 }
@@ -124,7 +126,11 @@ public sealed record EmulatorDto(
     IReadOnlyDictionary<string, int> SensorLevels,
     IReadOnlyDictionary<string, double> SensorAngles,
     int Battery,
-    IReadOnlyList<Obstacle> Obstacles)
+    IReadOnlyList<Obstacle> Obstacles,
+    IReadOnlyDictionary<string, double> SensorDown,
+    double DownSensorForward,
+    EmulatorScene Scene,
+    LineTrack? Line)
 {
     public static EmulatorDto From(EmulatorSnapshot s)
     {
@@ -132,6 +138,7 @@ public sealed record EmulatorDto(
         return new EmulatorDto(
             s.PoweredOn, s.RoomWidth, s.RoomHeight, s.RobotRadius,
             Math.Round(s.Pose.X, 2), Math.Round(s.Pose.Y, 2), Math.Round(s.Pose.Heading, 1),
-            s.Bumped, s.Motors, s.Lights.Select(b => (int)b).ToList(), s.SensorCm, s.SensorLevels, s.SensorAngles, s.Battery, s.Obstacles);
+            s.Bumped, s.Motors, s.Lights.Select(b => (int)b).ToList(), s.SensorCm, s.SensorLevels, s.SensorAngles, s.Battery, s.Obstacles,
+            s.SensorDown, s.DownSensorForward, s.Scene, s.Line);
     }
 }

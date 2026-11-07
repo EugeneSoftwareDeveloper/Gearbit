@@ -20,8 +20,14 @@ public sealed class Robot : IDisposable
 
     public const int DistanceMax = 6;
 
+    /// <summary>Уровень датчика, смотрящего в пол, с которого под ним чёрная линия, если сборка не откалибрована.</summary>
+    public const int LineLevel = 3;
+
     /// <summary>Места датчиков, как в карточке «Датчики».</summary>
     public static readonly IReadOnlyList<string> SensorPlaces = ["front", "front_right", "right", "back_right", "back", "back_left", "left", "front_left"];
+
+    /// <summary>Места «смотрит в пол» — для езды по линии.</summary>
+    public static readonly IReadOnlyList<string> DownPlaces = ["down_left", "down", "down_right"];
 
     /// <summary>Цвета огоньков.</summary>
     public static readonly IReadOnlyList<string> Colors = ["off", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "white"];
@@ -35,6 +41,21 @@ public sealed class Robot : IDisposable
         ["слева"] = "left",
         ["сзади"] = "back",
         ["позади"] = "back",
+        ["вниз"] = "down",
+        ["снизу"] = "down",
+        ["вниз слева"] = "down_left",
+        ["вниз справа"] = "down_right",
+    };
+
+    private static readonly Dictionary<string, string> PlaceNames = new()
+    {
+        ["front"] = "впереди",
+        ["right"] = "справа",
+        ["left"] = "слева",
+        ["back"] = "сзади",
+        ["down"] = "вниз",
+        ["down_left"] = "вниз слева",
+        ["down_right"] = "вниз справа",
     };
 
     private static readonly Dictionary<string, string> ColorWords = new(StringComparer.OrdinalIgnoreCase)
@@ -243,11 +264,29 @@ public sealed class Robot : IDisposable
     // ---------- Датчики ----------
 
     /// <summary>Уровень датчика расстояния: 0 — препятствие вплотную, 6 — далеко или ничего нет.</summary>
-    public int Distance(string sensor = "front")
+    public int Distance(string sensor = "front") => Level(SensorId(sensor));
+
+    /// <summary>
+    /// Видит ли датчик, смотрящий в пол, чёрную линию. Без имени — первый датчик, поставленный «вниз»
+    /// в карточке «Датчики».
+    /// </summary>
+    public bool OnLine(string? sensor = null)
     {
-        var id = SensorId(sensor);
-        Pause();
-        return Check().Telemetry?["distances"]?[id] is JsonValue value && value.TryGetValue<int>(out var level) ? level : DistanceMax;
+        JsonObject component;
+        if (sensor is null)
+        {
+            component = PlacedSensors().Where(s => s.Place is { } place && DownPlaces.Contains(place)).Select(s => s.Component).FirstOrDefault()
+                ?? throw new GearbitException(
+                    "Ни один датчик не смотрит в пол. Поставьте датчик «Вниз» в карточке «Датчики» на вкладке «Пульт» " +
+                    "или напишите, какой датчик спросить: robot.OnLine(\"down_left\").");
+        }
+        else
+        {
+            component = FindSensor(sensor);
+        }
+
+        var threshold = component["lineLevel"] is JsonValue value && value.TryGetValue<int>(out var level) ? level : LineLevel;
+        return Level((string)component["id"]!) >= threshold;
     }
 
     /// <summary>Расстояние в сантиметрах, если датчик откалиброван (иначе null).</summary>
@@ -446,30 +485,40 @@ public sealed class Robot : IDisposable
         return info;
     }
 
-    private string SensorId(string sensor)
+    private string SensorId(string sensor) => (string)FindSensor(sensor)["id"]!;
+
+    private JsonObject FindSensor(string sensor)
     {
         ArgumentNullException.ThrowIfNull(sensor);
-        var info = Info();
         var key = PlaceWords.TryGetValue(sensor.Trim(), out var word) ? word : sensor.Trim();
-        var places = UserSensorPlaces();
-        foreach (var component in Components(info, "distance"))
+        foreach (var (component, place) in PlacedSensors())
         {
-            var id = (string)component["id"]!;
-            var place = places.TryGetValue(id, out var chosen) ? chosen : Aliases(component).FirstOrDefault(SensorPlaces.Contains);
-            if (place == "none")
+            if ((string?)component["id"] == key || place == key)
             {
-                continue;
-            }
-
-            if (id == key || place == key)
-            {
-                return id;
+                return component;
             }
         }
 
-        var names = new Dictionary<string, string> { ["front"] = "впереди", ["right"] = "справа", ["left"] = "слева", ["back"] = "сзади" };
         throw new GearbitException(
-            $"У этой сборки нет датчика «{names.GetValueOrDefault(key, key)}». Проверьте, куда он поставлен, в карточке «Датчики» на вкладке «Пульт».");
+            $"У этой сборки нет датчика «{PlaceNames.GetValueOrDefault(key, key)}». Проверьте, куда он поставлен, в карточке «Датчики» на вкладке «Пульт».");
+    }
+
+    /// <summary>Датчики расстояния, стоящие на роботе, и их места (null — место неизвестно).</summary>
+    private List<(JsonObject Component, string? Place)> PlacedSensors()
+    {
+        var places = UserSensorPlaces();
+        return Components(Info(), "distance")
+            .Select(c => (Component: c, Place: places.TryGetValue((string)c["id"]!, out var chosen)
+                ? chosen
+                : Aliases(c).FirstOrDefault(a => SensorPlaces.Contains(a) || DownPlaces.Contains(a))))
+            .Where(s => s.Place != "none")
+            .ToList();
+    }
+
+    private int Level(string id)
+    {
+        Pause();
+        return Check().Telemetry?["distances"]?[id] is JsonValue value && value.TryGetValue<int>(out var level) ? level : DistanceMax;
     }
 
     private static IEnumerable<JsonObject> Components(JsonObject info, string kind) =>

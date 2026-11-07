@@ -25,6 +25,14 @@ export const SENSORS: Options = [
   ["D1", "D1"],
   ["D2", "D2"],
 ];
+/** Датчики, которые смотрят в пол (езда по линии): места «вниз» из карточки «Датчики» и порты. */
+export const LINE_SENSORS: Options = [
+  ["вниз", "down"],
+  ["вниз слева", "down_left"],
+  ["вниз справа", "down_right"],
+  ["D1", "D1"],
+  ["D2", "D2"],
+];
 export const MOTORS: Options = [
   ["M1", "M1"],
   ["M2", "M2"],
@@ -132,6 +140,12 @@ export function registerRobotBlocks(): void {
     message0: "препятствие %1 ?",
     args0: [dropdown("SENSOR", SENSORS)],
     tooltip: `Да, если расстояние меньше ${OBSTACLE_LEVEL}.`,
+    extensions: ["colours_sensing", "output_boolean"],
+  });
+  define("robot_on_line", {
+    message0: "датчик %1 видит чёрную линию?",
+    args0: [dropdown("SENSOR", LINE_SENSORS)],
+    tooltip: "Да, если датчик, смотрящий в пол, сейчас над чёрной линией. Куда смотрит датчик, выбирают в карточке «Датчики» на «Пульте».",
     extensions: ["colours_sensing", "output_boolean"],
   });
   define("robot_tilt", {

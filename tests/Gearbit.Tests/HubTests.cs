@@ -209,6 +209,36 @@ public sealed class HubTests : IAsyncLifetime
         await rpc.CallAsync("robot.disconnect");
     }
 
+    [Fact]
+    public async Task Emulator_line_scene_puts_down_sensors_over_the_line()
+    {
+        await using var rpc = await RpcClient.ConnectAsync(_port);
+        var robot = await rpc.CallAsync("robot.connect", new JsonObject { ["id"] = "emulator:superbot" });
+        // Порог не откалиброван: середина шкалы 0..6.
+        Assert.Equal(3, (int)robot["components"]!.AsArray().First(c => (string?)c!["id"] == "D1")!["lineLevel"]!);
+        Assert.Null(robot["components"]!.AsArray().First(c => (string?)c!["id"] == "M1")!["lineLevel"]);
+
+        Assert.Equal("line", (string?)await rpc.CallAsync("emulator.setScene", new JsonObject { ["scene"] = "line" }));
+        var mounts = await rpc.CallAsync("emulator.setSensorAngles", new JsonObject
+        {
+            ["angles"] = new JsonObject { ["D2"] = 90 },
+            ["down"] = new JsonObject { ["D1"] = 0 },
+        });
+        Assert.Equal(0, (double)mounts["down"]!["D1"]!);
+        Assert.Equal(90, (double)mounts["angles"]!["D2"]!);
+
+        var state = await rpc.CallAsync("emulator.state");
+        Assert.Equal("line", (string?)state["scene"]);
+        Assert.Empty(state["obstacles"]!.AsArray());
+        Assert.True(state["line"]!["points"]!.AsArray().Count > 10);
+        Assert.Equal(6, (int)state["sensorLevels"]!["D1"]!);
+        await WaitUntilAsync(async () => (int?)(await rpc.CallAsync("robot.telemetry"))["distances"]!["D1"] == 6);
+
+        var error = await Assert.ThrowsAsync<RpcError>(() => rpc.CallAsync("emulator.setScene", new JsonObject { ["scene"] = "moon" }));
+        Assert.Equal(HubErrors.InvalidParams, error.Code);
+        await rpc.CallAsync("robot.disconnect");
+    }
+
     private static async Task<int> EmulatorMotor(RpcClient rpc) => (int)(await rpc.CallAsync("emulator.state"))["motors"]![0]!;
 
     private static async Task WaitUntilAsync(Func<Task<bool>> condition)

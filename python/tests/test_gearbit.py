@@ -108,6 +108,26 @@ class RobotTests(unittest.TestCase):
         finally:
             del os.environ["GEARBIT_SENSOR_PLACES"]
 
+    def test_on_line_uses_sensor_looking_down(self):
+        with self.assertRaises(GearbitError) as ctx:
+            self.robot.on_line()  # ни один датчик не смотрит в пол
+        self.assertIn("Вниз", str(ctx.exception))
+
+        os.environ["GEARBIT_SENSOR_PLACES"] = '{"D1": "down_left", "D2": "down_right"}'
+        try:
+            self.hub.notify("robot.telemetry", {"distances": {"D1": 6, "D2": 0}})
+            self.assertTrue(until(lambda: self.robot.on_line()))   # первый датчик «вниз» — D1
+            self.assertTrue(self.robot.on_line("down_left"))
+            self.assertFalse(self.robot.on_line("вниз справа"))
+            self.assertEqual(self.robot.distance("down_right"), 0)
+            # Порог из калибровки сборки (lineLevel): уровень 3 ещё белое, если порог 4.
+            self.hub.notify("robot.telemetry", {"distances": {"D1": 3, "D2": 3}})
+            self.assertTrue(until(lambda: self.robot.on_line("D2")))
+            next(c for c in self.robot._info()["components"] if c["id"] == "D1")["lineLevel"] = 4
+            self.assertFalse(self.robot.on_line("D1"))
+        finally:
+            del os.environ["GEARBIT_SENSOR_PLACES"]
+
     def test_lights_all_and_russian_colors(self):
         self.robot.light("all", "красный")
         self.robot.light("L1", "red")  # уже красный — не отправляется

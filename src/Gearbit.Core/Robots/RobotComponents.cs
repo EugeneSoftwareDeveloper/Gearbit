@@ -44,6 +44,8 @@ internal sealed class DistanceComponent(ComponentDescriptor descriptor, int maxL
 
     public int MaxLevel { get; } = maxLevel;
 
+    public int LineLevel { get; } = Math.Clamp(calibration?.LineLevel ?? ((maxLevel + 1) / 2), 1, Math.Max(1, maxLevel));
+
     public double? Centimeters =>
         Level is { } level && calibration?.LevelToCm is { } table && level >= 0 && level < table.Count ? table[level] : null;
 

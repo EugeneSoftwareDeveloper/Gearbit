@@ -70,6 +70,7 @@ export function buildToolbox(withVariables = true): SB.utils.toolbox.ToolboxDefi
       category("Датчики", "sensing", [
         block("robot_distance"),
         block("robot_obstacle"),
+        block("robot_on_line"),
         gap(),
         block("robot_tilt"),
         block("robot_battery"),

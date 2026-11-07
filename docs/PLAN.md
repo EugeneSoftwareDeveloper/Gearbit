@@ -81,7 +81,7 @@ public interface IMotor          : IRobotComponent { Task SetPowerAsync(int perc
 public interface IDistanceSensor : IRobotComponent { DistanceReading Current { get; } }   // raw + level + см (если откалибровано)
 public interface IImu            : IRobotComponent { Tilt Current { get; } }              // наклон X/Y, ускорение
 public interface ILight          : IRobotComponent { Task SetColorAsync(RobotColor c); }
-public interface ILineSensor     : IRobotComponent { bool OnLine { get; } }
+public interface ILineSensor     : IRobotComponent { bool OnLine { get; } }   // у SuperBot сделано проще: тот же IDistanceSensor глазом вниз + LineLevel
 public interface IBattery        : IRobotComponent { int? Percent { get; } bool Low { get; } }
 // позже: IServo, ISpeaker, IColorSensor, IButton, ICompass ...
 ```
@@ -349,7 +349,8 @@ while (true)
 - [ ] Событие «когда наклон».
 - [x] Редактор встроен в Gearbit и грузится при первом открытии вкладки.
 - [ ] Блоки показываются по возможностям подключённого робота. Пока меню статичные, а датчик, которого нет в сборке, даёт понятную ошибку при запуске.
-- [x] Примеры: «Первые шаги», «Квадрат», «Светофор», «Умный тормоз», «Исследователь», «Осторожный водитель», «Считаем препятствия».
+- [x] Примеры: «Первые шаги», «Квадрат», «Светофор», «Умный тормоз», «Исследователь», «Осторожный водитель», «Считаем препятствия», «По линии», «По краю линии».
+- [x] Езда по линии: датчик можно поставить «вниз» (в пол), блок «датчик … видит чёрную линию?», `on_line` / `OnLine` в Python и C#, порог в «Замерах» ([docs/user/line-following.md](user/line-following.md)).
 - [x] Переменные с табличкой значения, сохранение в файл `*.gearbit.json` и автосохранение.
 - **Результат:** программирование блоками на большом экране, робот выполняет программу вживую.
 
@@ -380,7 +381,7 @@ while (true)
 ### Этап 6. Расширения (по желанию, в любом порядке)
 - [ ] **Scratch → Python/C#**: просмотр кода, сгенерированного из `.sb3`.
 - [ ] **Второй протокол** `ApitorF0FF` (Robot J и др.): проверка, что архитектура действительно расширяется без правок ядра.
-- [ ] **Составной робот**: SuperBot + micro:bit или ESP32 (компас для точных поворотов, лазерный дальномер, датчики линии).
+- [ ] **Составной робот**: SuperBot + micro:bit или ESP32 (компас для точных поворотов, лазерный дальномер, датчик цвета).
 - [ ] **Робот-такси**: веб-камера сверху + ArUco-маркер, клик мышкой по точке на карте.
 - [ ] Голосовые команды (Web Speech API, русский), жесты по веб-камере.
 - [ ] Эксперимент: загрузка Lua-скрипта в контроллер (`FF FE 09 02 …`) для автономной работы.

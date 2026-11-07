@@ -40,6 +40,7 @@ const tank = (left: number, right: number) => item("robot_tank", num("LEFT", lef
 const light = (color: string) => item("robot_light", field("LIGHT", "all"), field("COLOR", color));
 const say = (value: string) => item("robot_say", text("TEXT", value));
 const obstacle = (sensor: string) => item("robot_obstacle", field("SENSOR", sensor));
+const onLine = (sensor: string) => item("robot_on_line", field("SENSOR", sensor));
 const wait = (secs: number) => item("control_wait", num("DURATION", secs, "math_positive_number"));
 
 const xml = (body: string, variables = "") => `<xml xmlns="https://developers.google.com/blockly/xml">${variables}${body}</xml>`;
@@ -124,6 +125,45 @@ export const EXAMPLES: Example[] = [
           light("green"),
           move("forward", 40),
         ),
+    ),
+  },
+  {
+    id: "line",
+    title: "По линии",
+    text: "Два датчика смотрят в пол («Вниз слева» и «Вниз справа»), линия между ними. В эмуляторе выберите «Линия».",
+    xml: xml(
+      at(
+        40,
+        40,
+        flag(),
+        say("Еду по линии!"),
+        item(
+          "control_forever",
+          sub(
+            "SUBSTACK",
+            item(
+              "control_if_else",
+              input("CONDITION", onLine("down_left")),
+              sub("SUBSTACK", tank(0, 40)),
+              sub("SUBSTACK2", item("control_if_else", input("CONDITION", onLine("down_right")), sub("SUBSTACK", tank(40, 0)), sub("SUBSTACK2", move("forward", 40)))),
+            ),
+          ),
+        ),
+      ),
+    ),
+  },
+  {
+    id: "line-edge",
+    title: "По краю линии",
+    text: "Хватит одного датчика «Вниз»: на чёрном — вправо, на белом — влево.",
+    xml: xml(
+      at(
+        40,
+        40,
+        flag(),
+        say("Держусь края!"),
+        item("control_forever", sub("SUBSTACK", item("control_if_else", input("CONDITION", onLine("down")), sub("SUBSTACK", tank(40, 10)), sub("SUBSTACK2", tank(10, 40))))),
+      ),
     ),
   },
   {

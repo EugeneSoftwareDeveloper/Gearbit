@@ -95,6 +95,85 @@ public class EmulatorTests
         Assert.Equal(0, emulator.GetSnapshot().SensorAngles["D2"]);
     }
 
+    [Fact]
+    public void Stadium_track_goes_around_the_middle_of_the_room()
+    {
+        var line = LineTrack.Stadium(120, 80, 90, 45, 3);
+
+        Assert.Equal(0, line.DistanceTo(120, 125), 1);   // нижняя прямая
+        Assert.Equal(0, line.DistanceTo(120, 35), 1);    // верхняя прямая
+        Assert.Equal(0, line.DistanceTo(210, 80), 1);    // правый поворот
+        Assert.Equal(0, line.DistanceTo(30, 80), 1);     // левый поворот
+        Assert.Equal(45, line.DistanceTo(120, 80), 1);   // середина овала
+    }
+
+    [Fact]
+    public void Down_sensors_see_black_line_and_white_paper()
+    {
+        var world = new EmulatorWorld(new EmulatorSettings { Scene = EmulatorScene.Line });
+        using var emulator = new TudaoEmulator(Options, world, new ManualTime());
+        var reader = new TudaoProtocol(Options).CreateReader();
+        var received = new List<byte[]>();
+        emulator.SendToHost += (_, e) => received.Add(e.Data.ToArray());
+        emulator.PowerOn();
+
+        // Старт на нижней прямой: D1 посередине — над линией, D2 на 2,5 см правее — над белым.
+        var mounts = world.SetSensorMounts(null, new Dictionary<string, double> { ["D1"] = 0, ["D2"] = 2.5 });
+        emulator.SendTelemetry();
+
+        Assert.Empty(mounts.Angles);
+        var telemetry = Assert.IsType<Core.Protocol.TelemetryMessage>(Assert.Single(reader.Feed(received.Single()))).Telemetry;
+        Assert.Equal(6, telemetry.Distances["D1"]);
+        Assert.Equal(0, telemetry.Distances["D2"]);
+
+        // На краю линии пятно датчика видит и белое, и чёрное: уровень где-то посередине.
+        world.SetSensorMounts(null, new Dictionary<string, double> { ["D2"] = 1.5 });
+        Assert.Equal(3, emulator.GetSnapshot().SensorLevels["D2"]);
+        Assert.False(emulator.GetSnapshot().SensorCm.ContainsKey("D2"));
+    }
+
+    [Fact]
+    public void Scene_sets_obstacles_start_and_floor()
+    {
+        var world = new EmulatorWorld(new EmulatorSettings());
+        using var emulator = new TudaoEmulator(Options, world, new ManualTime());
+        world.SetSensorMounts(null, new Dictionary<string, double> { ["D1"] = 0 });
+
+        Assert.Equal(EmulatorScene.Room, world.Scene);
+        Assert.Null(world.Line);
+        Assert.Equal(0, emulator.GetSnapshot().SensorLevels["D1"]);   // в комнате пол светлый
+
+        world.SetScene(EmulatorScene.Line);
+        emulator.Reset();
+
+        var snapshot = emulator.GetSnapshot();
+        Assert.Empty(snapshot.Obstacles);
+        Assert.NotNull(snapshot.Line);
+        Assert.Equal(EmulatorScene.Line, snapshot.Scene);
+        Assert.Equal(world.Settings.LineStartPose, snapshot.Pose);
+        Assert.Equal(6, snapshot.SensorLevels["D1"]);
+
+        world.SetScene(EmulatorScene.Room);
+        emulator.Reset();
+        Assert.Equal(3, emulator.GetSnapshot().Obstacles.Count);
+        Assert.Equal(world.Settings.StartPose, emulator.GetSnapshot().Pose);
+    }
+
+    [Fact]
+    public void Sensor_moves_between_floor_and_sides()
+    {
+        var world = new EmulatorWorld(new EmulatorSettings());
+
+        var mounts = world.SetSensorMounts(null, new Dictionary<string, double> { ["D2"] = 20, ["D9"] = 0 });
+        Assert.Equal(8, mounts.Down["D2"]);                // не дальше края корпуса
+        Assert.False(mounts.Angles.ContainsKey("D2"));
+        Assert.False(mounts.Down.ContainsKey("D9"));
+
+        mounts = world.SetSensorMounts(new Dictionary<string, double> { ["D2"] = 270 }, null);
+        Assert.Equal(270, mounts.Angles["D2"]);
+        Assert.Empty(mounts.Down);
+    }
+
     private static async Task RunUntil(ManualTime time, Task task)
     {
         for (var i = 0; i < 1000 && !task.IsCompleted; i++)

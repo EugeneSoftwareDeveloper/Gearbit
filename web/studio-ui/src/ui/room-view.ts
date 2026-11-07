@@ -1,6 +1,6 @@
 import { hub } from "../hub";
 import { icons } from "../icons";
-import { NO_SENSOR, sensorPlace, store, type EmulatorState, type Obstacle } from "../model";
+import { NO_SENSOR, seesLine, sensorPlace, store, type EmulatorScene, type EmulatorState, type Obstacle } from "../model";
 import { onSettings } from "../settings";
 import { cssVar, h, icon } from "./dom";
 import { toast } from "./toasts";
@@ -20,6 +20,7 @@ export function levelColor(level: number, max = 6): string {
 
 /**
  * 2D-вид комнаты эмулятора: машинка, лучи датчиков, препятствия и след.
+ * Сцена «Линия» — белый лист с чёрной линией: датчики, смотрящие в пол, рисуются квадратиками у носа машинки.
  * Мышью: протяните по пустому месту — новое препятствие; двойной щелчок по препятствию — убрать.
  */
 export class RoomView {
@@ -30,16 +31,31 @@ export class RoomView {
   private drag: { x0: number; y0: number; x1: number; y1: number } | null = null;
   private colors = this.readColors();
   private frame = 0;
+  private readonly sceneButtons: Record<EmulatorScene, HTMLButtonElement>;
+  private readonly clear: HTMLButtonElement;
 
   constructor() {
     this.canvas = h("canvas", { class: "stage-canvas", "aria-label": "Комната эмулятора" });
     const reset = h("button", { class: "btn small", onclick: () => this.reset() }, icon(icons.home), "На старт");
-    const clear = h("button", { class: "btn small ghost", onclick: () => this.setObstacles([]) }, icon(icons.trash), "Убрать препятствия");
+    this.clear = h("button", { class: "btn small ghost", onclick: () => this.setObstacles([]) }, icon(icons.trash), "Убрать препятствия");
+    // Что лежит на полу: комната с препятствиями или лист с линией (езда по линии).
+    this.sceneButtons = {
+      room: h("button", { "aria-pressed": "true", title: "Комната с препятствиями", onclick: () => this.setScene("room") }, "Комната"),
+      line: h("button", { "aria-pressed": "false", title: "Белый лист с чёрной линией: езда по линии", onclick: () => this.setScene("line") }, "Линия"),
+    };
+    const scene = h("div", { class: "segmented compact", role: "group", "aria-label": "Что на полу" }, this.sceneButtons.room, this.sceneButtons.line);
     this.element = h(
       "div",
       {},
       this.canvas,
-      h("div", { class: "stage-toolbar" }, reset, clear, h("span", { class: "muted", style: "font-size:.8rem;margin-left:auto" }, "Протяните мышью — новое препятствие, двойной щелчок — убрать")),
+      h(
+        "div",
+        { class: "stage-toolbar" },
+        scene,
+        reset,
+        this.clear,
+        h("span", { class: "muted", style: "font-size:.8rem;margin-left:auto" }, "Протяните мышью — новое препятствие, двойной щелчок — убрать"),
+      ),
     );
 
     this.canvas.addEventListener("pointerdown", (e) => this.onDown(e));
@@ -58,17 +74,28 @@ export class RoomView {
 
   update(state: EmulatorState): void {
     const last = this.trail[this.trail.length - 1];
-    if (!last || Math.hypot(last.x - state.x, last.y - state.y) > 1.5) {
+    const step = last ? Math.hypot(last.x - state.x, last.y - state.y) : 0;
+    // Скачок больше 20 см — робота перенесли («На старт», смена сцены): след начинается заново.
+    if (step > 20) this.trail = [];
+    if (!last || step > 1.5) {
       this.trail.push({ x: state.x, y: state.y });
       if (this.trail.length > 300) this.trail.shift();
     }
     this.state = state;
+    for (const [scene, button] of Object.entries(this.sceneButtons)) button.setAttribute("aria-pressed", String(state.scene === scene));
+    this.clear.classList.toggle("hidden", state.obstacles.length === 0);
     this.schedule();
   }
 
   private async reset(): Promise<void> {
     this.trail = [];
     await hub.call("emulator.reset").catch((e) => toast(String(e.message ?? e), "error"));
+  }
+
+  private async setScene(scene: EmulatorScene): Promise<void> {
+    if (this.state?.scene === scene) return;
+    this.trail = [];
+    await hub.call("emulator.setScene", { scene }).catch((e) => toast(String(e.message ?? e), "error"));
   }
 
   private async setObstacles(obstacles: Obstacle[]): Promise<void> {
@@ -86,6 +113,9 @@ export class RoomView {
       accent: cssVar("--accent"),
       accent2: cssVar("--accent-2"),
       danger: cssVar("--danger"),
+      paper: cssVar("--paper"),
+      paperLine: cssVar("--paper-line"),
+      paperGrid: cssVar("--paper-grid"),
     };
   }
 
@@ -175,11 +205,13 @@ export class RoomView {
     const X = (v: number) => t.ox + v * t.scale;
     const Y = (v: number) => t.oy + v * t.scale;
 
-    // Пол и сетка 10 см.
-    ctx.fillStyle = c.surface;
+    // Пол и сетка 10 см. На сцене «линия» пол — белый лист бумаги.
+    const s = this.state;
+    const paper = s?.scene === "line";
+    ctx.fillStyle = paper ? c.paper : c.surface;
     roundRect(ctx, X(0), Y(0), t.width * t.scale, t.height * t.scale, 14);
     ctx.fill();
-    ctx.strokeStyle = c.grid;
+    ctx.strokeStyle = paper ? c.paperGrid : c.grid;
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let gx = 10; gx < t.width; gx += 10) {
@@ -196,8 +228,19 @@ export class RoomView {
     roundRect(ctx, X(0), Y(0), t.width * t.scale, t.height * t.scale, 14);
     ctx.stroke();
 
-    const s = this.state;
     if (!s) return;
+
+    // Чёрная линия на полу.
+    if (s.line && s.line.points.length > 1) {
+      ctx.strokeStyle = c.paperLine;
+      ctx.lineWidth = s.line.width * t.scale;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      s.line.points.forEach((p, i) => (i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y))));
+      if (s.line.closed) ctx.closePath();
+      ctx.stroke();
+    }
 
     // Препятствия.
     for (const o of s.obstacles) {
@@ -231,9 +274,8 @@ export class RoomView {
     }
 
     // Лучи датчиков (кроме отмеченных в карточке «Датчики» как «Нет на роботе»).
-    const absent = new Set(
-      store.state.robot?.components.filter((c) => c.kind === "distance" && sensorPlace(c) === NO_SENSOR).map((c) => c.id),
-    );
+    const sensors = store.state.robot?.components.filter((c) => c.kind === "distance") ?? [];
+    const absent = new Set(sensors.filter((c) => sensorPlace(c) === NO_SENSOR).map((c) => c.id));
     for (const [sensor, angle] of Object.entries(s.sensorAngles)) {
       if (absent.has(sensor)) continue;
       const cm = s.sensorCm[sensor] ?? 0;
@@ -301,6 +343,25 @@ export class RoomView {
       ctx.fill();
     });
     ctx.restore();
+
+    // Датчики, смотрящие в пол: квадратики у носа, чёрные над линией и белые над светлым полом.
+    const heading = (s.heading * Math.PI) / 180;
+    const [sin, cos] = [Math.sin(heading), Math.cos(heading)];
+    const size = Math.max(7, 2 * t.scale);
+    for (const [sensor, offset] of Object.entries(s.sensorDown ?? {})) {
+      if (absent.has(sensor)) continue;
+      const component = sensors.find((c) => c.id === sensor);
+      const level = s.sensorLevels[sensor];
+      const black = component ? seesLine(component, level) : (level ?? 0) >= 3;
+      const px = X(s.x + cos * s.downSensorForward - sin * offset);
+      const py = Y(s.y + sin * s.downSensorForward + cos * offset);
+      ctx.fillStyle = black ? c.paperLine : c.paper;
+      ctx.strokeStyle = c.accent;
+      ctx.lineWidth = 2;
+      roundRect(ctx, px - size / 2, py - size / 2, size, size, 2);
+      ctx.fill();
+      ctx.stroke();
+    }
   }
 }
 

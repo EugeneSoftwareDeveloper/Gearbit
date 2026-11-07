@@ -16,7 +16,7 @@
 | `input/keyboard-gamepad.ts` | Клавиши и Gamepad API. |
 | `ui/topbar.ts` | Шапка: режимы, плашка робота, кнопки, СТОП. |
 | `ui/remote-view.ts` | Пульт: карточки управления, сцены, датчиков, света, моторов. Карточку сцены (`stage`) вкладка «Блоки» забирает к себе. Название датчика — `<select>` места; для эмулятора места уходят в `emulator.setSensorAngles`. |
-| `ui/room-view.ts` | Canvas комнаты эмулятора: машинка, лучи, след, рисование препятствий. |
+| `ui/room-view.ts` | Canvas комнаты эмулятора: машинка, лучи, след, рисование препятствий, переключатель сцены «Комната» / «Линия», датчики «вниз» квадратиками. |
 | `ui/connect-dialog.ts` | Поиск и подключение. |
 | `ui/settings-popover.ts`, `help-dialog.ts`, `trace-panel.ts`, `toasts.ts` | Настройки, подсказка (F1), журнал протокола (с кнопкой «Замеры»), всплывающие сообщения. |
 | `ui/files.ts` | `saveTextFile`, `saveJsonFile`, `openFile`, `openTextFile`: File System Access API с запасным вариантом через ссылку. Тип файла — `FileKind {description, suffix, mime?}`. |
@@ -46,6 +46,7 @@
 | Акцент | `--accent`, `--accent-2`, `--accent-soft`, `--accent-contrast` |
 | Состояния | `--ok`, `--warn`, `--danger`, `--danger-strong` |
 | Светодиоды | `--led-off`, `--led-red` … `--led-white` |
+| Пол «Линия» | `--paper` (белый лист), `--paper-line` (чёрная линия), `--paper-grid` (клетка на листе): сцена «Линия» в комнате эмулятора, квадратики датчиков «вниз» на радаре и полоски «чёрное/белое» в карточке «Датчики». В тёмной теме лист чуть приглушён, чтобы не слепил. |
 | Блоки | `--block-<категория>`, `-2`, `-3` (`motion`, `looks`, `event`, `control`, `sensing`, `operators`, `data`, `more`), `--block-field`, `--block-field-text`, `--block-glow` |
 | Код | `--code-keyword`, `-string`, `-number`, `-comment`, `-function`, `-builtin`, `-type`, `-operator` (подсветка, свои для каждой темы), `--code-selection`, `--code-active-line`, `--code-error-line` (от акцента и `--danger`) |
 | Форма | `--radius-sm`, `--radius`, `--radius-lg`, `--gap`, `--shadow`, `--shadow-lg`, `--header-h` |

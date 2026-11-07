@@ -1,5 +1,5 @@
 import { icons } from "../icons";
-import { displayName, NO_SENSOR, sensorPlace, store } from "../model";
+import { displayName, NO_SENSOR, seesLine, sensorDownOffset, sensorPlace, store } from "../model";
 import { h, icon } from "./dom";
 import { levelColor } from "./room-view";
 
@@ -22,8 +22,14 @@ export function createSensorsCard(): HTMLElement {
     const rows: HTMLElement[] = [];
     for (const c of robot.components.filter((c) => c.kind === "distance" && sensorPlace(c, robot) !== NO_SENSOR)) {
       const level = t?.distances[c.id];
-      const value = level === null || level === undefined ? "—" : String(level);
-      const color = level === null || level === undefined ? "var(--text-muted)" : levelColor(level);
+      const known = level !== null && level !== undefined;
+      // Датчик смотрит в пол: показываем, что под ним — белое или чёрная линия.
+      if (sensorDownOffset(c, robot) !== null) {
+        rows.push(row(`Линия: ${displayName(c).toLowerCase()}`, c.id, known ? `${seesLine(c, level) ? "чёрное" : "белое"} · ${level}` : "—"));
+        continue;
+      }
+      const value = known ? String(level) : "—";
+      const color = known ? levelColor(level) : "var(--text-muted)";
       rows.push(row(`Расстояние ${displayName(c).toLowerCase()}`, c.id, value, color));
     }
     if (robot.components.some((c) => c.kind === "imu")) {

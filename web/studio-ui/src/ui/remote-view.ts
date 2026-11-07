@@ -2,7 +2,23 @@ import { hub } from "../hub";
 import { icons } from "../icons";
 import { emergencyStop, isPressed, onInputChange, onStop, press, release, setJoystick, type Direction } from "../input/drive";
 import { onGamepad } from "../input/keyboard-gamepad";
-import { COLOR_NAMES, COLORS, displayName, NO_SENSOR, SENSOR_PLACES, sensorAngle, sensorPlace, store, type AppState, type ComponentInfo, type RobotColor } from "../model";
+import {
+  COLOR_NAMES,
+  COLORS,
+  DEFAULT_LINE_LEVEL,
+  displayName,
+  DOWN_PLACES,
+  NO_SENSOR,
+  SENSOR_PLACES,
+  seesLine,
+  sensorAngle,
+  sensorDownOffset,
+  sensorPlace,
+  store,
+  type AppState,
+  type ComponentInfo,
+  type RobotColor,
+} from "../model";
 import { onSettings, setSensorPlaces, settings, updateSettings } from "../settings";
 import { h, icon, paintRange } from "./dom";
 import { levelColor, RoomView } from "./room-view";
@@ -267,14 +283,17 @@ function syncEmulatorSensors(): () => void {
       return;
     }
     const angles: Record<string, number> = {};
+    const down: Record<string, number> = {};
     distanceSensors(s).all.forEach((c, i) => {
+      const offset = sensorDownOffset(c, s.robot);
       const angle = sensorAngle(c, i, s.robot);
-      if (angle !== null) angles[c.id] = angle;
+      if (offset !== null) down[c.id] = offset;
+      else if (angle !== null) angles[c.id] = angle;
     });
-    const key = s.robot.id + JSON.stringify(angles);
+    const key = s.robot.id + JSON.stringify([angles, down]);
     if (key === sent) return;
     sent = key;
-    void hub.call("emulator.setSensorAngles", { angles }).catch(() => {
+    void hub.call("emulator.setSensorAngles", { angles, down }).catch(() => {
       sent = "";
     });
   };
@@ -357,6 +376,30 @@ function createRadar(): { element: HTMLElement; update: (s: AppState) => void } 
     beams.innerHTML = "";
     let shown = 0;
     sensors.forEach((c, i) => {
+      // Датчик смотрит в пол: квадратик у носа машинки — чёрный над линией, белый над светлым полом.
+      const offset = sensorDownOffset(c, s.robot);
+      if (offset !== null) {
+        shown++;
+        const level = s.telemetry?.distances[c.id];
+        const known = level !== null && level !== undefined;
+        const black = seesLine(c, level);
+        const g = document.createElementNS(ns, "g");
+        const x = offset * 6;
+        g.innerHTML = `
+          <rect x="${x - 7}" y="-56" width="14" height="14" rx="3"
+                fill="${known ? (black ? "var(--paper-line)" : "var(--paper)") : "var(--surface-3)"}" stroke="var(--text-muted)" stroke-width="1.5"/>`;
+        const label = document.createElementNS(ns, "text");
+        label.setAttribute("x", String(offset < 0 ? x - 12 : x + 12));
+        label.setAttribute("y", String(offset === 0 ? -64 : -45));
+        label.setAttribute("text-anchor", offset < 0 ? "end" : offset > 0 ? "start" : "middle");
+        label.setAttribute("fill", "var(--text)");
+        label.setAttribute("font-size", "13");
+        label.setAttribute("font-weight", "700");
+        label.textContent = known ? (black ? "чёрное" : "белое") : "—";
+        g.append(label);
+        beams.append(g);
+        return;
+      }
       // Направление — где датчик стоит в сборке (пользователь может переставить его в карточке «Датчики»).
       const angle = sensorAngle(c, i, s.robot);
       if (angle === null) return;
@@ -409,7 +452,8 @@ function createSensorsCard(): HTMLElement {
       "select",
       { class: "sensor-place", title: "Где стоит датчик на роботе", "aria-label": `Где стоит датчик ${c.id}` },
       current === null ? h("option", { value: "", disabled: true }, "Где стоит?") : null,
-      ...SENSOR_PLACES.map((p) => h("option", { value: p.id }, p.title)),
+      h("optgroup", { label: "Смотрит вокруг" }, ...SENSOR_PLACES.map((p) => h("option", { value: p.id }, p.title))),
+      h("optgroup", { label: "Смотрит в пол: линия" }, ...DOWN_PLACES.map((p) => h("option", { value: p.id }, p.title))),
       h("option", { value: NO_SENSOR }, "Нет на роботе"),
     );
     select.value = current ?? "";
@@ -421,7 +465,7 @@ function createSensorsCard(): HTMLElement {
   };
 
   let signature: string | null = null;
-  const rows = new Map<string, { value: HTMLElement; bars: HTMLElement[] }>();
+  const rows = new Map<string, { value: HTMLElement; bars: HTMLElement[]; line: ComponentInfo | null }>();
   const battery = h("div", { class: "value" }, "—");
   const batteryStat = h("div", { class: "stat" }, h("div", { class: "label" }, "Батарея"), battery);
   const tilt = h("div", { class: "value" }, "—");
@@ -440,16 +484,22 @@ function createSensorsCard(): HTMLElement {
       for (const c of shown) {
         const value = h("div", { class: "sensor-value" }, "—");
         const bars = Array.from({ length: 7 }, () => h("span"));
+        // Датчик смотрит в пол: шкала «белое → чёрное», после порога — чёрное.
+        const down = sensorDownOffset(c, s.robot) !== null;
+        const threshold = c.lineLevel ?? DEFAULT_LINE_LEVEL;
+        if (down) bars.forEach((bar, i) => bar.classList.toggle("black-zone", i >= threshold));
         list.append(
           h(
             "div",
             { class: "sensor" },
             h("div", { class: "sensor-head" }, placeSelect(c, s.robot), h("span", { class: "sensor-id" }, c.id), value),
-            h("div", { class: "levels", "aria-hidden": "true" }, ...bars),
-            h("div", { class: "levels-legend" }, h("span", {}, "близко"), h("span", {}, "далеко")),
+            h("div", { class: `levels${down ? " floor" : ""}`, "aria-hidden": "true" }, ...bars),
+            down
+              ? h("div", { class: "levels-legend" }, h("span", {}, "белое"), h("span", {}, `чёрное — от ${threshold}`))
+              : h("div", { class: "levels-legend" }, h("span", {}, "близко"), h("span", {}, "далеко")),
           ),
         );
-        rows.set(c.id, { value, bars });
+        rows.set(c.id, { value, bars, line: down ? c : null });
       }
       // Убранные датчики: строка «Нет на роботе: D1, D2» и кнопка вернуть их на места из сборки.
       absentRow.classList.toggle("hidden", !absent.length);
@@ -463,9 +513,15 @@ function createSensorsCard(): HTMLElement {
     for (const [id, row] of rows) {
       const level = t?.distances[id];
       const cm = t?.distancesCm[id];
-      row.value.innerHTML = level === null || level === undefined ? "—" : `${level}<small> / 6${cm != null ? ` · ${Math.round(cm)} см` : ""}</small>`;
+      const known = level !== null && level !== undefined;
+      if (row.line) {
+        row.value.innerHTML = known ? `${seesLine(row.line, level) ? "Чёрное" : "Белое"}<small> · ${level} / 6</small>` : "—";
+        row.bars.forEach((bar, i) => bar.classList.toggle("on", known && i <= level));
+        continue;
+      }
+      row.value.innerHTML = known ? `${level}<small> / 6${cm != null ? ` · ${Math.round(cm)} см` : ""}</small>` : "—";
       row.bars.forEach((bar, i) => {
-        const on = level !== null && level !== undefined && i <= level;
+        const on = known && i <= level;
         bar.className = on ? `on ${level <= 1 ? "near" : level <= 3 ? "mid" : "far"}` : "";
       });
     }

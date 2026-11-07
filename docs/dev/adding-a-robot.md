@@ -22,7 +22,7 @@
   "drive": { "type": "differential", "left": "M1", "right": "M2", "invertLeft": true, "invertRight": false },
   "aliases": { "front": "D1", "left_track": "M1", "right_track": "M2", "turret": "M3" },
   "limits": { "maxPowerPercent": 50, "kidMode": true },
-  "calibration": { "distance": { "D1": { "levelToCm": null } } }
+  "calibration": { "distance": { "D1": { "levelToCm": null, "lineLevel": null } } }
 }
 ```
 
@@ -33,6 +33,7 @@
 | `aliases` | Понятные имена для портов. Их видят программы (`motor.setPower {id:"turret"}`) и радар (`front`, `right`, `left`, `front_left`, `front_right`, `back` задают направление луча). |
 | `limits.maxPowerPercent` | Предел мощности, который предлагается при подключении. |
 | `calibration.distance.<id>.levelToCm` | Массив из 7 чисел: уровень 0–6 → сантиметры. `null` — не откалибровано. |
+| `calibration.distance.<id>.lineLevel` | С какого уровня датчик, смотрящий в пол, видит чёрную линию. `null` — по умолчанию `(maxLevel + 1) / 2`. Замеряется в «Замерах» → «Датчики» → «Порог линии». |
 | `status` | `draft`, пока сборка не проверена на настоящем роботе. |
 
 Проверка: `dotnet test` (тест `CatalogTests` загружает все JSON), затем подключение к эмулятору с этой сборкой.
